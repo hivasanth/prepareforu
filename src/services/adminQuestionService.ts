@@ -1,4 +1,3 @@
-import { supabase } from '../lib/supabase'
 import type { Question } from '../types/exam.types'
 import { resolveExamIds, resolveAdminExamId } from '../lib/examUtils'
 import { generateQuestionHash } from '../utils/hashUtils'
@@ -8,6 +7,8 @@ import { logInfo, logError, logWarn, metric, sanitizeError } from '../utils/logg
 import { alertEval } from '../observability/alertEvaluator'
 import { THRESHOLDS } from '../observability/thresholds'
 import { ensureRole } from '../utils/authUtils'
+import * as examRepo from '../lib/repositories/exam.repository'
+import * as questionRepo from '../lib/repositories/question.repository'
 import type { UserProfile, AuthError, ServiceResult } from '../types/auth.types'
 
 // ─── Phase 6 Contract (LOCKED) ────────────────────────────────────────────────
@@ -56,11 +57,9 @@ export const adminQuestionService = {
         topic_te: topicTe?.trim() || null
       }
 
-      const { error } = await supabase
-        .from('exam_topics')
-        .upsert([payload], { onConflict: 'exam_id,paper_id,subject_name,topic_en', ignoreDuplicates: true })
-
-      if (error) {
+      try {
+        await examRepo.upsertTopic(payload)
+      } catch (error: any) {
         logWarn('topics.register.error', { error, payload: { exam_id: payload.exam_id, paper_id: payload.paper_id, subject_name: payload.subject_name }, requestId: ctx.requestId })
       }
     } catch (err: any) {
@@ -82,31 +81,18 @@ export const adminQuestionService = {
     }
 
     try {
-      let q = supabase.from('questions').select('*', { count: 'exact' })
-      
       const resolvedIds = resolveExamIds(params.selectedExam)
-      if (resolvedIds.length > 0) {
-        q = q.in('exam_id', resolvedIds)
-      }
-      if (params.selectedPaper !== 'all') {
-        q = q.eq('paper_id', params.selectedPaper)
-      }
-      if (params.selectedSubject !== 'all') {
-        q = q.eq('subject_name', params.selectedSubject)
-      }
-      if (params.difficultyFilter !== 'all') {
-        q = q.eq('difficulty', params.difficultyFilter)
-      }
-      if (params.searchQuery.trim()) {
-        const searchTerm = `%${params.searchQuery.trim()}%`
-        // Phase 5: Search exclusively in modern bilingual fields
-        q = q.ilike('question_text_en', searchTerm)
-      }
-
-      q = q.order('updated_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false })
-      q = q.range(params.offset, params.offset + params.pageSize - 1)
-
-      const { data, count, error } = await retryWithBackoff<any>(async () => await q)
+      const { data, count, error } = await retryWithBackoff<any>(async () =>
+        questionRepo.listQuestions({
+          resolvedIds,
+          selectedPaper: params.selectedPaper,
+          selectedSubject: params.selectedSubject,
+          difficultyFilter: params.difficultyFilter,
+          searchQuery: params.searchQuery,
+          offset: params.offset,
+          pageSize: params.pageSize,
+        })
+      )
       if (error) throw error
 
       const response: ServiceResult<Question[]> = {
@@ -163,12 +149,9 @@ export const adminQuestionService = {
         ...payload,
         content_hash: await generateQuestionHash(payload as any)
       }
-      const { error } = await retryWithBackoff<any>(async () => 
-        await supabase
-          .from('questions')
-          .upsert([hashPayload], { onConflict: 'content_hash', ignoreDuplicates: true })
+      await retryWithBackoff<any>(async () =>
+        questionRepo.upsertQuestion(hashPayload)
       )
-      if (error) throw error
 
       if (payload.topic_en) {
         await adminQuestionService.registerTopicIfNeeded(
@@ -212,17 +195,12 @@ export const adminQuestionService = {
     const { requestId, user } = ctx
     try {
       ensureRole({ user, allowedRoles: ['admin', 'sub_admin'], operation: 'updateQuestion', requestId })
-      const { error } = await retryWithBackoff<any>(async () => 
-        await supabase.from('questions').update(payload).eq('id', id)
+      await retryWithBackoff<any>(async () =>
+        questionRepo.updateQuestion(id, payload)
       )
-      if (error) throw error
 
       if (payload.topic_en) {
-        const { data: qData } = await supabase
-          .from('questions')
-          .select('exam_id, paper_id, subject_name, topic_en, topic_te')
-          .eq('id', id)
-          .single()
+        const qData = await questionRepo.fetchQuestionMeta(id).catch(() => null)
           
         if (qData && qData.topic_en) {
           await adminQuestionService.registerTopicIfNeeded(
@@ -269,10 +247,9 @@ export const adminQuestionService = {
     const { requestId, user } = ctx
     try {
       ensureRole({ user, allowedRoles: ['admin', 'sub_admin'], operation: 'deleteQuestion', requestId })
-      const { error } = await retryWithBackoff<any>(async () => 
-        await supabase.from('questions').delete().eq('id', id)
+      await retryWithBackoff<any>(async () =>
+        questionRepo.deleteQuestion(id)
       )
-      if (error) throw error
       invalidateCache()
 
       logInfo('questions.delete.success', { requestId,
@@ -306,10 +283,9 @@ export const adminQuestionService = {
     const { requestId, user } = ctx
     try {
       ensureRole({ user, allowedRoles: ['admin', 'sub_admin'], operation: 'bulkDeleteQuestions', requestId })
-      const { error } = await retryWithBackoff<any>(async () => 
-        await supabase.from('questions').delete().in('id', ids)
+      await retryWithBackoff<any>(async () =>
+        questionRepo.bulkDeleteQuestions(ids)
       )
-      if (error) throw error
       invalidateCache()
 
       logInfo('bulk.questions.delete.success', { requestId,
@@ -354,14 +330,7 @@ export const adminQuestionService = {
       // that might block bulk array inserts even for admins.
       for (const q of payloadWithHash) {
         try {
-          const { error } = await supabase
-            .from('questions')
-            .upsert(q, { onConflict: 'content_hash' })
-
-          if (error) {
-            logError('bulkInsert.row_failed', { error, row: { subject: q.subject_name, id: q.content_hash?.slice(0, 8) }, requestId })
-            throw error
-          }
+          await questionRepo.upsertQuestionNoIgnore(q)
 
           if (q.topic_en) {
             await adminQuestionService.registerTopicIfNeeded(
@@ -432,16 +401,9 @@ export const adminQuestionService = {
     }
 
     try {
-      const { data, error } = await retryWithBackoff<any>(async () => 
-        await supabase
-          .from('prompt_templates')
-          .select('*')
-          .eq('exam_id', examId)
-          .eq('paper_id', paperId)
-          .eq('subject_name', subjectName)
-          .order('created_at', { ascending: true })
+      const data = await retryWithBackoff<any>(async () =>
+        examRepo.fetchPrompts(examId, paperId, subjectName)
       )
-      if (error) throw error
       const response: ServiceResult<any[]> = { success: true, data: data || [] }
       
       const duration = Math.round(performance.now() - start)
@@ -477,21 +439,9 @@ export const adminQuestionService = {
     const { requestId, user } = ctx
     try {
       ensureRole({ user, allowedRoles: ['admin', 'sub_admin'], operation: 'upsertPrompt', requestId })
-      const result = await retryWithBackoff<any>(async () => {
-        if (payload.id) {
-          const { id, ...updatePayload } = payload
-          return await supabase
-            .from('prompt_templates')
-            .update(updatePayload)
-            .eq('id', id)
-        } else {
-          return await supabase
-            .from('prompt_templates')
-            .insert([payload])
-        }
-      })
-
-      if (result.error) throw result.error
+      await retryWithBackoff<any>(async () =>
+        examRepo.upsertPrompt(payload)
+      )
       invalidateCache()
       
       logInfo('prompts.upsert.success', { requestId,
@@ -518,13 +468,9 @@ export const adminQuestionService = {
     const { requestId, user } = ctx
     try {
       ensureRole({ user, allowedRoles: ['admin'], operation: 'deletePrompt', requestId })
-      const { error } = await retryWithBackoff<any>(async () => 
-        await supabase
-          .from('prompt_templates')
-          .delete()
-          .eq('id', id)
+      await retryWithBackoff<any>(async () =>
+        examRepo.deletePromptById(id)
       )
-      if (error) throw error
       invalidateCache()
       
       logInfo('prompts.delete.success', { requestId,

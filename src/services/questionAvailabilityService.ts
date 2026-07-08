@@ -1,5 +1,4 @@
-import { supabase } from '../lib/supabase';
-import { safeSupabaseCall } from '../utils/safeSupabase';
+import * as examRepo from '../lib/repositories/exam.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 
@@ -17,15 +16,7 @@ export async function getMinQuestions(examSelection: string, force = false): Pro
       const allowedIds = getAllowedExamIds(examSelection);
       if (allowedIds.length === 0) return DEFAULT_MIN_QUESTIONS;
 
-      const { data, error } = await safeSupabaseCall(
-        supabase
-          .from('exam_configs')
-          .select('min_questions')
-          .in('exam_id', allowedIds)
-          .limit(50)
-      );
-
-      if (error) throw error;
+      const data = await examRepo.fetchMinQuestions(allowedIds);
 
       const records = (data as any[]) || [];
       if (records.length === 0) return DEFAULT_MIN_QUESTIONS;

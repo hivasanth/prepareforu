@@ -1,5 +1,6 @@
-import { supabase } from '../lib/supabase';
-import { safeSupabaseCall } from '../utils/safeSupabase';
+import * as attemptRepo from '../lib/repositories/attempt.repository';
+import * as examRepo from '../lib/repositories/exam.repository';
+import * as questionRepo from '../lib/repositories/question.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 import { assertValidEnFields } from '../utils/languageUtils';
@@ -31,18 +32,7 @@ export async function fetchSubjectsByExam(examSelection: string, force = false) 
   const cacheKey = `subjects_exam_${examSelection}`;
   return queryCache.fetchWithDedup(cacheKey, async () => {
     const allowedIds = getAllowedExamIds(examSelection);
-    const { data, error } = await safeSupabaseCall(
-      supabase
-        .from('exam_subjects')
-        .select('subject_name')
-        .in('exam_id', allowedIds)
-        .order('display_order', { ascending: true })
-        .limit(200)
-    );
-
-    if (error) throw error;
-    
-    return Array.from(new Set((data as any[])?.map((s: any) => s.subject_name).filter(Boolean))) as string[];
+    return await examRepo.fetchSubjectNamesByExam(allowedIds);
   }, 600000, force); // 10 min TTL
 }
 
@@ -53,17 +43,7 @@ export async function fetchAppscPapers(examSelection: string, force = false) {
   const cacheKey = `appsc_papers_${examSelection}`;
   return queryCache.fetchWithDedup(cacheKey, async () => {
     const allowedIds = getAllowedExamIds(examSelection);
-    const { data, error } = await safeSupabaseCall(
-      supabase
-        .from('exam_papers')
-        .select('*')
-        .in('exam_id', allowedIds)
-        .order('display_order', { ascending: true })
-        .limit(100)
-    );
-
-    if (error) throw error;
-    return data || [];
+    return await examRepo.fetchPapersByExamIds(allowedIds);
   }, 600000, force);
 }
 
@@ -73,17 +53,7 @@ export async function fetchAppscPapers(examSelection: string, force = false) {
 export async function fetchSubjectsByPaper(paperId: string, force = false) {
   const cacheKey = `subjects_paper_${paperId}`;
   return queryCache.fetchWithDedup(cacheKey, async () => {
-    const { data, error } = await safeSupabaseCall(
-      supabase
-        .from('exam_subjects')
-        .select('subject_name')
-        .eq('paper_id', paperId)
-        .order('display_order', { ascending: true })
-        .limit(100)
-    );
-
-    if (error) throw error;
-    return Array.from(new Set((data as any[])?.map((s: any) => s.subject_name).filter(Boolean))) as string[];
+    return await examRepo.fetchSubjectNamesByPaper(paperId);
   }, 600000, force);
 }
 
@@ -91,19 +61,7 @@ export async function fetchSubjectCounts(examSelection: string, paperId?: string
   const cacheKey = `subject_counts_${examSelection}_${paperId || 'all'}`;
   return queryCache.fetchWithDedup(cacheKey, async () => {
     const allowedIds = getAllowedExamIds(examSelection);
-    let query = supabase
-      .from('question_counts')
-      .select('subject_name, count')
-      .in('exam_id', allowedIds);
-
-    if (paperId) {
-      query = query.eq('paper_id', paperId);
-    }
-
-    query = query.limit(200);
-
-    const { data, error } = await safeSupabaseCall(query);
-    if (error) throw error;
+    const data = await examRepo.fetchSubjectCountsByExam(allowedIds, paperId);
 
     const counts: Record<string, number> = {};
     (data as any[])?.forEach((q: any) => {
@@ -129,18 +87,11 @@ export async function fetchSubjectTestQuestions(params: {
   
   let attemptedQuestionIds: string[] = [];
   if (params.userId) {
-    const { data: userAttempts } = await supabase
-      .from('attempts')
-      .select('id')
-      .eq('user_id', params.userId)
-      .limit(5000);
+    const userAttempts = await attemptRepo.fetchAttemptsByUserId(params.userId);
     
     if (userAttempts && userAttempts.length > 0) {
       const attemptIds = userAttempts.map(a => a.id);
-      const { data: answeredQuestions } = await supabase
-        .from('attempt_answers')
-        .select('question_id')
-        .in('attempt_id', attemptIds);
+      const answeredQuestions = await attemptRepo.findAnsweredQuestionIds(attemptIds);
       
       if (answeredQuestions) {
         attemptedQuestionIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
@@ -161,38 +112,21 @@ export async function fetchSubjectTestQuestions(params: {
   `;
 
   const count = params.count || 20;
+  const allowedIds = getAllowedExamIds(params.examId);
+  const poolLimit = Math.max(count * 3, 100);
 
   // 1. Fetch unattempted questions from a larger pool
-  let query = supabase
-    .from('questions')
-    .select(selectFields)
-    .eq('is_active', true)
-    .eq('subject_name', params.subjectName);
-
-  // Apply strict exam-scoped filtering
-  const allowedIds = getAllowedExamIds(params.examId);
-  query = query.in('exam_id', allowedIds);
-
-  // If paper_id is provided (APPSC), use it for stricter isolation
-  if (params.paperId) {
-    query = query.eq('paper_id', params.paperId);
-  }
+  let finalPool: any[];
 
   if (attemptedQuestionIds.length > 0) {
-    query = query.not('id', 'in', `(${attemptedQuestionIds.join(',')})`);
+    finalPool = await questionRepo.fetchQuestionsBySubject(
+      selectFields, params.subjectName, allowedIds, params.paperId, attemptedQuestionIds, poolLimit
+    );
+  } else {
+    finalPool = await questionRepo.fetchQuestionsBySubject(
+      selectFields, params.subjectName, allowedIds, params.paperId, [], poolLimit
+    );
   }
-
-  const poolLimit = Math.max(count * 3, 100);
-  query = query.limit(poolLimit);
-
-  const { data: poolData, error } = await safeSupabaseCall(query);
-
-  if (error) {
-    console.error('[SubjectTestService] Fetch error:', error.message);
-    throw error;
-  }
-  
-  let finalPool = (poolData || []) as any[];
 
   // Shuffle and slice to the requested count
   let selectedQuestions = finalPool
@@ -203,24 +137,9 @@ export async function fetchSubjectTestQuestions(params: {
   if (selectedQuestions.length < count && attemptedQuestionIds.length > 0) {
     const remainingNeeded = count - selectedQuestions.length;
 
-    let fallbackQuery = supabase
-      .from('questions')
-      .select(selectFields)
-      .eq('is_active', true)
-      .eq('subject_name', params.subjectName)
-      .in('id', attemptedQuestionIds);
-
-    fallbackQuery = fallbackQuery.in('exam_id', allowedIds);
-    if (params.paperId) {
-      fallbackQuery = fallbackQuery.eq('paper_id', params.paperId);
-    }
-    fallbackQuery = fallbackQuery.limit(poolLimit);
-
-    const { data: fallbackPoolData, error: fallbackErr } = await safeSupabaseCall(fallbackQuery);
-    if (fallbackErr) {
-      console.error('[SubjectTestService] Fallback fetch error:', fallbackErr.message);
-      throw fallbackErr;
-    }
+    const fallbackPoolData = await questionRepo.fetchQuestionsBySubjectIncluding(
+      selectFields, params.subjectName, allowedIds, params.paperId, attemptedQuestionIds, poolLimit
+    );
 
     if (fallbackPoolData) {
       const shuffledFallback = (fallbackPoolData as any[])

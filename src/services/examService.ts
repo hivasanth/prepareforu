@@ -1,5 +1,7 @@
-import { supabase } from '../lib/supabase';
-import { safeSupabaseCall } from '../utils/safeSupabase';
+import * as attemptRepo from '../lib/repositories/attempt.repository';
+import * as examRepo from '../lib/repositories/exam.repository';
+import * as questionRepo from '../lib/repositories/question.repository';
+import * as teacherExamRepo from '../lib/repositories/teacherExam.repository';
 import type { 
   Question, 
   Attempt, 
@@ -28,14 +30,7 @@ import { assertValidEnFields } from '../utils/languageUtils';
 export const fetchActiveExams = async (force = false): Promise<ExamConfig[]> => {
   const cacheKey = 'active_exams';
   return queryCache.fetchWithDedup(cacheKey, async () => {
-    const { data, error } = await safeSupabaseCall(
-      supabase
-        .from('exam_configs')
-        .select('*')
-        .eq('is_published', true)
-        .limit(200)
-    );
-    if (error) throw error;
+    const data = await examRepo.fetchActiveExamConfigs();
     return (data || []) as ExamConfig[];
   }, 300000, force); // 5 min TTL
 };
@@ -49,14 +44,7 @@ export const fetchUserPapers = async (targetExamIds: string[], force = false): P
   
   const cacheKey = `user_papers_${JSON.stringify([...targetExamIds].sort())}`;
   return queryCache.fetchWithDedup(cacheKey, async () => {
-    const { data: rawPapers, error: papersErr } = await safeSupabaseCall(
-      supabase
-        .from('exam_papers')
-        .select('*')
-        .in('exam_id', targetExamIds)
-        .order('display_order', { ascending: true })
-    );
-    if (papersErr) throw papersErr;
+    const rawPapers = await examRepo.fetchPapersByExamIds(targetExamIds);
     return (rawPapers || []) as ExamPaper[];
   }, 600000, force); // 10 min TTL
 };
@@ -65,28 +53,12 @@ export const fetchPaperWithSubjects = async (paperId: string) => {
   // NOTE: No cache here — always fetch live paper config so that any admin
   // changes to total_marks, duration_minutes, or negative_mark_value are
   // immediately reflected when a user starts or resumes an exam.
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
   try {
-    const { data: paper, error: paperErr } = await supabase
-      .from('exam_papers')
-      .select('*')
-      .eq('id', paperId)
-      .single();
-
-    if (paperErr) throw paperErr;
-
-    const { data: subjects, error: subErr } = await supabase
-      .from('exam_subjects')
-      .select('*')
-      .eq('paper_id', paperId)
-      .order('display_order', { ascending: true });
-
-    if (subErr) throw subErr;
-
+    const paper = await examRepo.findPaperById(paperId);
+    const subjects = await examRepo.fetchSubjectsByPaperId(paperId);
     return { paper: paper as ExamPaper, subjects: (subjects || []) as ExamSubject[] };
-  } finally {
-    clearTimeout(timeoutId);
+  } catch (error: any) {
+    throw error;
   }
 };
 
@@ -109,18 +81,11 @@ export const fetchQuestionsForPaper = async (
   try {
     let attemptedQuestionIds: string[] = [];
     if (userId) {
-      const { data: userAttempts } = await supabase
-        .from('attempts')
-        .select('id')
-        .eq('user_id', userId)
-        .limit(5000);
+      const userAttempts = await attemptRepo.fetchAttemptsByUserId(userId);
       
       if (userAttempts && userAttempts.length > 0) {
         const attemptIds = userAttempts.map(a => a.id);
-        const { data: answeredQuestions } = await supabase
-          .from('attempt_answers')
-          .select('question_id')
-          .in('attempt_id', attemptIds);
+        const answeredQuestions = await attemptRepo.findAnsweredQuestionIds(attemptIds);
         
         if (answeredQuestions) {
           attemptedQuestionIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
@@ -132,26 +97,19 @@ export const fetchQuestionsForPaper = async (
 
     for (const subject of subjects) {
       // 1. Fetch unattempted questions from a larger pool
-      let query = supabase
-        .from('questions')
-        .select(SELECT_FIELDS)
-        .eq('is_active', true)
-        .eq('paper_id', paperId)
-        .eq('subject_name', subject.subject_name);
+      const poolLimit = Math.max(subject.question_count * 3, 100);
+      let subjectQuestionsPool: any[] = [];
 
       if (attemptedQuestionIds.length > 0) {
-        query = query.not('id', 'in', `(${attemptedQuestionIds.join(',')})`);
+        subjectQuestionsPool = await questionRepo.fetchQuestionsByPaperAndSubjectExcluding(
+          SELECT_FIELDS, paperId, subject.subject_name, [], attemptedQuestionIds, poolLimit
+        );
+      } else {
+        subjectQuestionsPool = await questionRepo.fetchQuestionsByPaperAndSubject(
+          SELECT_FIELDS, paperId, subject.subject_name, [], poolLimit
+        );
       }
-
-      // Limit to a pool of up to 3x requested questions to allow random selection
-      const poolLimit = Math.max(subject.question_count * 3, 100);
-      const { data: poolData, error } = await query.limit(poolLimit);
-
-      if (error) throw error;
-
-      let subjectQuestionsPool = (poolData || []) as unknown as Question[];
       
-      // Shuffle the pool and take the required count
       let selectedSubjectQuestions = subjectQuestionsPool
         .sort(() => Math.random() - 0.5)
         .slice(0, subject.question_count);
@@ -160,16 +118,9 @@ export const fetchQuestionsForPaper = async (
       if (selectedSubjectQuestions.length < subject.question_count && attemptedQuestionIds.length > 0) {
         const remainingNeeded = subject.question_count - selectedSubjectQuestions.length;
         
-        const { data: attemptedPoolData, error: fallbackErr } = await supabase
-          .from('questions')
-          .select(SELECT_FIELDS)
-          .eq('is_active', true)
-          .eq('paper_id', paperId)
-          .eq('subject_name', subject.subject_name)
-          .in('id', attemptedQuestionIds)
-          .limit(poolLimit);
-
-        if (fallbackErr) throw fallbackErr;
+        const attemptedPoolData = await questionRepo.fetchQuestionsByPaperAndSubjectIncluding(
+          SELECT_FIELDS, paperId, subject.subject_name, [], attemptedQuestionIds, poolLimit
+        );
 
         if (attemptedPoolData) {
           const shuffledAttempted = (attemptedPoolData as unknown as Question[])
@@ -214,10 +165,7 @@ export const createAttempt = async (params: {
 }): Promise<{ attemptId: string; isResumed: boolean; attemptData?: Attempt }> => {
   // 0. Security Gate (Fail-Open for Exams)
   try {
-    await supabase.functions.invoke('security-gateway', {
-      method: 'POST',
-      body: { pathname: '/exams/start' }
-    });
+    await examRepo.invokeSecurityGateway('/exams/start');
   } catch (err) {
     console.warn('[security-gateway] Exam start check bypassed:', err);
   }
@@ -227,26 +175,19 @@ export const createAttempt = async (params: {
 
     // 1. Check for existing in_progress attempt (unless forcing new)
     if (!params.forceNew) {
-      let query = supabase
-        .from('attempts')
-        .select('*')
-        .eq('user_id', params.userId)
-        .eq('status', 'in_progress');
-
-      if (params.paperId) query = query.eq('paper_id', params.paperId);
-      if (params.teacherExamId) query = query.eq('teacher_exam_id', params.teacherExamId);
-      if (params.examId) query = query.eq('exam_id', params.examId);
-      if (params.source) query = query.eq('source', params.source);
-
-      const { data } = await query.maybeSingle();
-      existing = data as Attempt;
+      existing = await attemptRepo.findInProgressAttempt({
+        userId: params.userId,
+        paperId: params.paperId,
+        teacherExamId: params.teacherExamId,
+        examId: params.examId,
+        source: params.source,
+      });
     }
 
     // 2. Create or Update attempt
-    const { data, error } = await supabase
-      .from('attempts')
-      .upsert({
-        id: params.forceNew ? undefined : existing?.id, // If forceNew, don't pass ID to create NEW
+    try {
+      const data = await attemptRepo.upsertAttempt({
+        id: params.forceNew ? undefined : existing?.id,
         user_id: params.userId,
         exam_id: params.examId,
         paper_id: params.paperId,
@@ -256,34 +197,27 @@ export const createAttempt = async (params: {
         questions_snapshot: existing?.questions_snapshot?.length ? existing.questions_snapshot : (params.questionsSnapshot?.length ? params.questionsSnapshot : []),
         status: 'in_progress',
         started_at: (params.forceNew ? undefined : existing?.started_at) || new Date().toISOString()
-      }, { onConflict: 'id' })
-      .select('*')
-      .single();
-
-    if (error) {
+      });
+      return { attemptId: data.id, isResumed: !!existing && !params.forceNew, attemptData: data as Attempt };
+    } catch (error: any) {
       // FIX: Unique constraint violation on "one_active_attempt".
       // Happens when React StrictMode double-invokes the effect, or when the
       // lookup above returns null (race) but a row already exists in the DB.
       // Recovery: fetch the existing in_progress row and treat it as resumed.
       if (error.code === '23505' && error.message?.includes('one_active_attempt')) {
         console.warn('[createAttempt] Constraint hit — recovering existing in_progress attempt');
-        let recoveryQuery = supabase
-          .from('attempts')
-          .select('*')
-          .eq('user_id', params.userId)
-          .eq('status', 'in_progress');
-        if (params.paperId) recoveryQuery = recoveryQuery.eq('paper_id', params.paperId);
-        if (params.teacherExamId) recoveryQuery = recoveryQuery.eq('teacher_exam_id', params.teacherExamId);
-        if (params.examId) recoveryQuery = recoveryQuery.eq('exam_id', params.examId);
-        if (params.source) recoveryQuery = recoveryQuery.eq('source', params.source);
-        const { data: recovered, error: recErr } = await recoveryQuery.maybeSingle();
-        if (recErr) throw recErr;
+        const recovered = await attemptRepo.findInProgressAttempt({
+          userId: params.userId,
+          paperId: params.paperId,
+          teacherExamId: params.teacherExamId,
+          examId: params.examId,
+          source: params.source,
+        });
         if (!recovered) throw new Error('Failed to recover existing attempt after constraint violation.');
         return { attemptId: recovered.id, isResumed: true, attemptData: recovered as Attempt };
       }
       throw error;
     }
-    return { attemptId: data.id, isResumed: !!existing && !params.forceNew, attemptData: data as Attempt };
   } catch (error: any) {
     console.error('createAttempt Error:', error.message);
     throw error;
@@ -292,12 +226,7 @@ export const createAttempt = async (params: {
 
 export const syncAnswersCache = async (attemptId: string, answers: Record<string, string | null>): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('attempts')
-      .update({ answers_json: answers })
-      .eq('id', attemptId);
-    
-    if (error) throw error;
+    await attemptRepo.updateAttempt(attemptId, { answers_json: answers } as any);
   } catch (error: any) {
     console.error('syncAnswersCache Error:', error.message);
   }
@@ -309,8 +238,7 @@ export const submitAttempt = async (attemptId: string, userId?: string): Promise
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s for submission
   try {
-    const { data, error } = await supabase.rpc('submit_attempt', { p_attempt_id: attemptId }, { signal: controller.signal });
-    if (error) throw error;
+    const data = await attemptRepo.submitAttemptRpc(attemptId, controller.signal);
     
     // Invalidate performance cache if userId is provided
     if (userId) {
@@ -329,12 +257,7 @@ export const submitAttempt = async (attemptId: string, userId?: string): Promise
 export const updateTabSwitchCount = async (attemptId: string, currentCount: number): Promise<number> => {
   try {
     const newCount = currentCount + 1;
-    const { error } = await supabase
-      .from('attempts')
-      .update({ tab_switch_count: newCount })
-      .eq('id', attemptId);
-    
-    if (error) throw error;
+    await attemptRepo.updateAttempt(attemptId, { tab_switch_count: newCount } as any);
     return newCount;
   } catch (error: any) {
     console.error('updateTabSwitchCount Error:', error.message);
@@ -347,22 +270,9 @@ export const fetchAttemptResult = async (attemptId: string, userId: string): Pro
   answers: AttemptAnswer[] 
 }> => {
   try {
-    const { data: attempt, error: attemptErr } = await supabase
-      .from('attempts')
-      .select('*')
-      .eq('id', attemptId)
-      .eq('user_id', userId)
-      .single();
-
-    if (attemptErr) throw attemptErr;
-
-    const { data: answers, error: answersErr } = await supabase
-      .from('attempt_answers')
-      .select('*')
-      .eq('attempt_id', attemptId);
-
-    if (answersErr) throw answersErr;
-
+    const attempt = await attemptRepo.findAttemptById(attemptId, userId);
+    if (!attempt) throw new Error('Attempt not found');
+    const answers = await attemptRepo.findAnswersByAttemptId(attemptId);
     return { attempt: attempt as Attempt, answers: answers as AttemptAnswer[] };
   } catch (error: any) {
     console.error('fetchAttemptResult Error:', error.message);
@@ -376,13 +286,7 @@ export const fetchAttemptResult = async (attemptId: string, userId: string): Pro
  */
 export const fetchAttemptAnswers = async (attemptId: string): Promise<AttemptAnswer[]> => {
   try {
-    const { data, error } = await supabase
-      .from('attempt_answers')
-      .select('*')
-      .eq('attempt_id', attemptId);
-
-    if (error) throw error;
-    return (data || []) as AttemptAnswer[];
+    return await attemptRepo.findAnswersByAttemptId(attemptId);
   } catch (error: any) {
     console.error('fetchAttemptAnswers Error:', error.message);
     throw error;
@@ -407,12 +311,7 @@ export const touchQuestionVisit = async (
   questionId: string,
   correctOption: string,
 ): Promise<void> => {
-  const { error } = await supabase.rpc('touch_question_visit', {
-    p_attempt_id: attemptId,
-    p_question_id: questionId,
-    p_correct_option: correctOption,
-  });
-  if (error) throw error;
+  await attemptRepo.touchQuestionVisitRpc(attemptId, questionId, correctOption);
 };
 
 export const setQuestionAnswer = async (
@@ -423,15 +322,7 @@ export const setQuestionAnswer = async (
   marksPerQuestion: number,
   negativeMarkValue: number,
 ): Promise<void> => {
-  const { error } = await supabase.rpc('set_question_answer', {
-    p_attempt_id: attemptId,
-    p_question_id: questionId,
-    p_selected_option: selectedOption,
-    p_correct_option: correctOption,
-    p_marks_per_question: marksPerQuestion,
-    p_negative_mark_value: negativeMarkValue,
-  });
-  if (error) throw error;
+  await attemptRepo.setQuestionAnswerRpc(attemptId, questionId, selectedOption, correctOption, marksPerQuestion, negativeMarkValue);
 };
 
 export const setQuestionReview = async (
@@ -440,13 +331,7 @@ export const setQuestionReview = async (
   correctOption: string,
   marked: boolean,
 ): Promise<void> => {
-  const { error } = await supabase.rpc('set_question_review', {
-    p_attempt_id: attemptId,
-    p_question_id: questionId,
-    p_correct_option: correctOption,
-    p_marked: marked,
-  });
-  if (error) throw error;
+  await attemptRepo.setQuestionReviewRpc(attemptId, questionId, correctOption, marked);
 };
 
 export const addQuestionTime = async (
@@ -455,22 +340,12 @@ export const addQuestionTime = async (
   correctOption: string,
   seconds: number,
 ): Promise<void> => {
-  const { error } = await supabase.rpc('add_question_time', {
-    p_attempt_id: attemptId,
-    p_question_id: questionId,
-    p_correct_option: correctOption,
-    p_seconds: seconds,
-  });
-  if (error) throw error;
+  await attemptRepo.addQuestionTimeRpc(attemptId, questionId, correctOption, seconds);
 };
 
 export const markReviewAccessed = async (attemptId: string): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('attempts')
-      .update({ review_accessed: true })
-      .eq('id', attemptId);
-    if (error) throw error;
+    await attemptRepo.updateAttempt(attemptId, { review_accessed: true } as any);
   } catch (error: any) {
     console.error('markReviewAccessed Error:', error.message);
     throw error;
@@ -479,13 +354,7 @@ export const markReviewAccessed = async (attemptId: string): Promise<void> => {
 
 export const fetchTeacherExamQuestions = async (examId: string): Promise<Question[]> => {
   try {
-    const { data, error } = await supabase
-      .from('teacher_exam_questions')
-      .select('*')
-      .eq('teacher_exam_id', examId)
-      .order('display_order', { ascending: true });
-    
-    if (error) throw error;
+    const data = await teacherExamRepo.fetchTeacherExamQuestions(examId);
     // Map teacher exam questions to the same Question interface for engine compatibility
     return (data || []).map(q => ({
       ...q,
@@ -506,20 +375,10 @@ export const batchCheckAvailability = async (paperIds: string[]): Promise<Record
   
   try {
     // 1. Get subjects config for all papers
-    const { data: subjects, error: subErr } = await supabase
-      .from('exam_subjects')
-      .select('paper_id, subject_name, question_count')
-      .in('paper_id', paperIds);
-
-    if (subErr) throw subErr;
+    const subjects = await examRepo.fetchSubjectsWithQuestionCount(paperIds);
 
     // 2. Get counts for all papers in a single query from the question_counts view (to avoid 1000 limit)
-    const { data: countsData, error: qErr } = await supabase
-      .from('question_counts')
-      .select('paper_id, subject_name, count')
-      .in('paper_id', paperIds);
-
-    if (qErr) throw qErr;
+    const countsData = await examRepo.fetchQuestionCountsByPapers(paperIds);
 
     // 3. Map counts from database view
     const counts: Record<string, number> = {};

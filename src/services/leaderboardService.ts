@@ -1,5 +1,6 @@
-import { supabase } from '../lib/supabase';
-import { safeSupabaseCall } from '../utils/safeSupabase';
+import * as attemptRepo from '../lib/repositories/attempt.repository';
+import * as examRepo from '../lib/repositories/exam.repository';
+import * as leaderboardRepo from '../lib/repositories/leaderboard.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 
@@ -28,17 +29,14 @@ export async function fetchLeaderboardMetadata(examSelection: string): Promise<L
     if (!examSelection || examSelection === 'all') return { exams: [], papers: [] };
     const targetSelections = getAllowedExamIds(examSelection);
 
-    const [examsRes, papersRes] = await Promise.all([
-      safeSupabaseCall(supabase.from('exam_configs').select('exam_id, name').in('exam_id', targetSelections)),
-      safeSupabaseCall(supabase.from('exam_papers').select('id, exam_id, paper_name').in('exam_id', targetSelections))
+    const [examsData, papersData] = await Promise.all([
+      examRepo.fetchExamConfigNames(targetSelections),
+      examRepo.fetchPaperIdsAndNames(targetSelections),
     ]);
 
-    if (examsRes.error) throw examsRes.error;
-    if (papersRes.error) throw papersRes.error;
-
     return {
-      exams: (examsRes.data || []).map((e: any) => ({ id: e.exam_id, name: e.name })),
-      papers: (papersRes.data || []).map((p: any) => ({ id: p.id, exam_id: p.exam_id, name: p.paper_name }))
+      exams: (examsData || []).map((e: any) => ({ id: e.exam_id, name: e.name })),
+      papers: (papersData || []).map((p: any) => ({ id: p.id, exam_id: p.exam_id, name: p.paper_name }))
     };
   }, 600000); // 10 min TTL
 }
@@ -57,28 +55,7 @@ export async function fetchTopRanks(
     if (examId === 'all') return [];
     // CASE 1: ALL TIME -> Always use leaderboard table for performance and accuracy
     if (timeRange === 'all') {
-      let query = supabase
-        .from('leaderboard')
-        .select(`
-          user_id,
-          best_score,
-          best_accuracy,
-          best_time_secs,
-          best_submitted_at,
-          rank,
-          users ( full_name )
-        `)
-        .eq('exam_id', examId)
-        .order('rank', { ascending: true })
-        .limit(50);
-
-      if (paperId && paperId !== 'all') {
-        query = query.eq('paper_id', paperId);
-      }
-
-      const { data, error } = await safeSupabaseCall(query);
-
-      if (error) throw error;
+      const data = await leaderboardRepo.fetchLeaderboardByPaper(examId, paperId);
       
       if (data && data.length > 0) {
         return data.map((item: any) => ({
@@ -110,31 +87,9 @@ export async function fetchTopRanks(
       threshold = date.toISOString();
     }
 
-    let query = supabase
-      .from('attempts')
-      .select(`
-        user_id,
-        score,
-        accuracy,
-        duration_seconds,
-        submitted_at,
-        users ( full_name )
-      `)
-      .eq('exam_id', examId)
-      .eq('status', 'completed')
-      .eq('source', 'exam_tab');
-
-    if (paperId && paperId !== 'all') {
-      query = query.eq('paper_id', paperId);
-    }
-
-    if (threshold) {
-      query = query.gte('submitted_at', threshold);
-    }
-
-    const { data: attempts, error } = await safeSupabaseCall(query.limit(2000));
-
-    if (error) throw error;
+    const attempts = await attemptRepo.fetchCompletedAttemptsByPaper(
+      examId, paperId, threshold, 2000
+    );
 
     // Process best attempts per user manually (No mixing fields!)
     const userBestMap = new Map<string, any>();
@@ -202,13 +157,13 @@ export async function fetchUserRank(
     if (examId === 'all') return null;
     const mappedRange = timeRange === '30d' ? 'month' : (timeRange === '7d' ? 'week' : timeRange);
     
-    const { data, error } = await safeSupabaseCall(supabase.rpc('get_user_leaderboard_rank', {
-      p_exam_id: examId,
-      p_paper_id: paperId === 'all' ? null : paperId,
-      p_time_range: mappedRange
-    }));
+    const data = await leaderboardRepo.fetchUserRankRpc(
+      examId,
+      paperId === 'all' ? null : paperId,
+      mappedRange
+    );
 
-    if (error || !data || (data as any).rank === null) return null;
+    if (!data || (data as any).rank === null) return null;
 
     return {
       user_id: userId,

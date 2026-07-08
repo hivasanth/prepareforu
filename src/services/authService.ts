@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { safeSupabaseCall } from '../utils/safeSupabase'
+import * as userRepo from '../lib/repositories/user.repository'
 import type { 
   UserProfile,
   AuthError,
@@ -24,10 +25,7 @@ async function checkSecurityGateway(pathname: string): Promise<ServiceResult> {
   );
 
   try {
-    const invokePromise = supabase.functions.invoke('security-gateway', {
-      method: 'POST',
-      body: { pathname }
-    });
+    const invokePromise = userRepo.invokeSecurityGateway(pathname);
 
     const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
 
@@ -183,7 +181,7 @@ export async function signupWithEmail(params: {
       const cleanCoupon = params.couponCode.trim().toUpperCase()
       const { data: couponData, error: couponErr } = await safeSupabaseCall(
         withTimeout(
-          supabase.rpc('validate_coupon', { p_coupon: cleanCoupon }),
+          userRepo.validateCouponRpc(cleanCoupon),
           6000,
           'COUPON_TIMEOUT'
         )
@@ -211,7 +209,7 @@ export async function signupWithEmail(params: {
     // 2. Explicit check for existing email
     const { data: exists, error: checkError } = await safeSupabaseCall(
       withTimeout(
-        supabase.rpc('check_user_exists', { p_email: cleanEmail }),
+        userRepo.checkUserExistsRpc(cleanEmail),
         6000,
         'CHECK_USER_TIMEOUT'
       )
@@ -294,7 +292,7 @@ export async function loginWithEmail(params: {
 
     // 1. Per-account lockout check (NEW)
     const { data: lockData, error: lockError } = await safeSupabaseCall(
-      supabase.rpc('is_account_locked', { p_email: cleanEmail })
+      userRepo.isAccountLockedRpc(cleanEmail)
     )
 
     if (!lockError && lockData?.locked === true) {
@@ -331,7 +329,7 @@ export async function loginWithEmail(params: {
       if (isWrongPassword) {
         // Fire-and-forget — don't block the user-facing error response
         safeSupabaseCall(
-          supabase.rpc('record_failed_login', { p_email: cleanEmail })
+          userRepo.recordFailedLoginRpc(cleanEmail)
         ).catch(() => {})
       }
 
@@ -351,7 +349,7 @@ export async function loginWithEmail(params: {
 
     // 4. Successful login → reset counter (NEW)
     safeSupabaseCall(
-      supabase.rpc('reset_failed_login', { p_email: cleanEmail })
+      userRepo.resetFailedLoginRpc(cleanEmail)
     ).catch(() => {})
 
     // 5. Fetch profile (existing)
@@ -403,7 +401,7 @@ export async function sendPasswordReset(email: string): Promise<ServiceResult> {
     }
 
     // Check if email exists using secure RPC (bypasses RLS for anonymous check)
-    const { data: exists, error: checkError } = await safeSupabaseCall(supabase.rpc('check_user_exists', { p_email: cleanEmail }))
+    const { data: exists, error: checkError } = await safeSupabaseCall(userRepo.checkUserExistsRpc(cleanEmail))
 
     if (checkError) {
       console.error('[authService] Reset email check error:', checkError.message)

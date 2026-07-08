@@ -1,5 +1,6 @@
-import { supabase } from '../lib/supabase';
-import { safeSupabaseCall } from '../utils/safeSupabase';
+import * as attemptRepo from '../lib/repositories/attempt.repository';
+import * as examRepo from '../lib/repositories/exam.repository';
+import * as questionRepo from '../lib/repositories/question.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 import type { Question, ExamSubject } from '../types/exam.types';
@@ -17,17 +18,8 @@ export async function fetchExams(allowedIds: string[], force = false): Promise<a
   const cacheKey = `exams_config_${allowedIds.join('_')}`;
   
   return queryCache.fetchWithDedup(cacheKey, async () => {
-    const { data, error } = await safeSupabaseCall(
-      supabase
-        .from('exam_configs')
-        .select('id, exam_id, name')
-        .in('exam_id', allowedIds)
-        .order('name', { ascending: true })
-        .limit(200)
-    );
-
-    if (error) throw error;
-    return data || [];
+    const data = await examRepo.fetchExamConfigsByIds(allowedIds);
+    return (data || []).sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
   }, 600000, force);
 }
 
@@ -39,17 +31,7 @@ export async function fetchPapers(examId: string, allowedIds: string[], force = 
   const cacheKey = `papers_config_${examId}_${allowedIds.join('_')}`;
   
   return queryCache.fetchWithDedup(cacheKey, async () => {
-    const { data, error } = await safeSupabaseCall(
-      supabase
-        .from('exam_papers')
-        .select('*')
-        .eq('exam_id', examId)
-        .in('exam_id', allowedIds) 
-        .order('display_order', { ascending: true })
-        .limit(100)
-    );
-
-    if (error) throw error;
+    const data = await examRepo.fetchPapersByExamId(examId);
     return data || [];
   }, 300000, force);
 }
@@ -62,16 +44,7 @@ export async function fetchPaperDistribution(paperId: string, force = false): Pr
   const cacheKey = `paper_dist_${paperId}`;
   
   return queryCache.fetchWithDedup(cacheKey, async () => {
-    const { data, error } = await safeSupabaseCall(
-      supabase
-        .from('exam_subjects')
-        .select('*')
-        .eq('paper_id', paperId)
-        .order('display_order', { ascending: true })
-        .limit(200)
-    );
-
-    if (error) throw error;
+    const data = await examRepo.fetchSubjectsByPaperId(paperId);
     if (!data || data.length === 0) throw new Error('No distribution found for this paper.');
 
     return {
@@ -92,18 +65,11 @@ export async function fetchPrepareQuestions(
 ): Promise<Question[]> {
   let attemptedQuestionIds: string[] = [];
   if (userId) {
-    const { data: userAttempts } = await supabase
-      .from('attempts')
-      .select('id')
-      .eq('user_id', userId)
-      .limit(5000);
+    const userAttempts = await attemptRepo.fetchAttemptsByUserId(userId);
     
     if (userAttempts && userAttempts.length > 0) {
       const attemptIds = userAttempts.map(a => a.id);
-      const { data: answeredQuestions } = await supabase
-        .from('attempt_answers')
-        .select('question_id')
-        .in('attempt_id', attemptIds);
+      const answeredQuestions = await attemptRepo.findAnsweredQuestionIds(attemptIds);
       
       if (answeredQuestions) {
         attemptedQuestionIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
@@ -114,30 +80,21 @@ export async function fetchPrepareQuestions(
   const allQuestions: Question[] = [];
 
   for (const subject of subjects) {
+    const poolLimit = Math.max(subject.question_count * 3, 100);
+    const examIds = getAllowedExamIds(subject.exam_id);
+    
     // 1. Fetch unattempted questions from a larger pool
-    let query = supabase
-      .from('questions')
-      .select('*')
-      .eq('is_active', true)
-      .eq('paper_id', paperId)
-      .eq('subject_name', subject.subject_name)
-      .in('exam_id', getAllowedExamIds(subject.exam_id));
+    let subjectQuestionsPool: Question[];
 
     if (attemptedQuestionIds.length > 0) {
-      query = query.not('id', 'in', `(${attemptedQuestionIds.join(',')})`);
+      subjectQuestionsPool = (await questionRepo.fetchQuestionsByPaperAndSubjectExcluding(
+        '*', paperId, subject.subject_name, examIds, attemptedQuestionIds, poolLimit
+      )) as Question[];
+    } else {
+      subjectQuestionsPool = (await questionRepo.fetchQuestionsByPaperAndSubject(
+        '*', paperId, subject.subject_name, examIds, poolLimit
+      )) as Question[];
     }
-
-    const poolLimit = Math.max(subject.question_count * 3, 100);
-    query = query.limit(poolLimit);
-
-    const { data: poolData, error } = await safeSupabaseCall(query);
-
-    if (error) {
-      console.error(`Supabase error fetching ${subject.subject_name}:`, error.message);
-      throw error;
-    }
-    
-    let subjectQuestionsPool = (poolData || []) as Question[];
     
     // Shuffle the pool and take the required count
     let selectedSubjectQuestions = subjectQuestionsPool
@@ -148,21 +105,9 @@ export async function fetchPrepareQuestions(
     if (selectedSubjectQuestions.length < subject.question_count && attemptedQuestionIds.length > 0) {
       const remainingNeeded = subject.question_count - selectedSubjectQuestions.length;
       
-      let fallbackQuery = supabase
-        .from('questions')
-        .select('*')
-        .eq('is_active', true)
-        .eq('paper_id', paperId)
-        .eq('subject_name', subject.subject_name)
-        .in('exam_id', getAllowedExamIds(subject.exam_id))
-        .in('id', attemptedQuestionIds)
-        .limit(poolLimit);
-
-      const { data: attemptedPoolData, error: fallbackErr } = await safeSupabaseCall(fallbackQuery);
-      if (fallbackErr) {
-        console.error(`Supabase fallback error fetching ${subject.subject_name}:`, fallbackErr.message);
-        throw fallbackErr;
-      }
+      const attemptedPoolData = (await questionRepo.fetchQuestionsByPaperAndSubjectIncluding(
+        '*', paperId, subject.subject_name, examIds, attemptedQuestionIds, poolLimit
+      )) as Question[];
 
       if (attemptedPoolData) {
         const shuffledAttempted = (attemptedPoolData as Question[])

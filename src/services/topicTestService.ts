@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase';
-import { safeSupabaseCall } from '../utils/safeSupabase';
+import * as examRepo from '../lib/repositories/exam.repository';
+import * as questionRepo from '../lib/repositories/question.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 import { assertValidEnFields } from '../utils/languageUtils';
@@ -64,20 +64,7 @@ export async function fetchTopicsBySubject(
     const allowedIds = getAllowedExamIds(examId);
 
     // Primary: fetch from canonical exam_topics table
-    let query = supabase
-      .from('exam_topics')
-      .select('topic_en, topic_te, display_order')
-      .in('exam_id', allowedIds)
-      .eq('subject_name', subjectName)
-      .order('display_order', { ascending: true });
-
-    if (paperId) {
-      query = query.eq('paper_id', paperId);
-    }
-    query = query.limit(200);
-
-    const { data, error } = await safeSupabaseCall(query);
-    if (error) throw error;
+    const data = await examRepo.fetchTopicsBySubject(allowedIds, subjectName, paperId);
 
     if (data && (data as any[]).length > 0) {
       return (data as any[]).map((t: any) => ({
@@ -88,19 +75,7 @@ export async function fetchTopicsBySubject(
     }
 
     // Fallback: derive distinct topics from the questions table
-    let fallbackQuery = supabase
-      .from('questions')
-      .select('topic_en, topic_te')
-      .in('exam_id', allowedIds)
-      .eq('subject_name', subjectName)
-      .eq('is_active', true)
-      .not('topic_en', 'is', null);
-
-    if (paperId) fallbackQuery = fallbackQuery.eq('paper_id', paperId);
-    fallbackQuery = fallbackQuery.limit(200);
-
-    const { data: fbData, error: fbError } = await safeSupabaseCall(fallbackQuery);
-    if (fbError) throw fbError;
+    const fbData = await questionRepo.fetchDistinctTopics(allowedIds, subjectName, paperId);
 
     const seen = new Set<string>();
     const result: TopicItem[] = [];
@@ -126,22 +101,7 @@ export async function fetchTopicCounts(
 
   const allowedIds = getAllowedExamIds(examId);
 
-  let query = supabase
-    .from('questions')
-    .select('topic_en')
-    .in('exam_id', allowedIds)
-    .eq('subject_name', subjectName)
-    .eq('is_active', true)
-    .not('topic_en', 'is', null);
-
-  if (paperId) query = query.eq('paper_id', paperId);
-  query = query.limit(200);
-
-  const { data, error } = await safeSupabaseCall(query);
-  if (error) {
-    console.error('[TopicTestService] fetchTopicCounts error:', error.message);
-    return {};
-  }
+  const data = await questionRepo.fetchTopicCounts(allowedIds, subjectName, paperId);
 
   const counts: Record<string, number> = {};
   (data as any[])?.forEach((q: any) => {
@@ -177,29 +137,18 @@ export async function fetchTopicTestQuestions(params: {
 
   const count = params.count || 20;
 
-  let query = supabase
-    .from('questions')
-    .select(selectFields)
-    .eq('is_active', true)
-    .eq('subject_name', params.subjectName)
-    .eq('topic_en', params.topicName);
-
   const allowedIds = getAllowedExamIds(params.examId);
-  query = query.in('exam_id', allowedIds);
-
-  if (params.paperId) {
-    query = query.eq('paper_id', params.paperId);
-  }
 
   const poolLimit = Math.max(count * 3, 100);
-  query = query.limit(poolLimit);
 
-  const { data: poolData, error } = await safeSupabaseCall(query);
-
-  if (error) {
-    console.error('[TopicTestService] Fetch error:', error.message);
-    throw error;
-  }
+  const poolData = await questionRepo.fetchQuestionsByTopic(
+    selectFields,
+    params.subjectName,
+    params.topicName,
+    allowedIds,
+    params.paperId,
+    poolLimit
+  );
 
   let finalPool = (poolData || []) as any[];
   let selectedQuestions = finalPool

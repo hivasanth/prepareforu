@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase';
-import { safeSupabaseCall } from '../utils/safeSupabase';
+import * as attemptRepo from '../lib/repositories/attempt.repository';
+import * as examRepo from '../lib/repositories/exam.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 
@@ -34,41 +34,12 @@ export async function fetchPerformanceAttempts(userId: string, force = false): P
   const cacheKey = `perf_attempts_${userId}`;
   
   return queryCache.fetchWithDedup(cacheKey, async () => {
-    // ... existing logic ...
-    const { data: attempts, error: attemptsError } = await safeSupabaseCall(
-      supabase
-        .from('attempts')
-        .select(`
-          id, 
-          paper_id, 
-          exam_id, 
-          score, 
-          accuracy, 
-          correct_count,
-          wrong_count,
-          skipped_count,
-          submitted_at,
-          exam_papers ( paper_name )
-        `)
-        .eq('user_id', userId)
-        .eq('status', 'completed')
-        .eq('source', 'exam_tab')
-        .order('submitted_at', { ascending: true })
-        .limit(500)
-    );
+    const attempts = await attemptRepo.fetchPerformanceAttempts(userId);
 
-    if (attemptsError) {
-      throw new Error('Unable to retrieve your exam history. Please verify your connection and try again.');
-    }
     if (!attempts || attempts.length === 0) return [];
 
     const uniqueExamIds = Array.from(new Set((attempts as any[]).map((a: any) => a.exam_id)));
-    const { data: configs } = await safeSupabaseCall(
-      supabase
-        .from('exam_configs')
-        .select('exam_id, name')
-        .in('exam_id', uniqueExamIds)
-    );
+    const configs = await examRepo.fetchExamConfigNames(uniqueExamIds);
 
     const configMap = new Map((configs as any[])?.map((c: any) => [c.exam_id, c.name]) || []);
 
@@ -89,26 +60,8 @@ export async function fetchPerformanceAnswers(attemptIds: string[]): Promise<any
   const cacheKey = `perf_answers_${JSON.stringify(attemptIds.sort())}`;
   
   return queryCache.fetchWithDedup(cacheKey, async () => {
-    const { data, error } = await safeSupabaseCall(
-      supabase
-        .from('attempt_answers')
-        .select(`
-          attempt_id, 
-          is_correct,
-          questions ( subject_name )
-        `)
-        .in('attempt_id', attemptIds)
-        .limit(5000)
-    );
-
-    if (error) throw error;
-    
-    // Flatten the response
-    return (data as any[] || []).map((item: any) => ({
-      attempt_id: item.attempt_id,
-      is_correct: item.is_correct,
-      subject_name: (item.questions as any)?.subject_name || 'General'
-    }));
+    const data = await attemptRepo.fetchPerformanceAnswers(attemptIds);
+    return data;
   }, 300000); // 5 min TTL
 }
 
@@ -122,35 +75,11 @@ export async function fetchPerformanceMetadata(examSelection: string): Promise<P
   return queryCache.fetchWithDedup(cacheKey, async () => {
     const targetSelections = getAllowedExamIds(examSelection);
 
-    // 1. Fetch relevant exams
-    const { data: exams, error: examsError } = await safeSupabaseCall(
-      supabase
-        .from('exam_configs')
-        .select('exam_id, name, exam_selection')
-        .in('exam_id', targetSelections)
-        .limit(200)
-    );
-    if (examsError) throw examsError;
-
-    // 2. Fetch relevant papers
-    const { data: papers, error: papersError } = await safeSupabaseCall(
-      supabase
-        .from('exam_papers')
-        .select('id, exam_id, paper_name')
-        .in('exam_id', targetSelections)
-        .limit(200)
-    );
-    if (papersError) throw papersError;
-
-    // 3. Fetch relevant subjects
-    const { data: subjects, error: subjectsError } = await safeSupabaseCall(
-      supabase
-        .from('exam_subjects')
-        .select('paper_id, subject_name')
-        .in('exam_id', targetSelections)
-        .limit(500)
-    );
-    if (subjectsError) throw subjectsError;
+    const [exams, papers, subjects] = await Promise.all([
+      examRepo.fetchExamConfigNamesWithSelection(targetSelections),
+      examRepo.fetchPaperIdsAndNames(targetSelections),
+      examRepo.fetchSubjectMetadata(targetSelections),
+    ]);
 
     return {
       exams: (exams as any[] || [])

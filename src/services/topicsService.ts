@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import * as topicRepo from '../lib/repositories/topic.repository'
 import { ensureRole } from '../utils/authUtils'
 import { queryCache } from '../utils/queryCache'
 import type { UserProfile } from '../types/auth.types'
@@ -15,17 +15,7 @@ export async function fetchTopics(
 ): Promise<StudyTopic[]> {
   const cacheKey = `${TOPICS_PREFIX}${examId}_${paperId}_${subjectName}`;
   return queryCache.fetchWithDedup(cacheKey, async () => {
-    const { data, error } = await supabase
-      .from('study_topics')
-      .select('*')
-      .eq('exam_id', examId)
-      .eq('paper_id', paperId)
-      .eq('subject_name', subjectName)
-      .eq('is_published', true)
-      .order('display_order', { ascending: true })
-      .limit(200)
-
-    if (error) throw error
+    const data = await topicRepo.fetchPublishedTopics(examId, paperId, subjectName);
     return (data as StudyTopic[]) ?? []
   }, 300000, force); // 5 min TTL
 }
@@ -40,15 +30,7 @@ export async function fetchTopicsAdmin(
   paperId: string,
   subjectName: string
 ): Promise<StudyTopic[]> {
-  const { data, error } = await supabase
-    .from('study_topics')
-    .select('*')
-    .eq('exam_id', examId)
-    .eq('paper_id', paperId)
-    .eq('subject_name', subjectName)
-    .order('display_order', { ascending: true })
-
-  if (error) throw error
+  const data = await topicRepo.fetchAllTopics(examId, paperId, subjectName);
   return (data as StudyTopic[]) ?? []
 }
 
@@ -58,17 +40,7 @@ export async function getNextDisplayOrder(
   paperId: string,
   subjectName: string
 ): Promise<number> {
-  const { data } = await supabase
-    .from('study_topics')
-    .select('display_order')
-    .eq('exam_id', examId)
-    .eq('paper_id', paperId)
-    .eq('subject_name', subjectName)
-    .order('display_order', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  return (data?.display_order ?? 0) + 1
+  return await topicRepo.findMaxDisplayOrder(examId, paperId, subjectName);
 }
 
 // ─── Create a new topic ───────────────────────────────────────────────────────
@@ -90,13 +62,7 @@ export interface CreateTopicPayload {
 
 export async function createTopic(payload: CreateTopicPayload, user?: UserProfile | null): Promise<StudyTopic> {
   ensureRole({ user, allowedRoles: ['admin', 'sub_admin'], operation: 'topics:create' })
-  const { data, error } = await supabase
-    .from('study_topics')
-    .insert([payload])
-    .select()
-    .single()
-
-  if (error) throw error
+  const data = await topicRepo.insertTopic(payload)
   return data as StudyTopic
 }
 
@@ -115,35 +81,18 @@ export interface UpdateTopicPayload {
 
 export async function updateTopic(id: string, payload: UpdateTopicPayload, user?: UserProfile | null): Promise<StudyTopic> {
   ensureRole({ user, allowedRoles: ['admin', 'sub_admin'], operation: 'topics:update' })
-  const { data, error } = await supabase
-    .from('study_topics')
-    .update({ ...payload, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) throw error
+  const data = await topicRepo.modifyTopic(id, payload)
   return data as StudyTopic
 }
 
 // ─── Delete a topic ───────────────────────────────────────────────────────────
 export async function deleteTopic(id: string, user?: UserProfile | null): Promise<void> {
   ensureRole({ user, allowedRoles: ['admin', 'sub_admin'], operation: 'topics:delete' })
-  const { error } = await supabase
-    .from('study_topics')
-    .delete()
-    .eq('id', id)
-
-  if (error) throw error
+  await topicRepo.removeTopic(id)
 }
 
 // ─── Toggle publish status ────────────────────────────────────────────────────
 export async function toggleTopicPublish(id: string, isPublished: boolean, user?: UserProfile | null): Promise<void> {
   ensureRole({ user, allowedRoles: ['admin', 'sub_admin'], operation: 'topics:toggle' })
-  const { error } = await supabase
-    .from('study_topics')
-    .update({ is_published: isPublished, updated_at: new Date().toISOString() })
-    .eq('id', id)
-
-  if (error) throw error
+  await topicRepo.setTopicPublishStatus(id, isPublished)
 }
