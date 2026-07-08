@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Vend+Sans:ital,wght@0,300..700;1,300..700&display=swap');
+@import "./styles/themes.css";
 @import "tailwindcss";
 
 /* ─── Global Responsive Safety Layer ────────────────────────────────────────
@@ -30,26 +31,21 @@ html::-webkit-scrollbar {
   display: none;
 }
 
-::selection {
-  background-color: var(--selection-bg, #2D5A27);
-  color: var(--selection-text, #ffffff);
-}
-
 @theme {
   /* Brand System */
-  --color-primary: var(--primary);
-  --color-primary-hover: var(--primary-hover);
+  --color-primary: var(--color-accent);
+  --color-primary-hover: var(--color-accent-hover);
   --color-secondary: var(--secondary);
   --color-success: var(--success);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
-  --color-info: var(--primary);
+  --color-info: var(--info);
 
   /* App Background System */
-  --color-app-bg: var(--app-bg);
-  --color-card-bg: var(--card-bg);
-  --color-elevated-bg: var(--elevated-bg);
-  --color-hover-bg: var(--hover-bg);
+  --color-app-bg: var(--bg-app);
+  --color-card-bg: var(--bg-surface);
+  --color-elevated-bg: var(--bg-elevated);
+  --color-hover-bg: var(--bg-hover);
 
   /* Text System */
   --color-text-primary: var(--text-primary);
@@ -59,12 +55,12 @@ html::-webkit-scrollbar {
 
   /* UI Palette */
   --color-border-subtle: var(--border-color);
-  --color-input-border: var(--input-border);
-  --color-input-focus: var(--primary);
+  --color-input-border: var(--border-input);
+  --color-input-focus: var(--border-focus);
 
   /* Exam State Colors */
-  --color-correct: var(--success);
-  --color-wrong: var(--danger);
+  --color-correct: var(--color-success);
+  --color-wrong: var(--color-danger);
   --color-disabled-btn: var(--text-disabled);
 
   /* Radii */
@@ -102,27 +98,28 @@ html::-webkit-scrollbar {
   --text-button: 0.8125rem; --lh-button: 1.0; --fw-button: 500;
   --text-label: 0.75rem; --lh-label: 1.4; --fw-label: 500;
 
-  /* Theme Palette (Dark Default) */
-  --app-bg: #111827;
-  --card-bg: #1F2937;
-  --elevated-bg: #374151;
-  --hover-bg: #1F2937;
+  /* Theme Palette (Dark Default) — delegated to Design Tokens */
+  --app-bg: var(--bg-app);
+  --card-bg: var(--bg-surface);
+  --elevated-bg: var(--bg-elevated);
+  --hover-bg: var(--bg-hover);
   --text-primary: #F9FAFB;
   --text-secondary: #D1D5DB;
   --text-disabled: #9CA3AF;
-  --border-color: #374151;
+  --border-color: var(--border-default);
   --border-subtle: #374151;
-  --input-border: #4B5563;
+  --input-border: var(--border-input);
 
-  /* Shorthand aliases */
-  --primary: #3B82F6;
-  --primary-hover: #60A5FA;
-  --primary-subtle: rgba(59, 130, 246, 0.1);
-  --primary-rgb: 59, 130, 246;
+  /* Shorthand aliases — delegated to Design Tokens */
+  --primary: var(--color-accent);
+  --primary-hover: var(--color-accent-hover);
+  --primary-subtle: var(--color-accent-subtle);
+  --primary-rgb: var(--color-accent-rgb);
   --secondary: #10B981;
   --success: #22C55E;
   --danger: #F87171;
   --warning: #FBBF24;
+  --info: #3B82F6;
 
   /* Ancient theme defaults (dark mode — semantic tokens handle these) */
   --ancient-gold: var(--primary);
@@ -140,7 +137,7 @@ html::-webkit-scrollbar {
 
   background-color: var(--app-bg);
   color: var(--text-primary);
-  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  font-family: var(--font-sans) !important;
   transition: background-color 0.3s ease, color 0.3s ease;
   letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
@@ -165,27 +162,25 @@ input, button, select, textarea, optgroup {
 
 /* ─── Light Mode Overrides ─── */
 .light {
-  --app-bg: #E8D5B0;
-  --card-bg: #F4E5C4;
-  --elevated-bg: #FDF5E2;
-  --hover-bg: #EEDEB5;
-  --text-primary: #0A0503; /* Significantly darkened for absolute maximum visibility */
-  --text-secondary: #23120B; /* Darkened for sharp secondary copy */
-  --text-disabled: #4A3525; /* Darkened for highly readable disabled texts & labels */
-  --border-color: #8B5A10;
+  --app-bg: var(--bg-app);
+  --card-bg: var(--bg-surface);
+  --elevated-bg: var(--bg-elevated);
+  --hover-bg: var(--bg-hover);
+  --text-primary: #0A0503;
+  --text-secondary: #23120B;
+  --text-disabled: #4A3525;
+  --border-color: var(--border-default);
   --border-subtle: rgba(139, 90, 16, 0.45);
-  --input-border: #59320C; /* Darker border around inputs for structural clarity */
-  --primary: #0E3326; /* Deep dark forest green to ensure buttons and primary green text stand out perfectly */
-  --primary-hover: #164635;
-  --secondary: #8B5A10; /* Darker Gold for text readability */
-  --secondary-light: #C8960C; /* Original Gold for borders/icons */
-  --success: #0E3326;
-  --danger: #7A0C0C; /* High contrast dark red */
-  --warning: #733206; /* High contrast dark amber */
-  --selection-bg: #12291C;
-  --selection-text: #E8D5B0;
+  --input-border: var(--border-input);
+  --primary: var(--color-accent);
+  --primary-hover: var(--color-accent-hover);
+  --secondary: var(--color-secondary);
+  --success: var(--color-success);
+  --danger: var(--color-danger);
+  --warning: var(--color-warning);
+  --info: var(--color-info);
   color-scheme: light;
-  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  font-family: var(--font-sans) !important;
   -webkit-font-smoothing: antialiased !important;
   -moz-osx-font-smoothing: grayscale !important;
 
@@ -221,16 +216,16 @@ input, button, select, textarea, optgroup {
 .light input,
 .light textarea,
 .light select {
-  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
-  color: #0A0503 !important;
-  background-color: var(--elevated-bg) !important;
-  border: 1.5px solid var(--input-border) !important;
+  font-family: var(--font-sans) !important;
+  color: var(--text-primary) !important;
+  background-color: var(--bg-elevated) !important;
+  border: 1.5px solid var(--border-input) !important;
 }
 
 /* Stand out placeholder text with higher opacity and weight */
 .light input::placeholder,
 .light textarea::placeholder {
-  color: #4A3525 !important;
+  color: var(--text-disabled) !important;
   opacity: 0.8 !important;
   font-weight: 600 !important;
 }
@@ -239,10 +234,10 @@ input, button, select, textarea, optgroup {
 .light input:disabled,
 .light textarea:disabled,
 .light select:disabled {
-  color: #23120B !important;
-  -webkit-text-fill-color: #23120B !important;
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
   opacity: 0.9 !important;
-  background-color: rgba(139, 90, 16, 0.08) !important;
+  background-color: var(--bg-disabled) !important;
 }
 
 /* Boost readability of small uppercase labels */
@@ -329,13 +324,13 @@ tr.ancient-3d-lift:hover td {
 /* Ancient headings font */
 .light h1, .light h2, .light h3,
 .light h4, .light h5, .light h6 {
-  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
-  font-weight: 700;
+  font-family: var(--font-sans) !important;
+  font-weight: var(--weight-bold);
 }
 
 /* Font helpers */
-.font-cinzel { font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important; font-weight: 700; }
-.font-garamond { font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important; }
+.font-cinzel { font-family: var(--font-sans) !important; font-weight: var(--weight-bold); }
+.font-garamond { font-family: var(--font-sans) !important; }
 
 /* ─── Global Component Fixes ─── */
 select {
@@ -435,35 +430,35 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 
 /* Skeleton Base (Static) */
 .skeleton-static {
-  background: var(--border-color);
+  background: var(--border-default);
   opacity: 0.5;
 }
 
-/* ─── Scrollbar Styling (Premium Thin) ─── */
+/* ─── Scrollbar Styling (uses Design Tokens) ─── */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: var(--scrollbar-width, 8px);
+  height: var(--scrollbar-width, 8px);
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--scrollbar-track, transparent);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
+  background: var(--scrollbar-thumb);
   border-radius: 10px;
   transition: background 0.3s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--input-border);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Reusable thin scrollbar (replaces per-component inline <style> tags) */
 .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* Scrollbar-hide (Tailwind plugin equivalent) */
 .scrollbar-hide {
@@ -476,13 +471,13 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 
 /* ─── Theme-aware Utilities (auto dark/light) ─── */
 .premium-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 28px;
-  box-shadow: 
-    0 10px 15px -3px rgba(0, 0, 0, 0.1), 
-    0 4px 6px -4px rgba(0, 0, 0, 0.08),
-    0 20px 40px -10px rgba(0, 0, 0, 0.15);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  box-shadow:
+    0 10px 15px -3px var(--shadow-lg),
+    0 4px 6px -4px var(--shadow-md),
+    0 20px 40px -10px var(--shadow-2xl);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
@@ -490,10 +485,10 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 
 .premium-card:hover {
   transform: translateY(-4px);
-  box-shadow: 
-    0 25px 50px -12px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(59, 130, 246, 0.15);
-  border-color: var(--input-border);
+  box-shadow:
+    0 25px 50px -12px var(--shadow-2xl),
+    0 0 0 1px var(--color-accent-subtle);
+  border-color: var(--border-hover);
 }
 
 /* ─── Common Animation Helpers ─── */
@@ -503,14 +498,14 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 
 /* ─── Selection UI ─── */
 ::selection {
-  background: rgba(59, 130, 246, 0.3);
-  color: #fff;
+  background: var(--selection-bg);
+  color: var(--selection-text);
 }
 
-/* ─── Hide default focus rings, use custom ones ─── */
+/* ─── Focus ring — uses Design Token System ─── */
 :focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.5);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 2px) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 .light .bg-app-bg {
@@ -519,9 +514,8 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 
 /* ── LIGHT MODE — premium ancient sandstone/parchment background (Global) ── */
 .light, .light body, .light #root {
-  /* A noticeably richer, aged parchment gradient so it doesn't look white */
-  background-color: #E2CFA6;
-  background-image: radial-gradient(circle at 50% 0%, #EFE1C6 0%, #E2CFA6 60%, #D2BA8E 100%);
+  background-color: var(--bg-app);
+  background-image: var(--gradient-app);
   background-attachment: fixed;
 }
 
