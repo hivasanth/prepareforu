@@ -1,4 +1,3 @@
-import { useTheme } from '../../context/ThemeContext'
 import type { LucideIcon } from 'lucide-react'
 
 export const ICON_BADGE_SIZES = {
@@ -16,12 +15,11 @@ export const ICON_BADGE_SIZES = {
 } as const
 
 type IconBadgeSize = keyof typeof ICON_BADGE_SIZES
-type IconBadgeShape = 'rounded' | 'circle'
 
 interface IconBadgeProps {
   icon: LucideIcon
   size?: IconBadgeSize
-  shape?: IconBadgeShape
+  shape?: 'rounded' | 'circle'
   className?: string
   darkClassName?: string
 }
@@ -29,20 +27,14 @@ interface IconBadgeProps {
 export function IconBadge({
   icon: Icon,
   size = '2xl',
-  shape = 'rounded',
   className = '',
   darkClassName = 'rounded-xl bg-primary/10 text-primary',
 }: IconBadgeProps) {
-  const { isDark } = useTheme()
   const { container, icon: iconSize } = ICON_BADGE_SIZES[size]
 
-  const lightClasses = shape === 'circle'
-    ? 'ancient-arrow-btn'
-    : 'ancient-icon-badge'
-
   return (
-    <div className={`${container} flex items-center justify-center shrink-0 transition-all ${!isDark ? lightClasses : darkClassName} ${className}`}>
-      <Icon size={iconSize} color={!isDark ? '#C8960C' : undefined} />
+    <div className={`${container} flex items-center justify-center shrink-0 transition-all ${darkClassName} ${className}`}>
+      <Icon size={iconSize} />
     </div>
   )
 }

@@ -1,7 +1,6 @@
 import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useTheme } from '../../context/ThemeContext'
 import { Label } from './AntigravityTypography'
 import { IconBadge } from './IconBadge'
 
@@ -23,20 +22,13 @@ interface TabsProps {
 export const Tabs: React.FC<TabsProps> = ({ options, activeId, onChange, variant = 'primary', className = '', pillClassName = '' }) => {
   const instanceId = React.useId()
   const isSecondary = variant === 'secondary'
-  const { isDark } = useTheme()
-
-  const containerClass = !isDark 
-    ? `ancient-tab-track flex items-center gap-1 md:gap-2 p-1.5 min-w-max ${isSecondary ? 'h-[40px] md:h-[44px] opacity-90' : 'h-[44px] md:h-[52px]'}`
-    : `flex items-center gap-1 md:gap-2 p-1.5 bg-hover-bg/60 rounded-[16px] border border-border-subtle/80 min-w-max ${isSecondary ? 'h-[40px] md:h-[44px] opacity-80' : 'h-[44px] md:h-[52px]'}`
 
   return (
     <div className={`w-full overflow-x-auto scrollbar-hide flex ${className}`}>
-      <div className={containerClass}>
+      <div className={`flex items-center gap-1 md:gap-2 p-1.5 bg-hover-bg/60 rounded-[16px] border border-border-subtle/80 min-w-max ${isSecondary ? 'h-[40px] md:h-[44px] opacity-80' : 'h-[44px] md:h-[52px]'}`}>
         {options.map((option) => {
           const isActive = activeId === option.id
-          const textColor = !isDark 
-            ? (isActive ? 'var(--tab-text-active, var(--text-primary))' : 'var(--tab-text-inactive, var(--text-secondary))')
-            : (isActive ? 'var(--primary)' : 'var(--text-secondary)')
+          const textColor = isActive ? 'var(--primary)' : 'var(--text-secondary)'
 
           return (
             <button
@@ -48,11 +40,11 @@ export const Tabs: React.FC<TabsProps> = ({ options, activeId, onChange, variant
               {isActive && (
                 <motion.div
                   layoutId={`${instanceId}-tab-pill`}
-                  className={`absolute inset-0 ${pillClassName || (!isDark ? 'ancient-tab-pill' : 'rounded-[12px] bg-card-bg border border-border-subtle shadow-md dark:shadow-none')}`}
+                  className={`absolute inset-0 ${pillClassName || 'rounded-[12px] bg-card-bg border border-border-subtle shadow-md'}`}
                   transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
                 />
               )}
-              <span className={`relative z-10 ${isActive ? 'opacity-100 scale-105' : (!isDark ? 'opacity-85 hover:opacity-100' : 'opacity-70 hover:opacity-100')}`}>
+              <span className={`relative z-10 ${isActive ? 'opacity-100 scale-105' : 'opacity-70 hover:opacity-100'}`}>
                 {option.label}
               </span>
             </button>
@@ -75,30 +67,13 @@ export const AdminPageTitle: React.FC<AdminPageTitleProps> = ({
   icon: Icon,
   className = ''
 }) => {
-  const { isDark } = useTheme()
-  
-  if (isDark) {
-    return (
-      <div className={`flex items-center gap-3 ml-2 border-l border-border-subtle pl-3 overflow-hidden flex-1 min-w-0 ${className}`}>
-        {Icon && (
-          <IconBadge icon={Icon} size="md" className="flex-shrink-0" darkClassName="rounded-lg bg-primary/10 text-primary" />
-        )}
-        <div className="flex flex-col min-w-0">
-          <span className="text-xl font-black text-text-primary tracking-tight uppercase truncate">{children}</span>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className={`flex items-center gap-3 ml-4 p-1.5 px-4 rounded-[16px] ancient-tab-track shadow-md border-[#B07A14]/30 min-w-0 max-w-fit ${className}`}>
+    <div className={`flex items-center gap-3 ml-2 border-l border-border-subtle pl-3 overflow-hidden flex-1 min-w-0 ${className}`}>
       {Icon && (
         <IconBadge icon={Icon} size="md" className="flex-shrink-0" darkClassName="rounded-lg bg-primary/10 text-primary" />
       )}
-      <div className="flex flex-col min-w-0 pr-1">
-        <span className="text-lg md:text-xl font-black font-cinzel text-[#DFC096] tracking-[0.08em] uppercase truncate drop-shadow-sm">
-          {children}
-        </span>
+      <div className="flex flex-col min-w-0">
+        <span className="text-xl font-black text-text-primary tracking-tight uppercase truncate">{children}</span>
       </div>
     </div>
   )
@@ -214,7 +189,6 @@ export function DataGrid<T extends Record<string, any>>({
   renderRow,
   className = '',
 }: DataGridProps<T>) {
-  const { isDark } = useTheme()
   const alignClass = {
     left:   'text-left',
     center: 'text-center',
@@ -223,9 +197,9 @@ export function DataGrid<T extends Record<string, any>>({
 
   return (
     <div className={`overflow-x-auto ${className}`}>
-      <table className={`w-full text-left ${!isDark ? 'border-separate border-spacing-y-1' : 'border-collapse'}`}>
+      <table className="w-full text-left border-collapse">
         <thead>
-          <tr className={`border-b ${!isDark ? 'bg-primary/5' : 'bg-hover-bg/50 border-border-subtle'}`}>
+          <tr className="border-b bg-hover-bg/50 border-border-subtle">
             {columns.map((col) => (
               <th
                 key={col.key}

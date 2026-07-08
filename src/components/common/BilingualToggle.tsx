@@ -1,11 +1,11 @@
 import { Globe, Languages } from 'lucide-react'
-import { useTheme } from '../../context/ThemeContext'
 
 interface BilingualToggleProps {
   displayLang: 'en' | 'te';
   onChange: (lang: 'en' | 'te') => void;
   className?: string;
   shortLabels?: boolean;
+  /** @deprecated No longer used internally — kept for page-level backward compatibility */
   showShadow?: boolean;
   fill?: boolean;
 }
@@ -15,18 +15,11 @@ export function BilingualToggle({
   onChange,
   className = '',
   shortLabels = false,
-  showShadow = false,
   fill = false,
 }: BilingualToggleProps) {
-  const { isDark } = useTheme();
-
   return (
     <div
-      className={`flex items-center gap-1 p-1 rounded-xl transition-all ${
-        !isDark
-          ? 'bg-[#F5EAD4] border-[2px] border-[#A87828] shadow-[2px_2px_0px_#8B5A10]'
-          : 'bg-hover-bg/30'
-      } ${className}`}
+      className={`flex items-center gap-1 p-1 rounded-xl transition-all bg-hover-bg/30 ${className}`}
       role="radiogroup"
       aria-label="Language"
     >
@@ -38,9 +31,7 @@ export function BilingualToggle({
             onClick={() => onChange(l)}
             className={`flex items-center gap-1 px-3 py-2.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
               isActive
-                ? !isDark
-                  ? 'bg-primary border-[1.5px] border-[#A87828] text-white shadow-[1px_1px_0px_#8B5A10]'
-                  : 'bg-primary text-white shadow-sm'
+                ? 'bg-primary text-white shadow-sm'
                 : 'text-text-secondary lg:hover:text-text-primary'
             } ${fill ? 'flex-1 justify-center' : ''}`}
             role="radio"

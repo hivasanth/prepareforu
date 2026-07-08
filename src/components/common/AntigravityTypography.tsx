@@ -1,5 +1,4 @@
 import React from 'react'
-import { useTheme } from '../../context/ThemeContext'
 
 export const spacing = {
   xs: '4px',
@@ -43,9 +42,8 @@ interface LabelProps {
 }
 
 export const Label: React.FC<LabelProps> = ({ children, className = '', error = false, htmlFor }) => {
-  const { isDark } = useTheme()
   return (
-    <label htmlFor={htmlFor} className={`text-[10px] font-bold uppercase tracking-widest ${error ? 'text-danger' : (isDark ? 'text-text-secondary opacity-60' : 'text-text-secondary opacity-95')} ${className}`}>
+    <label htmlFor={htmlFor} className={`text-[10px] font-bold uppercase tracking-widest ${error ? 'text-danger' : 'text-text-secondary opacity-60'} ${className}`}>
       {children}
     </label>
   )

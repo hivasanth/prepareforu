@@ -1,11 +1,17 @@
 import React from 'react'
 import { motion, type HTMLMotionProps } from 'framer-motion'
-import { useTheme } from '../../context/ThemeContext'
 
 export interface ButtonProps extends HTMLMotionProps<'button'> {
   variant?: 'primary' | 'secondary' | 'success' | 'danger'
   fullWidth?: boolean
   loading?: boolean
+}
+
+const variants = {
+  primary:   'bg-primary text-white shadow-lg shadow-primary/20 hover:shadow-primary/30',
+  secondary: 'bg-hover-bg text-text-primary border border-border-subtle hover:bg-hover-bg/80',
+  success:   'bg-success text-white shadow-lg shadow-success/20 hover:shadow-success/30',
+  danger:    'bg-danger text-white shadow-lg shadow-danger/20 hover:shadow-danger/30',
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -16,37 +22,6 @@ export const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props
 }) => {
-  const { isDark } = useTheme()
-
-  if (!isDark) {
-    const ancientVariants = {
-      primary:   'ancient-btn-primary',
-      secondary: 'ancient-btn-secondary',
-      success:   'ancient-btn-success',
-      danger:    'ancient-btn-danger',
-    }
-
-    return (
-      <motion.button
-        className={`${ancientVariants[variant]} ancient-3d-lift h-[48px] px-6 rounded-[14px] font-bold text-[13px] uppercase tracking-wider flex items-center justify-center gap-2 ${fullWidth ? 'w-full' : ''} ${props.disabled || loading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''} ${className}`}
-        {...props}
-      >
-        {loading ? (
-          <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-        ) : (
-          children
-        )}
-      </motion.button>
-    )
-  }
-
-  const variants = {
-    primary:   'bg-primary text-white shadow-lg shadow-primary/20 hover:shadow-primary/30',
-    secondary: 'bg-hover-bg text-text-primary border border-border-subtle hover:bg-hover-bg/80',
-    success:   'bg-success text-white shadow-lg shadow-success/20 hover:shadow-success/30',
-    danger:    'bg-danger text-white shadow-lg shadow-danger/20 hover:shadow-danger/30',
-  }
-
   return (
     <motion.button
       whileHover={{ scale: props.disabled || loading ? 1 : 1.01 }}

@@ -72,31 +72,31 @@ export function FormattedBodyText({ text, className }: FormattedBodyTextProps) {
         elements.push(
           <div 
             key={`table-container-${tableKey++}`} 
-            className="w-full overflow-x-auto my-5 rounded-2xl border border-primary/15 dark:border-white/10 shadow-sm"
+            className="w-full overflow-x-auto my-5 rounded-2xl border border-border-subtle/30 shadow-sm"
           >
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="bg-primary/5 dark:bg-white/5 text-primary dark:text-text-primary border-b border-primary/15 dark:border-white/10 font-bold uppercase tracking-wider">
+              <thead className="bg-hover-bg/50 text-text-primary border-b border-border-subtle/20 font-bold uppercase tracking-wider">
                 <tr>
                   {headers.map((h, i) => (
                     <th 
                       key={i} 
-                      className="px-4 py-3 font-semibold text-xs border-r last:border-r-0 border-primary/10 dark:border-white/10"
+                      className="px-4 py-3 font-semibold text-xs border-r last:border-r-0 border-border-subtle/20"
                     >
                       {parseInlineMarkdown(h)}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-primary/5 dark:divide-white/5 bg-transparent">
+              <tbody className="divide-y divide-border-subtle/10 bg-transparent">
                 {bodyRows.map((row, i) => (
                   <tr 
                     key={i} 
-                    className="hover:bg-primary/5 dark:hover:bg-white/5 transition-colors"
+                    className="hover:bg-hover-bg/50 transition-colors"
                   >
                     {row.map((val, j) => (
                       <td 
                         key={j} 
-                        className="px-4 py-3 text-text-secondary dark:text-text-primary border-r last:border-r-0 border-primary/10 dark:border-white/10 leading-relaxed font-sans"
+                        className="px-4 py-3 text-text-secondary border-r last:border-r-0 border-border-subtle/20 leading-relaxed font-sans"
                       >
                         {parseInlineMarkdown(val)}
                       </td>

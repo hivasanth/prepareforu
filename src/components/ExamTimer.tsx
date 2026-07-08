@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, type FC } from 'react';
 import { useToast } from '../hooks/useToast';
-import { useTheme } from '../context/ThemeContext';
 import { updateTabSwitchCount } from '../services/examService';
 
 interface ExamTimerProps {
@@ -23,7 +22,6 @@ export const ExamTimer: FC<ExamTimerProps> = ({
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [tabSwitches, setTabSwitches] = useState(initialTabSwitches);
   const { showToast } = useToast();
-  const { isDark } = useTheme();
   const timerRef = useRef<any>(null);
 
   /**
@@ -157,10 +155,10 @@ export const ExamTimer: FC<ExamTimerProps> = ({
     <div className={`
       flex items-center gap-2 px-6 py-2.5 rounded-2xl border-2 transition-all duration-500
       ${getBorderColor()}
-      ${isDark ? 'bg-elevated-bg' : 'bg-white'}
+      bg-elevated-bg
     `}>
       <div className="flex flex-col items-center">
-        <span className={`text-[9px] font-black uppercase tracking-widest leading-none mb-1 ${isDark ? 'text-text-disabled' : 'text-slate-400'}`}>
+        <span className="text-[9px] font-black uppercase tracking-widest leading-none mb-1 text-text-disabled">
           Remaining
         </span>
         <div className={`text-2xl tabular-nums leading-none font-['Vend_Sans'] ${getTimerColor()}`}>

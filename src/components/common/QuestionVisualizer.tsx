@@ -66,7 +66,7 @@ export const QuestionVisualizer: FC<QuestionVisualizerProps> = ({ visual: rawVis
     <div className={`my-6 space-y-4 ${className} animate-in fade-in zoom-in duration-500`}>
       {title && <h5 className="text-sm font-black text-text-primary text-center uppercase tracking-wider">{title}</h5>}
       
-      <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex items-center justify-center overflow-hidden min-h-[240px]">
+      <div className="bg-card-bg/30 border border-border-subtle/20 rounded-3xl p-6 flex items-center justify-center overflow-hidden min-h-[240px]">
         {type === 'chart' && renderChart(data)}
         {type === 'table' && renderTable(data)}
         {type === 'geometry' && renderGeometry(data)}
@@ -149,11 +149,11 @@ function renderChart(data: any) {
       <ResponsiveContainer width="100%" height="100%">
         {actualChartType === 'bar' ? (
           <BarChart data={finalSeries}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft', style: { fill: '#94a3b8', fontSize: 11 } } : undefined} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" opacity={0.3} />
+            <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
+            <YAxis stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft', style: { fill: 'var(--text-secondary)', fontSize: 11 } } : undefined} />
             <Tooltip 
-              contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#f8fafc' }}
+              contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)' }}
               itemStyle={{ color: '#6366f1' }}
             />
             <Bar dataKey="value" radius={[6, 6, 0, 0]}>
@@ -177,7 +177,7 @@ function renderChart(data: any) {
                 <Cell key={`cell-${index}`} fill={colors[index % colors.length]} stroke="none" />
               ))}
             </Pie>
-            <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px' }} />
+            <Tooltip contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-subtle)', borderRadius: '12px' }} />
           </PieChart>
         ) : (
           <AreaChart data={finalSeries}>
@@ -187,10 +187,10 @@ function renderChart(data: any) {
                 <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-            <YAxis stroke="#94a3b8" fontSize={12} />
-            <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" opacity={0.3} />
+            <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} />
+            <YAxis stroke="var(--text-secondary)" fontSize={12} />
+            <Tooltip contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-subtle)', borderRadius: '12px' }} />
             <Area type="monotone" dataKey="value" stroke="#6366f1" fillOpacity={1} fill="url(#colorValue)" />
           </AreaChart>
         )}
@@ -205,18 +205,18 @@ function renderTable(data: any) {
   const rows = data.rows || [];
   
   return (
-    <div className="w-full overflow-x-auto border border-white/10 rounded-2xl">
+    <div className="w-full overflow-x-auto border border-border-subtle/20 rounded-2xl">
       <table className="w-full text-xs text-left">
-        <thead className="bg-white/5 text-text-muted font-black uppercase tracking-tighter">
+        <thead className="bg-hover-bg/40 text-text-secondary font-black uppercase tracking-tighter">
           <tr>
             {headers.map((h: string, i: number) => (
-              <th key={i} className="px-3 py-2 border-b border-white/10">{h}</th>
+              <th key={i} className="px-3 py-2 border-b border-border-subtle/20">{h}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5">
+        <tbody className="divide-y divide-border-subtle/10">
           {rows.map((row: any[], i: number) => (
-            <tr key={i} className="hover:bg-white/5">
+            <tr key={i} className="hover:bg-hover-bg/40">
               {row.map((val, j) => (
                 <td key={j} className="px-3 py-2 text-text-primary whitespace-nowrap">{val}</td>
               ))}
@@ -232,7 +232,7 @@ function renderTable(data: any) {
 function renderLatex(data: any) {
   const expression = data.expression || data.latex || "";
   return (
-    <div className="text-white text-lg">
+    <div className="text-text-primary text-lg">
       <BlockMath math={expression} />
     </div>
   );
@@ -254,7 +254,7 @@ const MermaidRenderer: FC<{ code: string }> = ({ code }) => {
     }
   }, [code]);
 
-  return <div ref={containerRef} className="w-full flex justify-center text-white mermaid-container" />;
+  return <div ref={containerRef} className="w-full flex justify-center text-text-primary mermaid-container" />;
 };
 
 // --- RAW SVG RENDERING ---
@@ -282,7 +282,7 @@ function renderMap(data: any) {
   const scale = zoom * 150; // Approximation for scale based on zoom
 
   return (
-    <div className="w-full h-80 rounded-2xl overflow-hidden bg-slate-900/50">
+    <div className="w-full h-80 rounded-2xl overflow-hidden bg-app-bg/60">
       <ComposableMap 
         projection="geoMercator" 
         projectionConfig={{ center: [centerLng, centerLat], scale }}
@@ -295,7 +295,7 @@ function renderMap(data: any) {
                 key={geo.rsmKey}
                 geography={geo}
                 fill="rgba(99, 102, 241, 0.15)"
-                stroke="rgba(255,255,255,0.2)"
+                stroke="var(--border-subtle)"
                 strokeWidth={0.5}
                 style={{
                   default: { outline: "none" },
@@ -309,12 +309,12 @@ function renderMap(data: any) {
         
         {overlays.map((marker: any, index: number) => (
           <Marker key={index} coordinates={[marker.lng, marker.lat]}>
-            <circle r={6} fill={marker.color || "#f43f5e"} stroke="#fff" strokeWidth={2} />
+            <circle r={6} fill={marker.color || "#f43f5e"} stroke="var(--text-primary)" strokeWidth={2} />
             {marker.label && (
               <text
                 textAnchor="middle"
                 y={-12}
-                className="font-sans fill-white text-[14px] font-bold"
+                className="font-sans fill-[var(--text-primary)] text-[14px] font-bold"
               >
                 {marker.label}
               </text>
@@ -335,12 +335,12 @@ function renderGeometry(data: any) {
       <svg viewBox="0 0 200 200" className="w-48 h-48 drop-shadow-xl">
         <path d="M100 20 L180 160 L20 160 Z" fill="rgba(99, 102, 241, 0.1)" stroke="#6366f1" strokeWidth="3" />
         {/* Points Labels */}
-        <text x="95" y="15" fill="#f8fafc" fontSize="14" fontWeight="bold">A</text>
-        <text x="185" y="170" fill="#f8fafc" fontSize="14" fontWeight="bold">B</text>
-        <text x="5" y="170" fill="#f8fafc" fontSize="14" fontWeight="bold">C</text>
+        <text x="95" y="15" fill="var(--text-primary)" fontSize="14" fontWeight="bold">A</text>
+        <text x="185" y="170" fill="var(--text-primary)" fontSize="14" fontWeight="bold">B</text>
+        <text x="5" y="170" fill="var(--text-primary)" fontSize="14" fontWeight="bold">C</text>
         {/* Optional value labels */}
-        {labels.ab && <text x="145" y="90" fill="#94a3b8" fontSize="12">{labels.ab}</text>}
-        {labels.bc && <text x="100" y="180" fill="#94a3b8" fontSize="12">{labels.bc}</text>}
+        {labels.ab && <text x="145" y="90" fill="var(--text-secondary)" fontSize="12">{labels.ab}</text>}
+        {labels.bc && <text x="100" y="180" fill="var(--text-secondary)" fontSize="12">{labels.bc}</text>}
         {labels.angleA && <text x="90" y="45" fill="#f43f5e" fontSize="10">{labels.angleA}°</text>}
       </svg>
     );
@@ -352,8 +352,8 @@ function renderGeometry(data: any) {
         <circle cx="100" cy="100" r="70" fill="rgba(16, 185, 129, 0.1)" stroke="#10b981" strokeWidth="3" />
         <line x1="100" y1="100" x2="170" y2="100" stroke="#10b981" strokeWidth="2" strokeDasharray="4" />
         <circle cx="100" cy="100" r="3" fill="#10b981" />
-        <text x="130" y="90" fill="#f8fafc" fontSize="12" fontWeight="bold">r = {data.radius || '?'}</text>
-        <text x="95" y="115" fill="#94a3b8" fontSize="12">O</text>
+        <text x="130" y="90" fill="var(--text-primary)" fontSize="12" fontWeight="bold">r = {data.radius || '?'}</text>
+        <text x="95" y="115" fill="var(--text-secondary)" fontSize="12">O</text>
       </svg>
     );
   }
@@ -369,9 +369,9 @@ function renderVenn(data: any) {
       <circle cx="110" cy="75" r="60" fill="rgba(99, 102, 241, 0.2)" stroke="#6366f1" strokeWidth="2" />
       <circle cx="190" cy="75" r="60" fill="rgba(244, 63, 94, 0.2)" stroke="#f43f5e" strokeWidth="2" />
       
-      <text x="60" y="75" fill="#f8fafc" fontSize="12" fontWeight="bold" textAnchor="middle">{setA}</text>
-      <text x="240" y="75" fill="#f8fafc" fontSize="12" fontWeight="bold" textAnchor="middle">{setB}</text>
-      <text x="150" y="75" fill="#f8fafc" fontSize="9" textAnchor="middle" className="pointer-events-none">{intersection}</text>
+      <text x="60" y="75" fill="var(--text-primary)" fontSize="12" fontWeight="bold" textAnchor="middle">{setA}</text>
+      <text x="240" y="75" fill="var(--text-primary)" fontSize="12" fontWeight="bold" textAnchor="middle">{setB}</text>
+      <text x="150" y="75" fill="var(--text-primary)" fontSize="9" textAnchor="middle" className="pointer-events-none">{intersection}</text>
     </svg>
   );
 }

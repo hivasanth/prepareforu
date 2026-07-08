@@ -1,18 +1,18 @@
-import { useNavigate } from 'react-router-dom';
 import { Button } from './AntigravityUI';
 
 interface ErrorActionButtonsProps {
   className?: string;
+  onBack?: () => void;
 }
 
-export function ErrorActionButtons({ className = '' }: ErrorActionButtonsProps) {
-  const navigate = useNavigate();
-
+export function ErrorActionButtons({ className = '', onBack }: ErrorActionButtonsProps) {
   const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
+    if (onBack) {
+      onBack();
+    } else if (window.history.length > 1) {
+      window.history.back();
     } else {
-      navigate('/', { replace: true });
+      window.location.href = '/';
     }
   };
 

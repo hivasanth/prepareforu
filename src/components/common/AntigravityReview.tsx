@@ -2,30 +2,25 @@ import React from 'react'
 import { CheckCircle2, XCircle, AlertCircle, HelpCircle } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import DOMPurify from 'dompurify'
-import { useTheme } from '../../context/ThemeContext'
 import { Card } from './AntigravityCard'
 import { IconBadge } from './IconBadge'
 
 export const QuestionCard: React.FC<{ number: number; question: string; children: React.ReactNode; status?: 'correct' | 'wrong' | 'skipped' }> = ({ number, question, children, status }) => {
-  const { isDark } = useTheme()
   const statusConfig = {
-    correct: { icon: CheckCircle2, color: 'text-success', bg: isDark ? 'bg-success/5' : 'bg-success/10' },
-    wrong: { icon: XCircle, color: 'text-danger', bg: isDark ? 'bg-danger/5' : 'bg-danger/10' },
-    skipped: { icon: AlertCircle, color: 'text-text-secondary', bg: isDark ? 'bg-hover-bg' : 'bg-hover-bg/20' }
+    correct: { icon: CheckCircle2, color: 'text-success', bg: 'bg-success/5' },
+    wrong: { icon: XCircle, color: 'text-danger', bg: 'bg-danger/5' },
+    skipped: { icon: AlertCircle, color: 'text-text-secondary', bg: 'bg-hover-bg' }
   }
-  const config = status ? statusConfig[status] : { icon: HelpCircle, color: 'text-primary', bg: isDark ? 'bg-primary/5' : 'bg-primary/10' }
+  const config = status ? statusConfig[status] : { icon: HelpCircle, color: 'text-primary', bg: 'bg-primary/5' }
 
   return (
-    <Card className={`p-8 md:p-10 space-y-8 ${!isDark ? 'ancient-card' : ''}`}>
+    <Card className="p-8 md:p-10 space-y-8">
       <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-        <div className={`w-14 h-14 rounded-[18px] flex-shrink-0 flex items-center justify-center font-black text-[20px] border shadow-sm
-          ${!isDark
-            ? 'bg-primary text-white border-primary/30 shadow-primary/20'
-            : `border-border-subtle ${config.bg} ${config.color}`}`}>
+        <div className={`w-14 h-14 rounded-[18px] flex-shrink-0 flex items-center justify-center font-black text-[20px] border shadow-sm border-border-subtle ${config.bg} ${config.color}`}>
           {number}
         </div>
         <div className="flex-1 space-y-8">
-          <div className={`text-[18px] md:text-[20px] font-semibold text-text-primary leading-relaxed exam-content ${!isDark ? 'font-garamond text-xl' : ''}`} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question) }} />
+          <div className="text-[18px] md:text-[20px] font-semibold text-text-primary leading-relaxed exam-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question) }} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {children}
           </div>
@@ -79,14 +74,13 @@ export const QuestionOption: React.FC<{ label: string; text: string; isCorrect?:
 }
 
 export const InsightCard: React.FC<{ title: string; children: React.ReactNode; icon: LucideIcon; variant?: 'success' | 'danger' | 'warning' | 'default' }> = ({ title, children, icon: Icon, variant = 'default' }) => {
-  const { isDark } = useTheme()
-  const variants = {
-    default: isDark ? 'border-primary/10 bg-primary/5 text-primary' : 'ancient-card !shadow-none border-primary/20 text-primary',
-    success: isDark ? 'border-success/20 bg-success/5 text-success' : 'ancient-card !shadow-none border-success/30 text-success',
-    danger:  isDark ? 'border-danger/20 bg-danger/5 text-danger' : 'ancient-card !shadow-none border-danger/30 text-danger',
-    warning: isDark ? 'border-warning/20 bg-warning/5 text-warning' : 'ancient-card !shadow-none border-warning/30 text-warning',
+  const variants: Record<string, string> = {
+    default: 'border-primary/10 bg-primary/5 text-primary',
+    success: 'border-success/20 bg-success/5 text-success',
+    danger:  'border-danger/20 bg-danger/5 text-danger',
+    warning: 'border-warning/20 bg-warning/5 text-warning',
   }
-  const iconDarkClasses: Record<string, string> = {
+  const iconClasses: Record<string, string> = {
     default: 'rounded-xl bg-primary/10 text-primary',
     success: 'rounded-xl bg-success/10 text-success',
     danger: 'rounded-xl bg-danger/10 text-danger',
@@ -94,10 +88,10 @@ export const InsightCard: React.FC<{ title: string; children: React.ReactNode; i
   }
   return (
     <div className={`p-4 rounded-[14px] border flex gap-3 ${variants[variant]}`}>
-      <IconBadge icon={Icon} size="lg" darkClassName={iconDarkClasses[variant]} />
+      <IconBadge icon={Icon} size="lg" darkClassName={iconClasses[variant]} />
       <div className="space-y-1">
-        <span className={`text-[10px] font-bold text-current uppercase tracking-widest ${!isDark ? 'font-cinzel' : ''}`}>{title}</span>
-        <p className={`text-[13px] font-bold text-current leading-relaxed m-0 ${!isDark ? 'font-garamond italic' : ''}`}>{children}</p>
+        <span className="text-[10px] font-bold text-current uppercase tracking-widest">{title}</span>
+        <p className="text-[13px] font-bold text-current leading-relaxed m-0">{children}</p>
       </div>
     </div>
   )

@@ -1,7 +1,6 @@
 import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { motion, type HTMLMotionProps } from 'framer-motion'
-import { useTheme } from '../../context/ThemeContext'
 
 type CardVariant = 'elevated' | 'default' | 'subtle'
 
@@ -12,12 +11,16 @@ interface CardProps extends HTMLMotionProps<'div'> {
   variant?: CardVariant
 }
 
-export const Card: React.FC<CardProps> = ({ children, className = '', padding, variant = 'default', ...props }) => {
-  const { isDark } = useTheme()
+const variantClasses: Record<CardVariant, string> = {
+  elevated: 'rounded-[18px] shadow-lg bg-card-bg brightness-[1.04]',
+  default:  'rounded-[14px] shadow-md bg-card-bg border border-border-subtle/50',
+  subtle:   'rounded-[12px] shadow-sm bg-card-bg/60 border border-border-subtle/30',
+}
 
+export const Card: React.FC<CardProps> = ({ children, className = '', padding, variant = 'default', ...props }) => {
   let paddingClass = ''
   if (padding !== undefined) {
-    const paddingMap = {
+    const paddingMap: Record<number, string> = {
       0: 'p-0',
       16: 'p-4',
       20: 'p-5',
@@ -33,17 +36,9 @@ export const Card: React.FC<CardProps> = ({ children, className = '', padding, v
     paddingClass = defaultPaddingMap[variant]
   }
 
-  const baseStyleClass = !isDark
-    ? 'ancient-card'
-    : {
-        elevated: 'rounded-[18px] shadow-lg bg-card-bg brightness-[1.04]',
-        default:  'rounded-[14px] shadow-md bg-card-bg border border-border-subtle/50',
-        subtle:   'rounded-[12px] shadow-sm bg-card-bg/60 border border-border-subtle/30',
-      }[variant]
-
   return (
     <motion.div
-      className={`${baseStyleClass} ${paddingClass} ancient-3d-lift ${className}`}
+      className={`${variantClasses[variant]} ${paddingClass} ${className}`}
       {...props}
     >
       {children}
@@ -70,8 +65,6 @@ export const StatCard: React.FC<StatCardProps> = ({
   loading = false,
   className = ''
 }) => {
-  const { isDark } = useTheme()
-
   let displayValue = value
   let displayUnit = unit
 
@@ -92,34 +85,11 @@ export const StatCard: React.FC<StatCardProps> = ({
     }
   }
 
-  if (!isDark) {
-    return (
-      <div className={`ancient-stat-card ancient-3d-lift ${className}`}>
-        <div className="stat-header">
-          <p className="stat-label">{label}</p>
-          <div className="stat-icon-wrap">
-            <Icon className="w-5 h-5" style={{ color }} />
-          </div>
-        </div>
-        <div className="stat-body">
-          {loading ? (
-             <div className="h-4 w-16 bg-hover-bg animate-pulse rounded mt-1" />
-          ) : (
-            <>
-              <p className="stat-value">{displayValue}</p>
-              {displayUnit && <p className="stat-unit">{displayUnit}</p>}
-            </>
-          )}
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div
       className={`
         h-[64px] sm:h-[72px] lg:h-[84px] px-3 sm:px-4 lg:px-5 py-3 sm:py-4 rounded-[12px] sm:rounded-[14px] shadow-sm flex items-center gap-2 sm:gap-3 lg:gap-4
-        bg-card-bg border border-border-subtle/50 hover:bg-hover-bg/40 transition-all duration-300 ancient-3d-lift
+        bg-card-bg border border-border-subtle/50 hover:bg-hover-bg/40 transition-all duration-300
         ${className}
       `}
     >

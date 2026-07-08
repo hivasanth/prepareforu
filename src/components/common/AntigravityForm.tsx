@@ -1,7 +1,6 @@
 import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { ChevronDown } from 'lucide-react'
-import { useTheme } from '../../context/ThemeContext'
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   rightIcon?: LucideIcon
@@ -67,17 +66,16 @@ export const Select: React.FC<SelectProps> = ({
   disabled = false,
   className = '',
 }) => {
-  const { isDark } = useTheme()
   return (
     <div className={`space-y-2 ${disabled ? 'opacity-40 pointer-events-none' : ''} ${className}`}>
       {label && (
-        <label className={`text-[10px] font-bold text-text-secondary uppercase tracking-widest ml-1 ${!isDark ? 'font-cinzel' : ''}`}>
+        <label className={'text-[10px] font-bold text-text-secondary uppercase tracking-widest ml-1'}>
           {label}
         </label>
       )}
       <div className="relative group">
         {Icon && (
-          <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors pointer-events-none z-10 ${!isDark ? 'text-[#A87828]' : 'text-text-secondary group-focus-within:text-primary'}`}>
+          <div className={'absolute left-4 top-1/2 -translate-y-1/2 transition-colors pointer-events-none z-10 text-text-secondary group-focus-within:text-primary'}>
             <Icon size={16} />
           </div>
         )}
@@ -89,20 +87,18 @@ export const Select: React.FC<SelectProps> = ({
             text-[12px] font-bold uppercase tracking-wide
             focus:outline-none pr-10
             ${Icon ? 'pl-11' : 'pl-4'}
-            ${!isDark 
-              ? 'ancient-card !p-0 !pl-11 !h-[48px] border-primary/20 text-primary shadow-sm focus:border-[#A87828]' 
-              : 'bg-hover-bg border-border-subtle rounded-[12px] text-text-primary focus:border-primary'}
+            bg-hover-bg border-border-subtle rounded-[12px] text-text-primary focus:border-primary
             ${className}
           `}
         >
-          {placeholder && <option value="" className={!isDark ? 'bg-[#E8D5B0] text-[#3D1F08]' : 'bg-card-bg text-text-primary'}>{placeholder}</option>}
+          {placeholder && <option value="" className={'bg-card-bg text-text-primary'}>{placeholder}</option>}
           {options.map((opt, idx) => (
-            <option key={`${opt.id}-${idx}`} value={String(opt.id)} className={!isDark ? 'bg-[#E8D5B0] text-[#3D1F08]' : 'bg-card-bg text-text-primary'}>
+            <option key={`${opt.id}-${idx}`} value={String(opt.id)} className={'bg-card-bg text-text-primary'}>
               {opt.name}
             </option>
           ))}
         </select>
-        <div className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity ${!isDark ? 'text-primary opacity-60' : 'text-text-secondary opacity-40'}`}>
+        <div className={'absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity text-text-secondary opacity-40'}>
           <ChevronDown size={14} />
         </div>
       </div>
@@ -125,7 +121,6 @@ export const Switch: React.FC<SwitchProps> = ({
   disabled = false,
   className = '',
 }) => {
-  const { isDark } = useTheme()
   return (
     <div className={`flex items-center justify-between gap-3 ${className} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       {label && (
@@ -139,16 +134,14 @@ export const Switch: React.FC<SwitchProps> = ({
         className={`
           relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent 
           transition-colors duration-300 ease-in-out focus:outline-none
-          ${checked 
-            ? (isDark ? 'bg-primary' : 'bg-primary shadow-[0_0_12px_rgba(27,77,62,0.3)]') 
-            : (isDark ? 'bg-hover-bg' : 'var(--hover-bg)')}
+          ${checked ? 'bg-primary' : 'bg-hover-bg'}
         `}
       >
         <span
           className={`
             pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-lg ring-0 
             transition duration-300 cubic-bezier(0.175, 0.885, 0.32, 1.275)
-            ${isDark ? 'bg-white' : 'bg-[#F4E5C4]'}
+            bg-white
             ${checked ? 'translate-x-5' : 'translate-x-0'}
           `}
         />

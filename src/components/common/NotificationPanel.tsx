@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
 import {
   Bell,
   X,
@@ -13,9 +12,9 @@ import {
   AlertTriangle,
   CheckCircle,
   RefreshCcw,
+  type LucideIcon,
 } from 'lucide-react'
 import { useNotifications, type AppNotification, type NotificationType } from '../../hooks/useNotifications'
-import { useTheme } from '../../context/ThemeContext'
 import { IconBadge } from './AntigravityUI'
 
 // ─── Icon resolver per type ────────────────────────────────────────────────────
@@ -64,7 +63,6 @@ function NotificationRow({
   onDelete: (id: string) => void
   onNavigate: (link: string | null) => void
 }) {
-  const { isDark } = useTheme()
   const { icon: TypeIcon, color } = typeIconInfo(notification.type)
 
   return (
@@ -76,8 +74,8 @@ function NotificationRow({
       transition={{ duration: 0.2 }}
       className={`group relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors
         ${!notification.is_read
-          ? isDark ? 'bg-primary/5 hover:bg-primary/10' : 'bg-primary/5 hover:bg-primary/8'
-          : isDark ? 'hover:bg-hover-bg/60' : 'hover:bg-hover-bg/40'
+          ? 'bg-primary/5 hover:bg-primary/10'
+          : 'hover:bg-hover-bg/60'
         }`}
       onClick={() => {
         onRead(notification.id)
@@ -128,12 +126,12 @@ function NotificationRow({
 interface NotificationBellProps {
   /** Whether to show dropdown on the right side (default) or left side */
   align?: 'right' | 'left'
+  /** Callback when a notification with a link is clicked. Pages own routing. */
+  onNavigate?: (link: string) => void
 }
 
-export function NotificationBell({ align = 'right' }: NotificationBellProps) {
+export function NotificationBell({ align = 'right', onNavigate }: NotificationBellProps) {
   const { notifications, unreadCount, loading, markRead, markAllRead, deleteNotification, clearAll, refresh } = useNotifications()
-  const { isDark } = useTheme()
-  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -150,8 +148,8 @@ export function NotificationBell({ align = 'right' }: NotificationBellProps) {
   }, [open])
 
   const handleNavigate = (link: string | null) => {
-    if (link) {
-      navigate(link)
+    if (link && onNavigate) {
+      onNavigate(link)
       setOpen(false)
     }
   }
@@ -164,7 +162,7 @@ export function NotificationBell({ align = 'right' }: NotificationBellProps) {
         onClick={() => setOpen(prev => !prev)}
         className={`relative w-9 h-9 flex items-center justify-center rounded-xl transition-all
           ${open
-            ? isDark ? 'bg-primary/20 text-primary' : 'bg-primary/10 text-primary'
+            ? 'bg-primary/20 text-primary'
             : 'hover:bg-hover-bg text-text-secondary hover:text-text-primary'
           }`}
         title="Notifications"
@@ -196,16 +194,12 @@ export function NotificationBell({ align = 'right' }: NotificationBellProps) {
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className={`absolute top-12 z-[200] w-80 rounded-2xl shadow-2xl overflow-hidden
               border flex flex-col max-h-[420px]
-              ${isDark
-                ? 'bg-card-bg border-border-subtle'
-                : 'bg-white border-stone-200 shadow-stone-200/60'
-              }
+              bg-card-bg border-border-subtle
               ${align === 'right' ? 'right-0' : 'left-0'}
             `}
           >
             {/* Header */}
-            <div className={`flex items-center justify-between px-4 py-3 border-b flex-shrink-0
-              ${isDark ? 'border-border-subtle' : 'border-stone-100'}`}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Bell size={14} className="text-primary" />
                 <span className="text-[13px] font-black text-text-primary uppercase tracking-widest">

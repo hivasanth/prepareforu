@@ -103,10 +103,10 @@ export const OTPInput: React.FC<OTPInputProps> = ({
           onFocus={() => setActiveInput(index)}
           className={`w-10 h-14 sm:w-12 sm:h-16 text-center text-xl font-black rounded-2xl border-2 transition-all duration-300 outline-none
             ${activeInput === index 
-              ? 'border-sky-500 bg-white shadow-[0_0_20px_rgba(14,165,233,0.2)] scale-110' 
-              : 'border-slate-100 bg-slate-50 text-slate-900'
+              ? 'border-primary bg-card-bg shadow-primary/20 scale-110' 
+              : 'border-border-subtle bg-card-bg text-text-primary'
             }
-            ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-200'}
+            ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-primary/50'}
           `}
         />
       ))}

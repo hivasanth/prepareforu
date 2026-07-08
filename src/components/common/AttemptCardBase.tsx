@@ -1,7 +1,6 @@
 import { Card, Badge, Body, Label } from './AntigravityUI'
-import { TrendingUp, ChevronRight, type LucideIcon, BookOpen, Scroll, Swords, GraduationCap } from 'lucide-react'
+import { TrendingUp, ChevronRight, type LucideIcon } from 'lucide-react'
 import type { Attempt } from '../../types/exam.types'
-import { useTheme } from '../../context/ThemeContext'
 
 export interface AttemptWithRelations extends Attempt {
   exam_papers?: { paper_name: string };
@@ -23,15 +22,6 @@ function handleCardKeyDown(e: React.KeyboardEvent, onClick: () => void) {
   }
 }
 
-// Source → icon mapping for recent attempts
-function sourceIcon(source: string, defaultIcon: LucideIcon) {
-  if (source === 'subject_test') return BookOpen
-  if (source === 'prepare_write') return Scroll
-  if (source === 'teacher_exam') return Swords
-  if (source === 'grand_exam') return GraduationCap
-  return defaultIcon
-}
-
 export function AttemptCardBase({ 
   attempt, 
   onClick, 
@@ -39,58 +29,12 @@ export function AttemptCardBase({
   dateFormatter = (d) => new Date(d).toLocaleDateString(),
   showReviewLink = true
 }: AttemptCardBaseProps) {
-  const { isDark } = useTheme();
-  
   const paperName = attempt.exam_papers?.paper_name || 'Practice Paper';
   const examName = attempt.exam_configs?.name || 'Grand Exam';
-  const title = attempt.exam_configs?.name || attempt.exam_papers?.paper_name || 'Practice Session'
-
-  if (!isDark) {
-    const CustomIcon = sourceIcon(attempt.source, Icon);
-    const scoreVal = typeof attempt.score === 'number' ? attempt.score : null;
-    const pct = scoreVal !== null && attempt.total_marks > 0
-      ? Math.round((scoreVal / attempt.total_marks) * 100)
-      : null;
-
-    return (
-      <Card
-        onClick={onClick}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => handleCardKeyDown(e, onClick)}
-        className={`w-full text-left flex items-center gap-4 p-4 cursor-pointer group ancient-card ancient-3d-lift`}
-      >
-        {/* Icon badge */}
-        <div className="ancient-icon-badge w-12 h-12 flex items-center justify-center shrink-0">
-          <CustomIcon size={20} />
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <p className="font-cinzel text-sm font-bold text-text-primary m-0 mb-1 truncate uppercase tracking-tight">
-            {title}
-          </p>
-          <p className="font-garamond text-sm text-text-secondary m-0 mb-2 font-medium italic">
-            Score: {scoreVal ?? '—'} / {attempt.total_marks} &nbsp;·&nbsp; {attempt.accuracy}% accuracy
-          </p>
-          {pct !== null && (
-            <div className="ancient-progress-track">
-              <div className="ancient-progress-fill" style={{ width: `${pct}%` }} />
-            </div>
-          )}
-        </div>
-
-        {/* Arrow */}
-        <div className="ancient-arrow-btn w-9 h-9 flex items-center justify-center shrink-0">
-          <ChevronRight size={16} />
-        </div>
-      </Card>
-    );
-  }
   
   return (
     <Card 
-      className="w-full h-full group cursor-pointer flex flex-col ancient-3d-lift"
+      className="w-full h-full group cursor-pointer flex flex-col"
       onClick={onClick}
       role="button"
       tabIndex={0}

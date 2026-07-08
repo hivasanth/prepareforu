@@ -2,12 +2,10 @@ import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useTheme } from '../../context/ThemeContext'
 
 export const PageContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => {
-  const { isDark } = useTheme()
   return (
-    <div className={`max-w-[1280px] mx-auto px-2 sm:px-4 md:px-5 lg:px-6 xl:px-8 py-6 md:py-10 ${!isDark ? 'font-ancient' : ''} ${className}`}>
+    <div className={`max-w-[1280px] mx-auto px-2 sm:px-4 md:px-5 lg:px-6 xl:px-8 py-6 md:py-10 ${className}`}>
       {children}
     </div>
   )
@@ -167,7 +165,6 @@ export const FilterSelect: React.FC<SelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = React.useState(false)
   const dropdownRef = React.useRef<HTMLDivElement>(null)
-  const { isDark } = useTheme()
   const isActive = value !== 'all' && value !== ''
 
   React.useEffect(() => {
@@ -190,17 +187,14 @@ export const FilterSelect: React.FC<SelectProps> = ({
         className={`
           w-full h-[44px] md:h-[48px] rounded-[12px] transition-all flex items-center justify-between px-4 md:px-3.5 gap-2
           text-[11px] font-black uppercase tracking-widest focus:outline-none border
-          ${!isDark 
-            ? `ancient-card shadow-sm ${isActive ? 'bg-[#F4E5C4] border-secondary text-primary' : 'border-primary/20 text-text-secondary'}`
-            : `${isActive ? 'bg-primary/10 text-primary border-primary/20' : 'bg-hover-bg/60 text-text-primary border-border-subtle opacity-70 hover:opacity-100'}`
-          }
+          ${isActive ? 'bg-primary/10 text-primary border-primary/20' : 'bg-hover-bg/60 text-text-primary border-border-subtle opacity-70 hover:opacity-100'}
         `}
       >
         <div className="flex items-center gap-2 overflow-hidden">
-          {Icon && <Icon size={16} className={`shrink-0 ${isActive ? (isDark ? 'text-primary' : 'text-secondary') : 'text-text-secondary'}`} />}
+          {Icon && <Icon size={16} className={`shrink-0 ${isActive ? 'text-primary' : 'text-text-secondary'}`} />}
           <span className="truncate">{selectedOption?.name}</span>
         </div>
-        <ChevronDown size={14} className={`transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''} ${isActive ? (isDark ? 'text-primary' : 'text-secondary') : 'text-text-secondary opacity-40'}`} />
+        <ChevronDown size={14} className={`transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''} ${isActive ? 'text-primary' : 'text-text-secondary opacity-40'}`} />
       </button>
 
       <AnimatePresence>
@@ -209,7 +203,7 @@ export const FilterSelect: React.FC<SelectProps> = ({
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 5, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className={`absolute top-full left-0 right-0 z-[1000] border rounded-xl overflow-hidden shadow-2xl min-w-[200px] ${!isDark ? 'ancient-card border-primary/30 bg-[#F4E5C4]' : 'bg-card-bg border-border-subtle'}`}
+            className={'absolute top-full left-0 right-0 z-[1000] border rounded-xl overflow-hidden shadow-2xl min-w-[200px] bg-card-bg border-border-subtle'}
           >
             <div className="py-1">
               {placeholder && (
@@ -218,8 +212,8 @@ export const FilterSelect: React.FC<SelectProps> = ({
                   onClick={() => { onChange('all'); setIsOpen(false); }}
                   className={`w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
                     value === 'all' 
-                      ? (!isDark ? 'bg-primary text-white' : 'bg-primary/20 text-primary') 
-                      : (!isDark ? 'text-text-secondary hover:bg-primary/5 hover:text-primary' : 'text-text-primary hover:bg-white/5')
+                      ? 'bg-primary/20 text-primary' 
+                      : 'text-text-primary hover:bg-white/5'
                   }`}
                 >
                   {placeholder}
@@ -232,8 +226,8 @@ export const FilterSelect: React.FC<SelectProps> = ({
                   onClick={() => { onChange(String(opt.id)); setIsOpen(false); }}
                   className={`w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors border-t border-border-subtle/5 first:border-t-0 ${
                     String(value) === String(opt.id)
-                      ? (!isDark ? 'bg-primary text-white' : 'bg-primary/20 text-primary') 
-                      : (!isDark ? 'text-text-secondary hover:bg-primary/5 hover:text-primary' : 'text-text-primary hover:bg-white/5')
+                      ? 'bg-primary/20 text-primary' 
+                      : 'text-text-primary hover:bg-white/5'
                   }`}
                 >
                   {opt.name}

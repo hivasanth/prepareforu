@@ -354,7 +354,7 @@ function render2SetVenn(sets: string[], intersections: any) {
         </div>
 
         {/* The Overlap (The true intersection) */}
-        <div className="z-20 w-24 h-24 rounded-full bg-white/10 backdrop-blur-xl border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)] flex flex-col items-center justify-center p-3 text-center animate-pulse-slow">
+        <div className="z-20 w-24 h-24 rounded-full bg-card-bg/40 backdrop-blur-xl border border-border-subtle/30 shadow-[0_0_20px_var(--border-subtle)] flex flex-col items-center justify-center p-3 text-center animate-pulse-slow">
            <div className="text-[7px] font-black text-text-secondary uppercase mb-1 opacity-60">Both</div>
            <div className="text-xs font-black text-text-primary leading-tight">
               {both.join(', ') || '∅'}
@@ -404,7 +404,7 @@ function render3SetVenn(sets: string[], intersections: any) {
         </div>
 
         {/* Center Intersection */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 w-16 h-16 rounded-full bg-white/20 backdrop-blur-2xl border border-white/40 flex items-center justify-center shadow-xl">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 w-16 h-16 rounded-full bg-card-bg/50 backdrop-blur-2xl border border-border-subtle/40 flex items-center justify-center shadow-xl">
             <span className="text-[10px] font-black text-text-primary">
                {findValueSafe(intersections, sets[0], sets[1], sets[2]).length || 0}
             </span>
