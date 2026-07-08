@@ -1,5 +1,5 @@
 import { CheckCircle2, AlertTriangle } from 'lucide-react'
-import { IconBadge, useTheme } from '../../common/AntigravityUI'
+import { IconBadge } from '../../common/AntigravityUI'
 
 interface UploadProgressOverlayProps {
   uploadProgress: {
@@ -15,7 +15,6 @@ interface UploadProgressOverlayProps {
 }
 
 export function UploadProgressOverlay({ uploadProgress, errors, examLabel, paperLabel, subjectName, onRetry }: UploadProgressOverlayProps) {
-  const { isDark } = useTheme()
   if (uploadProgress.status === 'idle') return null
 
   const percentage = uploadProgress.total > 0
@@ -59,7 +58,7 @@ export function UploadProgressOverlay({ uploadProgress, errors, examLabel, paper
         />
       )}
 
-      <h3 className={`text-lg font-black uppercase tracking-widest mb-2 ${!isDark ? 'font-cinzel text-[#3D1F08]' : 'text-text-primary'}`}>
+      <h3 className="text-lg font-black uppercase tracking-widest mb-2 text-text-primary">
         {uploadProgress.status === 'running' && 'Syncing Questions...'}
         {uploadProgress.status === 'success' && 'Upload Complete!'}
         {uploadProgress.status === 'error' && 'Upload Failed'}

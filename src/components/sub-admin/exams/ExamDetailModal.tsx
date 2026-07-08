@@ -11,9 +11,9 @@ import {
   History,
   FileText
 } from 'lucide-react'
-import { supabase } from '../../../lib/supabase'
 import { useBreakpoint } from '../../../hooks/useBreakpoint'
 import { IconBadge } from '../../common/AntigravityUI'
+import { fetchTeacherExamQuestions, fetchTeacherExamAttempts } from '../../../services/teacherExamService'
 
 interface ExamDetailModalProps {
   exam: { id: string; title?: string; [key: string]: any }
@@ -63,32 +63,10 @@ export default function ExamDetailModal({ exam, onClose }: ExamDetailModalProps)
     setLoading(true)
     setError(null)
     try {
-      // 1. Fetch Questions
-      const { data: questions, error: qErr } = await supabase
-        .from('teacher_exam_questions')
-        .select(`
-          *,
-          question_text_en,
-          option_a_en, option_b_en, option_c_en, option_d_en,
-          explanation_en
-        `)
-        .eq('teacher_exam_id', exam.id)
-        .order('display_order', { ascending: true })
-
-      if (qErr) throw qErr
-
-      // 2. Fetch Leaderboard
-      // Sort by score DESC, duration_seconds ASC
-      const { data: leaderboard, error: lErr } = await supabase
-        .from('attempts')
-        .select('*, users(full_name)')
-        .eq('teacher_exam_id', exam.id)
-        .eq('status', 'completed')
-        .order('score', { ascending: false })
-        .order('duration_seconds', { ascending: true })
-        .limit(50)
-
-      if (lErr) throw lErr
+      const [questions, leaderboard] = await Promise.all([
+        fetchTeacherExamQuestions(exam.id),
+        fetchTeacherExamAttempts(exam.id),
+      ])
       if (!mountedRef.current) return
 
       setData({

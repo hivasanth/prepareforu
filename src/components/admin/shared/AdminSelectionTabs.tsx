@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { supabase } from '../../../lib/supabase'
 import { useSupabaseQuery } from '../../../hooks/useSupabaseQuery'
 import { fetchActiveExams } from '../../../services/examService'
+import { adminService } from '../../../services/adminService'
 import type { ExamPaper, ExamSubject } from '../../../types/exam.types'
-import { Tabs, Stack, useTheme } from '../../common/AntigravityUI'
+import { Tabs, Stack } from '../../common/AntigravityUI'
 import { useAuth } from '../../../context/AuthContext'
 import { isExamAllowed } from '../../../utils/examUtils'
 import { logError } from '../../../utils/logger'
@@ -52,7 +52,6 @@ export function AdminSelectionTabs({
   customSubjects,
   flattenAppsc = false,
 }: AdminSelectionTabsProps) {
-  const { isDark } = useTheme();
   const { user } = useAuth();
   const lastLabelsRef = useRef({ exam: '', paper: '' })
   const isAppscActive = selectedExam === 'APPSC_GROUPS' || selectedExam.startsWith('APPSC_GROUP_')
@@ -128,13 +127,15 @@ export function AdminSelectionTabs({
   const { data: dbPapers, loading: papersLoading } = useSupabaseQuery<ExamPaper[]>(async () => {
     if (customPapers) return { data: [], error: null } // skip when custom data provided
     if (selectedExam === 'all' || selectedExam === 'APPSC_GROUPS') return { data: [], error: null }
-    return await supabase.from('exam_papers').select('*').eq('exam_id', selectedExam).order('display_order')
+    const papers = await adminService.fetchPapersByExam(selectedExam)
+    return { data: papers, error: null }
   }, [selectedExam, customPapers])
 
   const { data: dbSubjects, loading: subjectsLoading } = useSupabaseQuery<ExamSubject[]>(async () => {
     if (customSubjects) return { data: [], error: null } // skip when custom data provided
     if (!selectedPaper || selectedPaper === 'all' || !showSubjects) return { data: [], error: null }
-    return await supabase.from('exam_subjects').select('*').eq('paper_id', selectedPaper).order('display_order')
+    const subjects = await adminService.fetchSubjectsByPaper(selectedPaper)
+    return { data: subjects, error: null }
   }, [selectedPaper, showSubjects, customSubjects])
 
   const papers = customPapers || dbPapers
@@ -219,7 +220,7 @@ export function AdminSelectionTabs({
 
   return (
     <div className={`w-full relative ${className}`}>
-      <div className={`w-full pt-2 p-2 rounded-[28px] ${!isDark ? 'ancient-tab-track shadow-xl' : 'bg-card-bg/50 border border-border-subtle'} transition-all duration-500`}>
+      <div className="w-full pt-2 p-2 rounded-[28px] bg-card-bg/50 border border-border-subtle transition-all duration-500">
         <Stack gap="sm" className="w-full">
           {/* LEVEL 1: Main exam tabs */}
           <div className="w-full flex justify-center lg:justify-start">
@@ -247,7 +248,7 @@ export function AdminSelectionTabs({
           >
             <div className="pt-3 flex flex-col gap-3">
               {/* Subtle Divider */}
-              <div className={`h-px w-full mx-auto opacity-30 ${!isDark ? 'bg-primary' : 'bg-white'}`} />
+              <div className="h-px w-full mx-auto opacity-30 bg-border-subtle" />
 
               <div>
                 <Stack gap="sm">

@@ -1,7 +1,6 @@
 import type { FC } from 'react';
 import { Check, X, Brain } from 'lucide-react';
 import DOMPurify from 'dompurify';
-import { useTheme } from '../../context/ThemeContext';
 import { computeAnswerStatus } from '../../utils/examStateCalculator';
 import type { Question, AttemptAnswer } from '../../types/exam.types';
 
@@ -22,7 +21,6 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
   visualNode,
   diagramNode,
 }) => {
-  const { isDark } = useTheme();
   const { status, isCorrect } = computeAnswerStatus(answer);
 
   return (
@@ -89,7 +87,7 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
           else if (isUserChoice && !isCorrect) stateClass = 'bg-danger/10 border-danger/20 text-danger font-bold';
 
           return (
-            <div key={label} className={`p-4 rounded-[14px] border-2 flex items-center justify-between text-[14px] ${stateClass} ${isDark ? '' : 'ancient-3d-lift'}`}>
+            <div key={label} className={`p-4 rounded-[14px] border-2 flex items-center justify-between text-[14px] ${stateClass}`}>
               <span
                 className="line-clamp-2 leading-relaxed flex-1"
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(optionText) }}
@@ -101,9 +99,7 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
         })}
       </div>
 
-      <div className={`sm:ml-16 p-8 rounded-[20px] border relative overflow-hidden ${
-        isDark ? 'bg-primary/5 border-primary/10' : 'ancient-card !border-primary/20 !shadow-[3px_4px_0px_rgba(105,62,15,0.5)]'
-      }`}>
+      <div className="sm:ml-16 p-8 rounded-[20px] border relative overflow-hidden bg-primary/5 border-primary/10 shadow-sm">
         <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
         <div className="flex items-center gap-3 mb-2">
           <Brain size={18} className="text-primary" />

@@ -17,7 +17,7 @@ interface TopicListItemProps {
   onMoveDown: () => void
   isFirst: boolean
   isLast: boolean
-  isDark: boolean
+  isDark?: boolean
 }
 
 export const TopicListItem = React.memo(function TopicListItem({
@@ -31,7 +31,6 @@ export const TopicListItem = React.memo(function TopicListItem({
   onMoveDown,
   isFirst,
   isLast,
-  isDark,
 }: TopicListItemProps) {
   return (
     <motion.div
@@ -39,22 +38,16 @@ export const TopicListItem = React.memo(function TopicListItem({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className={`group flex items-center gap-3 p-4 rounded-2xl border transition-all ${
-        !isDark
-          ? 'bg-white/60 border-primary/15 hover:border-primary/40 hover:bg-[var(--ancient-cream)]'
-          : 'bg-card-bg/50 border-border-subtle/40 hover:border-primary/30'
-      }`}
+      className="group flex items-center gap-3 p-4 rounded-2xl border transition-all bg-card-bg/50 border-border-subtle/40 hover:border-primary/30"
     >
-      <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
-        !isDark ? 'bg-primary/10 text-primary' : 'bg-primary/20 text-primary'
-      }`}>
+      <div className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black bg-primary/20 text-primary">
         {index + 1}
       </div>
 
       <GripVertical size={14} className="text-text-secondary opacity-30 flex-shrink-0" />
 
       <div className="flex-1 min-w-0">
-        <p className={`font-bold text-sm truncate ${!isDark ? 'text-[var(--ancient-brown-deep)]' : 'text-text-primary'}`}>
+        <p className="font-bold text-sm truncate text-text-primary">
           {topic.title_en || 'Untitled Topic'}
         </p>
         {topic.title_te && (
@@ -106,7 +99,7 @@ export const TopicListItem = React.memo(function TopicListItem({
         <button
           onClick={e => { e.stopPropagation(); onPreview() }}
           aria-label="Preview topic"
-          className="p-1.5 rounded-lg hover:bg-primary/10 text-[#0F766E] dark:text-[#2DD4BF] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="p-1.5 rounded-lg hover:bg-primary/10 text-teal-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           title="Preview Topic"
         >
           <BookOpen size={14} />

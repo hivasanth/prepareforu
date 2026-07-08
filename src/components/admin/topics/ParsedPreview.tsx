@@ -8,10 +8,10 @@ import { FormattedBodyText } from '../../common/FormattedBodyText'
 interface ParsedPreviewProps {
   sections: TopicSection[]
   lang: 'en' | 'te'
-  isDark: boolean
+  isDark?: boolean
 }
 
-export function ParsedPreview({ sections, lang, isDark }: ParsedPreviewProps) {
+export function ParsedPreview({ sections, lang }: ParsedPreviewProps) {
   if (sections.length === 0) return null
 
   const totalCards = sections.reduce((s, sec) => s + sec.items.length, 0)
@@ -35,17 +35,11 @@ export function ParsedPreview({ sections, lang, isDark }: ParsedPreviewProps) {
           return (
             <div
               key={si}
-              className={`rounded-2xl border overflow-hidden ${
-                !isDark ? 'border-primary/15' : 'border-border-subtle/40'
-              }`}
+              className="rounded-2xl border overflow-hidden border-border-subtle/40"
             >
               {/* Section header */}
-              <div className={`px-4 py-2.5 flex items-center gap-2 ${
-                !isDark ? 'bg-primary/8' : 'bg-primary/10'
-              }`}>
-                <span className={`text-[10px] font-black uppercase tracking-widest ${
-                  !isDark ? 'text-primary font-cinzel' : 'text-primary'
-                }`}>
+              <div className="px-4 py-2.5 flex items-center gap-2 bg-primary/10">
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
                   {label || 'Section ' + (si + 1)}
                 </span>
                 <Badge variant="default" className="!text-[8px] !py-0 !px-1.5">
@@ -54,14 +48,14 @@ export function ParsedPreview({ sections, lang, isDark }: ParsedPreviewProps) {
               </div>
 
               {/* Cards */}
-              <div className={`divide-y ${!isDark ? 'divide-primary/10' : 'divide-border-subtle/30'}`}>
+              <div className="divide-y divide-border-subtle/30">
                 {sec.items.map((item, ii) => {
                   const heading = lang === 'en' ? item.heading_en : item.heading_te
                   const body = lang === 'en' ? item.body_en : item.body_te
                   return (
-                    <div key={ii} className={`px-4 py-2.5 ${!isDark ? 'bg-white/60' : 'bg-hover-bg/20'}`}>
+                    <div key={ii} className="px-4 py-2.5 bg-hover-bg/20">
                       {heading && (
-                        <p className={`text-xs font-bold ${!isDark ? 'text-[#2D1505]' : 'text-text-primary'}`}>
+                        <p className="text-xs font-bold text-text-primary">
                           {heading}
                         </p>
                       )}

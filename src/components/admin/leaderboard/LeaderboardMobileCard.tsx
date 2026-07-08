@@ -1,6 +1,5 @@
 import { format, parseISO } from 'date-fns'
 import { Clock, BarChart2, Target, Calendar } from 'lucide-react'
-import { useTheme } from '../../../context/ThemeContext'
 import { Badge } from '../../common/AntigravityUI'
 import { formatDuration } from '../../../lib/leaderboardUtils'
 import { RankBadge } from './RankBadge'
@@ -11,16 +10,12 @@ interface LeaderboardMobileCardProps {
 }
 
 export function LeaderboardMobileCard({ entry }: LeaderboardMobileCardProps) {
-  const { isDark } = useTheme()
-
   return (
-    <div
-      className={`${!isDark ? 'ancient-card shadow-md border-[var(--ancient-gold)]/10' : 'bg-card-bg border border-border-subtle shadow-sm'} rounded-2xl p-4 flex flex-col gap-4 active:scale-[0.98] transition-all`}
-    >
-      <div className={`flex items-center justify-between border-b pb-3 ${!isDark ? 'border-[var(--ancient-gold)]/10' : 'border-border-subtle'}`}>
+    <div className="bg-card-bg border border-border-subtle shadow-sm rounded-2xl p-4 flex flex-col gap-4 active:scale-[0.98] transition-all">
+      <div className="flex items-center justify-between border-b pb-3 border-border-subtle">
         <div className="flex items-center gap-3">
           <RankBadge rank={entry.rank || 0} />
-          <span className={`text-sm font-black uppercase tracking-tight truncate max-w-[150px] ${!isDark ? 'font-garamond text-base text-[var(--ancient-brown-deep)]' : 'text-text-primary'}`}>
+          <span className="text-sm font-black uppercase tracking-tight truncate max-w-[150px] text-text-primary">
             {entry.user_name}
           </span>
         </div>

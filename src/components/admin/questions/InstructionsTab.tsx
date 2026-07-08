@@ -1,5 +1,5 @@
 import { Sparkles, Plus, CheckCircle2, Copy, Check, Edit3, Trash2 } from 'lucide-react'
-import { Button, IconButton, IconBadge, useTheme } from '../../common/AntigravityUI'
+import { Button, IconButton, IconBadge } from '../../common/AntigravityUI'
 import type { PromptTemplate } from '../../../hooks/useBulkUpload'
 
 interface InstructionsTabProps {
@@ -16,11 +16,9 @@ interface InstructionsTabProps {
 export function InstructionsTab({
   promptBlocks, subjectName, localCopied, copiedPromptId, onCopy, onCreateNew, onEdit, onDelete
 }: InstructionsTabProps) {
-  const { isDark } = useTheme()
-
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="bg-primary/5 dark:bg-primary/5 border border-primary/20 dark:border-primary/10 p-6 rounded-3xl">
+      <div className="bg-primary/5 border border-primary/20 p-6 rounded-3xl">
         <div className="flex items-center gap-3 mb-4">
           <IconBadge
             icon={Sparkles}
@@ -48,7 +46,7 @@ export function InstructionsTab({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="bg-card-bg border border-border-subtle/80 dark:border-border-subtle p-4 rounded-2xl group hover:border-primary/30 transition-all relative shadow-sm">
+            <div className="bg-card-bg border border-border-subtle p-4 rounded-2xl group hover:border-primary/30 transition-all relative shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-black text-primary uppercase tracking-tighter">System Default</span>
                 <CheckCircle2 className="w-3 h-3 text-green-500" />
@@ -68,7 +66,7 @@ export function InstructionsTab({
             </div>
 
             {promptBlocks.map(block => (
-              <div key={block.id} className="bg-card-bg border border-border-subtle/80 dark:border-border-subtle p-4 rounded-2xl group hover:border-secondary/30 transition-all shadow-sm">
+              <div key={block.id} className="bg-card-bg border border-border-subtle p-4 rounded-2xl group hover:border-secondary/30 transition-all shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-black text-secondary uppercase tracking-tighter">{block.topic_name}</span>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -1,6 +1,5 @@
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, Send, Trash2 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
 
 interface QuestionNavigatorProps {
   isFirstQuestion: boolean;
@@ -14,40 +13,23 @@ interface QuestionNavigatorProps {
   onSkip?: () => void;
 }
 
+const baseBtn = 'flex items-center gap-2 uppercase tracking-widest shadow-sm transition-all font-black rounded-[13px]';
+
 const NavButton: FC<{
   onClick: () => void;
   disabled?: boolean;
   variant?: 'primary' | 'secondary' | 'danger';
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }> = ({ onClick, disabled = false, variant = 'primary', children, className = '' }) => {
-  const { isDark } = useTheme();
-
-  if (!isDark) {
-    const cls = variant === 'danger' ? 'ancient-btn-danger' : variant === 'secondary' ? 'ancient-btn-secondary' : 'ancient-btn-primary';
-    const sizing = variant === 'primary'
-      ? 'px-8 py-3 text-[13px] rounded-[13px] gap-2'
-      : 'px-6 py-2.5 text-xs rounded-[13px] gap-2';
-    return (
-      <button
-        onClick={onClick}
-        disabled={disabled}
-        className={`${cls} ${sizing} ${disabled ? 'opacity-40 pointer-events-none' : ''} ${className}`}
-      >
-        {children}
-      </button>
-    );
-  }
-
-  const base = 'flex items-center gap-2 uppercase tracking-widest shadow-sm transition-all font-black rounded-[13px]';
   const variants = {
-    primary: `${base} px-8 py-3 text-[13px] bg-primary text-white shadow-primary/20 hover:bg-primary/90 ${disabled ? 'opacity-40 pointer-events-none' : ''}`,
-    secondary: `${base} px-6 py-2.5 text-xs bg-hover-bg text-text-secondary border border-border-subtle ${disabled ? 'opacity-40 pointer-events-none' : 'hover:bg-hover-bg/80'}`,
-    danger: `${base} px-6 py-2.5 text-xs bg-danger text-white shadow-danger/20 hover:bg-danger/90 ${disabled ? 'opacity-40 pointer-events-none' : ''}`,
+    primary: `${baseBtn} px-8 py-3 text-[13px] bg-primary text-white shadow-primary/20 hover:bg-primary/90 ${disabled ? 'opacity-40 pointer-events-none' : ''}`,
+    secondary: `${baseBtn} px-6 py-2.5 text-xs bg-hover-bg text-text-secondary border border-border-subtle ${disabled ? 'opacity-40 pointer-events-none' : 'hover:bg-hover-bg/80'}`,
+    danger: `${baseBtn} px-6 py-2.5 text-xs bg-danger text-white shadow-danger/20 hover:bg-danger/90 ${disabled ? 'opacity-40 pointer-events-none' : ''}`,
   };
 
   return (
-    <button onClick={onClick} disabled={disabled} className={variants[variant]}>
+    <button onClick={onClick} disabled={disabled} className={`${variants[variant]} ${className}`}>
       {children}
     </button>
   );
@@ -111,30 +93,7 @@ export const MobileActionBar: FC<{
   onClear: () => void;
   onSubmit: () => void;
 }> = ({ isFirstQuestion, isLastQuestion, hasAnswer, canProceed, onPrev, onNext, onClear, onSubmit }) => {
-  const { isDark } = useTheme();
   const base = 'flex flex-col items-center justify-center gap-0.5 text-[10px] font-black h-full rounded-[13px] transition-all';
-
-  if (!isDark) {
-    return (
-      <footer className="md:hidden h-16 bg-card-bg border-t border-border-subtle grid grid-cols-3 gap-1 p-2">
-        <button onClick={onPrev} disabled={isFirstQuestion} className={`${base} ancient-btn-secondary ${isFirstQuestion ? 'opacity-40 pointer-events-none' : ''}`}>
-          <ChevronLeft size={18} />
-          PREV
-        </button>
-        <button onClick={onClear} disabled={!hasAnswer} className={`${base} ancient-btn-secondary ${!hasAnswer ? 'opacity-40 pointer-events-none' : ''}`}>
-          <Trash2 size={18} />
-          CLEAR
-        </button>
-        <button
-          onClick={isLastQuestion ? onSubmit : onNext}
-          disabled={!isLastQuestion && !canProceed}
-          className={`${base} ${isLastQuestion ? 'ancient-btn-danger' : 'ancient-btn-primary'} ${!isLastQuestion && !canProceed ? 'opacity-40 pointer-events-none' : ''}`}
-        >
-          {isLastQuestion ? <><Send size={18} />FINISH</> : <><ChevronRight size={18} />NEXT</>}
-        </button>
-      </footer>
-    );
-  }
 
   return (
     <footer className="md:hidden h-16 bg-card-bg border-t border-border-subtle grid grid-cols-3 gap-1 p-2">

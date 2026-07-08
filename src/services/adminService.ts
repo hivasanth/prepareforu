@@ -63,6 +63,32 @@ export const adminService = {
     }
   },
   /**
+   * Fetches papers for a given exam (no role enforcement — for UI components).
+   */
+  async fetchPapersByExam(examId: string): Promise<ExamPaper[]> {
+    const { data, error } = await supabase
+      .from('exam_papers')
+      .select('*')
+      .eq('exam_id', examId)
+      .order('display_order', { ascending: true });
+    if (error) throw error;
+    return (data || []) as ExamPaper[];
+  },
+
+  /**
+   * Fetches subjects for a given paper (no role enforcement — for UI components).
+   */
+  async fetchSubjectsByPaper(paperId: string): Promise<ExamSubject[]> {
+    const { data, error } = await supabase
+      .from('exam_subjects')
+      .select('*')
+      .eq('paper_id', paperId)
+      .order('display_order', { ascending: true });
+    if (error) throw error;
+    return (data || []) as ExamSubject[];
+  },
+
+  /**
    * Fetches the global configuration for a specific exam ID.
    */
   async fetchExamConfig(

@@ -6,10 +6,21 @@ import { parseHeading } from '../../../utils/parseOutlineText'
 
 interface AdminTopicPreviewRendererProps {
   topic: StudyTopic
-  isDark: boolean
+  isDark?: boolean
 }
 
-export function AdminTopicPreviewRenderer({ topic, isDark }: AdminTopicPreviewRendererProps) {
+function tagBadge(tag: string) {
+  const colors: Record<string, string> = {
+    IMP: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    TIP: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    ALERT: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+    KEY: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  }
+  const cls = colors[tag] || 'bg-sky-500/10 text-sky-500 border-sky-500/20'
+  return `inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border leading-none ${cls}`
+}
+
+export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererProps) {
   const [lang, setLang] = useState<'en' | 'te'>('en')
 
   const title   = lang === 'en' ? topic.title_en   : (topic.title_te   || topic.title_en)
@@ -50,17 +61,13 @@ export function AdminTopicPreviewRenderer({ topic, isDark }: AdminTopicPreviewRe
         )}
       </div>
 
-      <div className={`p-6 rounded-[20px] border space-y-6 ${
-        !isDark ? 'bg-white border-primary/10 shadow-sm' : 'bg-card-bg border-border-subtle/40'
-      }`}>
+      <div className="p-6 rounded-[20px] border space-y-6 bg-card-bg border-border-subtle/40">
         <div className="pb-5 border-b border-border-subtle/30 space-y-2">
           <div className="flex items-center gap-2.5">
-            <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black ${
-              !isDark ? 'bg-primary/10 text-primary' : 'bg-primary/20 text-primary'
-            }`}>
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black bg-primary/20 text-primary">
               {topic.display_order}
             </span>
-            <h3 className={`text-base font-black ${!isDark ? 'font-cinzel text-[#2D1505]' : 'text-text-primary'}`}>
+            <h3 className="text-base font-black text-text-primary">
               {title}
             </h3>
           </div>
@@ -77,9 +84,7 @@ export function AdminTopicPreviewRenderer({ topic, isDark }: AdminTopicPreviewRe
             sections.map((sec, i) => (
               <div key={i} className="space-y-2">
                 {sec.label_en || sec.label_te ? (
-                  <h4 className={`text-[10px] font-black uppercase tracking-widest ${
-                    !isDark ? 'text-primary font-cinzel' : 'text-primary'
-                  }`}>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">
                     {lang === 'en' ? sec.label_en : sec.label_te}
                   </h4>
                 ) : null}
@@ -98,38 +103,22 @@ export function AdminTopicPreviewRenderer({ topic, isDark }: AdminTopicPreviewRe
                           key={ii}
                           className={`flex gap-3 p-4 rounded-2xl border ${
                             isTableCard ? 'col-span-1 sm:col-span-2' : ''
-                          } ${
-                            !isDark
-                              ? 'bg-[#FFFAF2]/50 border-primary/10'
-                              : 'bg-hover-bg/25 border-border-subtle/30'
-                          }`}
+                          } bg-hover-bg/25 border-border-subtle/30`}
                         >
                           {item.icon ? (
                             <span className="text-xl flex-shrink-0 leading-none">{item.icon}</span>
                           ) : parsed.numberPrefix ? (
-                            <span className={`flex-shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 h-5 text-[9px] font-black tracking-wider rounded-md border leading-none ${
-                              !isDark 
-                                ? 'bg-primary/5 border-primary/20 text-primary' 
-                                : 'bg-white/5 border-white/10 text-text-primary'
-                            }`}>
+                            <span className={`flex-shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 h-5 text-[9px] font-black tracking-wider rounded-md border leading-none bg-primary/10 border-primary/20 text-primary`}>
                               {parsed.numberPrefix}
                             </span>
                           ) : parsed.bulletPrefix ? (
-                            <span className={`flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full ${
-                              !isDark ? 'bg-primary border border-primary/50' : 'bg-primary'
-                            }`} />
+                            <span className="flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
                           ) : null}
                           <div className="min-w-0 flex-1">
                             {parsed.text && (
                               <div className="flex flex-wrap items-center gap-1.5 mb-1">
                                 {parsed.tag && (
-                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border leading-none ${
-                                    parsed.tag === 'IMP' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' :
-                                    parsed.tag === 'TIP' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' :
-                                    parsed.tag === 'ALERT' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20' :
-                                    parsed.tag === 'KEY' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' :
-                                    'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
-                                  }`}>
+                                  <span className={tagBadge(parsed.tag)}>
                                     {parsed.tag}
                                   </span>
                                 )}
@@ -156,11 +145,7 @@ export function AdminTopicPreviewRenderer({ topic, isDark }: AdminTopicPreviewRe
                       return heading ? (
                         <span
                           key={ii}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border ${
-                            !isDark
-                              ? 'bg-[#FDF5E2] border-primary/20 text-primary'
-                              : 'bg-primary/10 border-primary/20 text-primary'
-                          }`}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border bg-primary/10 border-primary/20 text-primary"
                         >
                           {item.icon && <span>{item.icon}</span>}
                           {heading}
@@ -181,13 +166,7 @@ export function AdminTopicPreviewRenderer({ topic, isDark }: AdminTopicPreviewRe
                             {parsed.text && (
                               <div className="flex flex-wrap items-center gap-1 mb-0.5">
                                 {parsed.tag && (
-                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border leading-none ${
-                                    parsed.tag === 'IMP' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' :
-                                    parsed.tag === 'TIP' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' :
-                                    parsed.tag === 'ALERT' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20' :
-                                    parsed.tag === 'KEY' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' :
-                                    'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
-                                  }`}>
+                                  <span className={tagBadge(parsed.tag)}>
                                     {parsed.tag}
                                   </span>
                                 )}
@@ -206,11 +185,7 @@ export function AdminTopicPreviewRenderer({ topic, isDark }: AdminTopicPreviewRe
                     })}
                   </ul>
                 ) : sec.type === 'quick_summary' ? (
-                  <div className={`rounded-xl p-3.5 border space-y-2 ${
-                    !isDark
-                      ? 'bg-[#FFFAF2]/80 border-primary/15'
-                      : 'bg-hover-bg/20 border-border-subtle/30'
-                  }`}>
+                  <div className="rounded-xl p-3.5 border space-y-2 bg-hover-bg/20 border-border-subtle/30">
                     {sec.items?.map((item, ii) => {
                       const headingRaw = lang === 'en' ? item.heading_en : item.heading_te
                       const body       = lang === 'en' ? item.body_en    : item.body_te
@@ -220,13 +195,7 @@ export function AdminTopicPreviewRenderer({ topic, isDark }: AdminTopicPreviewRe
                           {parsed.text && (
                             <div className="flex flex-wrap items-center gap-1 mb-1.5">
                               {parsed.tag && (
-                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border leading-none ${
-                                  parsed.tag === 'IMP' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' :
-                                  parsed.tag === 'TIP' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' :
-                                  parsed.tag === 'ALERT' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20' :
-                                  parsed.tag === 'KEY' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' :
-                                  'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
-                                }`}>
+                                <span className={tagBadge(parsed.tag)}>
                                   {parsed.tag}
                                 </span>
                               )}
@@ -244,11 +213,7 @@ export function AdminTopicPreviewRenderer({ topic, isDark }: AdminTopicPreviewRe
                     })}
                   </div>
                 ) : sec.type === 'memory_trick' ? (
-                  <div className={`rounded-xl p-3.5 border-l-4 text-xs ${
-                    !isDark
-                      ? 'bg-[#FFF8E7] border-secondary text-[#3D1F08]'
-                      : 'bg-primary/5 border-primary text-text-primary'
-                  }`}>
+                  <div className="rounded-xl p-3.5 border-l-4 text-xs bg-primary/5 border-primary text-text-primary">
                     {sec.items?.map((item, ii) => {
                       const headingRaw = lang === 'en' ? item.heading_en : item.heading_te
                       const body       = lang === 'en' ? item.body_en    : item.body_te
@@ -259,11 +224,11 @@ export function AdminTopicPreviewRenderer({ topic, isDark }: AdminTopicPreviewRe
                             <div className="flex flex-wrap items-center gap-1 mb-0.5">
                               {parsed.tag && (
                                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border leading-none ${
-                                  parsed.tag === 'IMP' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
-                                  parsed.tag === 'TIP' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                                  parsed.tag === 'ALERT' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20' :
-                                  parsed.tag === 'KEY' ? 'bg-purple-500/10 text-purple-600 border-purple-500/20' :
-                                  'bg-sky-500/10 text-sky-600 border-sky-500/20'
+                                  parsed.tag === 'IMP' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                  parsed.tag === 'TIP' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                  parsed.tag === 'ALERT' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                  parsed.tag === 'KEY' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
+                                  'bg-sky-500/10 text-sky-500 border-sky-500/20'
                                 }`}>
                                   {parsed.tag}
                                 </span>

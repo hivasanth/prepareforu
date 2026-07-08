@@ -1,5 +1,4 @@
 import type { FC, ReactNode } from 'react';
-import { useTheme } from '../../context/ThemeContext';
 
 interface ExamHeaderProps {
   title: string;
@@ -16,12 +15,8 @@ export const ExamHeader: FC<ExamHeaderProps> = ({
   leftActions,
   rightActions,
 }) => {
-  const { isDark } = useTheme();
-
   return (
-    <header className={`h-[60px] flex items-center justify-between px-4 sm:px-6 z-50 shadow-sm transition-colors duration-300 mx-4 sm:mx-6 max-sm:mx-[10px] mt-4 mb-2 max-sm:mt-[10px] max-sm:mb-[6px] rounded-2xl max-sm:rounded-xl ${
-      isDark ? 'bg-card-bg border-b border-border-subtle' : 'ancient-header'
-    }`}>
+    <header className="h-[60px] flex items-center justify-between px-4 sm:px-6 z-50 shadow-sm transition-colors duration-300 mx-4 sm:mx-6 max-sm:mx-[10px] mt-4 mb-2 max-sm:mt-[10px] max-sm:mb-[6px] rounded-2xl max-sm:rounded-xl bg-card-bg border-b border-border-subtle">
       <div className="flex items-center gap-4 min-w-0 flex-1">
         {leftActions}
         <div className="hidden sm:block min-w-0 flex-1 max-w-[420px]">

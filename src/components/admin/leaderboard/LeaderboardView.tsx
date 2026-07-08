@@ -3,7 +3,6 @@ import type { LeaderboardEntry } from '../../../types/leaderboard.types'
 import { formatDuration } from '../../../lib/leaderboardUtils'
 import { RankBadge } from './RankBadge'
 import { format, parseISO } from 'date-fns'
-import { useTheme } from '../../../context/ThemeContext'
 import { LeaderboardMobileCard } from './LeaderboardMobileCard'
 import { LeaderboardTabletCard } from './LeaderboardTabletCard'
 
@@ -12,7 +11,6 @@ interface LeaderboardViewProps {
 }
 
 export const LeaderboardView = React.memo(function LeaderboardView({ data }: LeaderboardViewProps) {
-  const { isDark } = useTheme()
   const topThree = data.slice(0, 3)
 
   return (
@@ -65,27 +63,27 @@ export const LeaderboardView = React.memo(function LeaderboardView({ data }: Lea
         </div>
 
         {/* Full Table (md+) */}
-        <div className={`overflow-hidden ${!isDark ? 'ancient-card shadow-2xl rounded-[40px] border-[var(--ancient-gold)]/20' : 'bg-card-bg border border-border-subtle rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border-b-8 border-b-primary/20'}`}>
+        <div className="overflow-hidden bg-card-bg border border-border-subtle rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border-b-8 border-b-primary/20">
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full border-collapse min-w-[600px] lg:min-w-[800px] xl:min-w-[1000px]">
               <thead className="sticky top-0 z-20">
-                <tr className={`${!isDark ? 'bg-[var(--ancient-cream)]/40 border-b-[var(--ancient-gold)]/20' : 'bg-card-bg/80 border-border-subtle'} backdrop-blur-xl border-b`}>
-                  <th scope="col" className={`px-6 md:px-8 lg:px-10 py-5 md:py-6 text-left text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] ${!isDark ? 'font-cinzel text-[var(--ancient-brown-deep)]' : 'text-text-secondary'}`}>
+                <tr className="bg-card-bg/80 border-border-subtle backdrop-blur-xl border-b">
+                  <th scope="col" className="px-6 md:px-8 lg:px-10 py-5 md:py-6 text-left text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-text-secondary">
                     <span className="md:hidden">#</span>
                     <span className="hidden md:inline">Rank</span>
                   </th>
-                  <th scope="col" className={`px-6 md:px-8 lg:px-10 py-5 md:py-6 text-left text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] ${!isDark ? 'font-cinzel text-[var(--ancient-brown-deep)]' : 'text-text-secondary'}`}>
+                  <th scope="col" className="px-6 md:px-8 lg:px-10 py-5 md:py-6 text-left text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-text-secondary">
                     <span className="md:hidden lg:hidden">User</span>
                     <span className="hidden lg:inline">Participant</span>
                   </th>
-                  <th scope="col" className={`px-4 md:px-6 lg:px-8 py-5 md:py-6 text-center text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] ${!isDark ? 'font-cinzel text-[var(--ancient-brown-deep)]' : 'text-text-secondary'}`}>
+                  <th scope="col" className="px-4 md:px-6 lg:px-8 py-5 md:py-6 text-center text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-text-secondary">
                     Score
                   </th>
-                  <th scope="col" className={`px-4 md:px-6 lg:px-8 py-5 md:py-6 text-center text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] ${!isDark ? 'font-cinzel text-[var(--ancient-brown-deep)]' : 'text-text-secondary'}`}>
+                  <th scope="col" className="px-4 md:px-6 lg:px-8 py-5 md:py-6 text-center text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-text-secondary">
                     <span className="md:hidden lg:hidden">Acc</span>
                     <span className="hidden lg:inline">Accuracy</span>
                   </th>
-                  <th scope="col" className={`px-4 md:px-6 lg:px-8 py-5 md:py-6 text-center text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] ${!isDark ? 'font-cinzel text-[var(--ancient-brown-deep)]' : 'text-text-secondary'}`}>
+                  <th scope="col" className="px-4 md:px-6 lg:px-8 py-5 md:py-6 text-center text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-text-secondary">
                     <span className="md:hidden lg:hidden">Time</span>
                     <span className="hidden lg:inline">Duration</span>
                   </th>
@@ -99,16 +97,16 @@ export const LeaderboardView = React.memo(function LeaderboardView({ data }: Lea
               </thead>
               <tbody className="divide-y divide-border-subtle/20">
                 {data.map((entry) => (
-                  <tr key={entry.user_id + entry.exam_id + (entry.paper_id || '')} className={`group transition-colors ancient-3d-lift ${!isDark ? 'hover:bg-[var(--ancient-cream)]/40' : 'hover:bg-primary/[0.02]'}`}>
+                  <tr key={entry.user_id + entry.exam_id + (entry.paper_id || '')} className="group transition-colors hover:bg-primary/[0.02]">
                     <td className="px-6 md:px-8 lg:px-10 py-4 md:py-5">
                       <RankBadge rank={entry.rank || 0} />
                     </td>
                     <td className="px-6 md:px-8 lg:px-10 py-4 md:py-5">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl flex items-center justify-center text-[10px] lg:text-xs font-black shadow-lg group-hover:rotate-12 transition-transform ${!isDark ? 'ancient-icon-badge !bg-[var(--ancient-gold)] text-white shadow-[var(--ancient-gold)]/20' : 'bg-gradient-to-br from-primary to-primary-dark text-white shadow-primary/20'}`}>
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl flex items-center justify-center text-[10px] lg:text-xs font-black shadow-lg group-hover:rotate-12 transition-transform bg-gradient-to-br from-primary to-primary-dark text-white shadow-primary/20">
                           {entry.user_name[0].toUpperCase()}
                         </div>
-                        <span className={`text-[11px] lg:text-sm font-black uppercase tracking-tight group-hover:text-primary transition-colors truncate max-w-[120px] lg:max-w-[200px] ${!isDark ? 'font-garamond lg:text-base text-[var(--ancient-brown-deep)]' : 'text-text-primary'}`}>
+                        <span className="text-[11px] lg:text-sm font-black uppercase tracking-tight group-hover:text-primary transition-colors truncate max-w-[120px] lg:max-w-[200px] text-text-primary">
                           {entry.user_name}
                         </span>
                         <span className="hidden xl:inline text-[10px] font-bold font-mono text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity">

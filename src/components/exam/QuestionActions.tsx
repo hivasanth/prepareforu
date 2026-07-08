@@ -1,6 +1,5 @@
 import type { FC } from 'react';
 import { Eye, Globe } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
 
 interface QuestionActionsProps {
   displayLang: 'en' | 'te';
@@ -15,14 +14,10 @@ export const QuestionActions: FC<QuestionActionsProps> = ({
   isMarkedForReview,
   onToggleReview,
 }) => {
-  const { isDark } = useTheme();
-
   return (
     <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
       <div
-        className={`flex items-center gap-1 p-1 rounded-xl ${
-          isDark ? 'bg-hover-bg/30' : 'bg-[#F5EAD4] border-[2px] border-[#A87828] shadow-[2px_2px_0px_#8B5A10]'
-        }`}
+        className="flex items-center gap-1 p-1 rounded-xl bg-hover-bg/30"
         role="radiogroup"
         aria-label="Language"
       >
@@ -34,9 +29,7 @@ export const QuestionActions: FC<QuestionActionsProps> = ({
               onClick={() => onToggleLang(l)}
               className={`flex items-center gap-1 px-3 py-2.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
                 isActive
-                  ? isDark
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'bg-primary border-[1.5px] border-[#A87828] text-white shadow-[1px_1px_0px_#8B5A10]'
+                  ? 'bg-primary text-white shadow-sm'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
               role="radio"
@@ -51,6 +44,7 @@ export const QuestionActions: FC<QuestionActionsProps> = ({
 
       <button
         onClick={onToggleReview}
+        aria-pressed={isMarkedForReview}
         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all border-2 ${
           isMarkedForReview
             ? 'bg-purple-500/10 text-purple-500 border-purple-500/30 shadow-sm'

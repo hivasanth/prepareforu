@@ -14,7 +14,7 @@ interface LangInputPanelProps {
   parsed: TopicSection[] | null
   onParse: () => void
   onCopyPrompt: () => void
-  isDark: boolean
+  isDark?: boolean
 }
 
 export function LangInputPanel({
@@ -26,15 +26,10 @@ export function LangInputPanel({
   parsed,
   onParse,
   onCopyPrompt,
-  isDark,
 }: LangInputPanelProps) {
   const isEn = lang === 'en'
 
-  const taClass = `w-full text-sm rounded-2xl px-4 py-3 border resize-none outline-none transition-colors leading-relaxed ${
-    !isDark
-      ? 'bg-white border-primary/20 text-[#3D1F08] focus:border-primary placeholder-[#C4A882]'
-      : 'bg-hover-bg border-border-subtle text-text-primary focus:border-primary placeholder-text-secondary'
-  }`
+  const taClass = 'w-full text-sm rounded-2xl px-4 py-3 border resize-none outline-none transition-colors leading-relaxed bg-hover-bg border-border-subtle text-text-primary focus:border-primary placeholder-text-secondary'
 
   return (
     <div className="space-y-4">
@@ -55,11 +50,7 @@ export function LangInputPanel({
           <div className="flex items-center gap-2">
             <button
               onClick={onCopyPrompt}
-              className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all shadow-sm ${
-                !isDark
-                  ? 'border-primary/20 text-primary hover:bg-primary/5 bg-white'
-                  : 'border-primary/30 text-primary hover:bg-primary/10 bg-hover-bg/30'
-              }`}
+              className="text-[10px] font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all shadow-sm border-primary/30 text-primary hover:bg-primary/10 bg-hover-bg/30"
               title="Copy the AI Structured Prompt Template to easily generate complete topics"
             >
               <Wand2 size={11} className="animate-pulse" />
@@ -67,9 +58,7 @@ export function LangInputPanel({
             </button>
             <button
               onClick={() => { onTextChange(isEn ? FORMAT_HINT : FORMAT_HINT_TE); }}
-              className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-colors ${
-                !isDark ? 'text-primary hover:bg-primary/10' : 'text-primary hover:bg-primary/10'
-              }`}
+              className="text-[10px] font-bold px-2 py-1 rounded-lg transition-colors text-primary hover:bg-primary/10"
             >
               {isEn ? 'Load Example' : 'ఉదాహరణను లోడ్ చేయి'}
             </button>
@@ -77,9 +66,7 @@ export function LangInputPanel({
         </div>
 
         {/* Format hint box */}
-        <div className={`text-[11px] leading-relaxed px-3 py-2.5 rounded-xl border space-y-1.5 ${
-          !isDark ? 'bg-[#FFFAF0] border-secondary/30 text-[#6B4A00]' : 'bg-primary/5 border-primary/20 text-text-secondary'
-        }`}>
+        <div className="text-[11px] leading-relaxed px-3 py-2.5 rounded-xl border space-y-1.5 bg-primary/5 border-primary/20 text-text-secondary">
           <p>
             <span className="font-black">{isEn ? 'Structure: ' : 'నిర్మాణం: '}</span>
             {isEn
@@ -118,9 +105,7 @@ export function LangInputPanel({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className={`p-4 rounded-2xl text-sm text-center border ${
-                !isDark ? 'bg-red-50 text-red-700 border-red-200' : 'bg-danger/10 text-danger border-danger/20'
-              }`}
+              className="p-4 rounded-2xl text-sm text-center border bg-danger/10 text-danger border-danger/20"
             >
               {isEn ? (
                 <>Nothing parsed. Check your format — use <code>1.</code> for headings and <code>1.1</code> for sub-headings.</>
@@ -129,7 +114,7 @@ export function LangInputPanel({
               )}
             </motion.div>
           ) : (
-            <ParsedPreview sections={parsed} lang={lang} isDark={isDark} />
+            <ParsedPreview sections={parsed} lang={lang} />
           )
         )}
       </AnimatePresence>

@@ -45,10 +45,10 @@ export const StatusBoard: FC<StatusBoardProps> = ({
       <div className="mt-8 p-4 rounded-2xl bg-app-bg border border-border-subtle transition-colors">
         <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-widest mb-4 opacity-60">Indicator Legend</h4>
         <div className="flex flex-col gap-3">
-          <LegendItem color="bg-[#22C55E]" label={`Current${stats ? ` (1)` : ''}`} />
-          <LegendItem color="bg-[#F59E0B]" label={`Answered${stats ? ` (${stats.answered})` : ''}`} />
-          <LegendItem color="bg-[#8B5CF6]" label={`Marked for Review${stats ? ` (${stats.marked})` : ''}`} />
-          <LegendItem color="bg-[#3B82F6]" label={`Skipped${stats ? ` (${stats.skipped})` : ''}`} />
+          <LegendItem color="bg-success" label={`Current${stats ? ` (1)` : ''}`} />
+          <LegendItem color="bg-warning" label={`Answered${stats ? ` (${stats.answered})` : ''}`} />
+          <LegendItem color="bg-primary" label={`Marked for Review${stats ? ` (${stats.marked})` : ''}`} />
+          <LegendItem color="bg-info" label={`Skipped${stats ? ` (${stats.skipped})` : ''}`} />
           <LegendItemNotVisited label={`Not Visited${stats ? ` (${stats.notVisited})` : ''}`} />
         </div>
       </div>
@@ -77,7 +77,7 @@ const LegendItem: FC<{ color: string; label: string }> = ({ color, label }) => (
 
 const LegendItemNotVisited: FC<{ label: string }> = ({ label }) => (
   <div className="flex items-center gap-3 text-xs font-bold text-text-secondary uppercase tracking-widest">
-    <div className="w-3.5 h-3.5 rounded-md border border-[#64748B] bg-transparent" />
+    <div className="w-3.5 h-3.5 rounded-md border border-border-subtle bg-transparent" />
     {label}
   </div>
 );

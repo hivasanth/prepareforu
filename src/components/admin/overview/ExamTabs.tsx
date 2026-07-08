@@ -1,4 +1,4 @@
-import { Tabs, useTheme } from '../../common/AntigravityUI'
+import { Tabs } from '../../common/AntigravityUI'
 
 export const EXAM_TABS = [
   { label: 'ALL', id: 'all' },
@@ -19,7 +19,6 @@ export function ExamTabs({
   hideAll = false,
   className = ""
 }: ExamTabsProps) {
-  const { isDark } = useTheme();
   const tabs = hideAll ? EXAM_TABS.filter(t => t.id !== 'all') : EXAM_TABS
 
   return (
@@ -30,7 +29,6 @@ export function ExamTabs({
         onChange={setSelectedExam}
         variant="primary"
         className="w-full"
-        pillClassName={!isDark ? 'ancient-tab-pill' : ''}
       />
     </div>
   )

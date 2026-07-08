@@ -1,6 +1,5 @@
 import type { FC, ReactNode } from 'react';
 import { Globe } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
 import type { Question } from '../../types/exam.types';
 import { QuestionOptions } from './QuestionOptions';
 import { QuestionActions } from './QuestionActions';
@@ -32,17 +31,11 @@ export const QuestionCard: FC<QuestionCardProps> = ({
   visualNode,
   diagramNode,
 }) => {
-  const { isDark } = useTheme();
-
   return (
-    <div className={`${isDark ? 'bg-card-bg border border-border-subtle shadow-xl' : 'ancient-card'} rounded-[24px] relative overflow-hidden`}>
-      <div className={`p-4 md:p-6 border-b flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 ${
-        isDark ? 'border-border-subtle/50 bg-hover-bg/30' : ''
-      }`}>
+    <div className="bg-card-bg border border-border-subtle shadow-xl rounded-[24px] relative overflow-hidden">
+      <div className="p-4 md:p-6 border-b border-border-subtle/50 bg-hover-bg/30 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-lg ${
-          isDark ? 'bg-primary text-white shadow-primary/20' : 'ancient-icon-badge text-amber-400'
-        }`}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-lg bg-primary text-white shadow-primary/20">
             {index + 1}
           </div>
           <div>
@@ -106,14 +99,10 @@ export const QuestionInfoHeader: FC<{
   subjectName: string;
   difficulty: string;
 }> = ({ index, total, subjectName, difficulty }) => {
-  const { isDark } = useTheme();
-
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${
-          isDark ? 'bg-primary/10 text-primary border border-primary/20' : 'ancient-icon-badge text-amber-400'
-        }`}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-primary/10 text-primary border border-primary/20">
           Q{index + 1}
         </div>
         <div>

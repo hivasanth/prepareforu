@@ -1,6 +1,5 @@
 import type { FC, ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { useTheme } from '../../context/ThemeContext';
 
 interface ExamLayoutProps {
   children: ReactNode;
@@ -13,12 +12,9 @@ export const ExamLayout: FC<ExamLayoutProps> = ({
   children,
   showFullscreenPrompt,
   onRequestFullscreen,
-  fullscreenViolations
 }) => {
-  const { isDark } = useTheme();
-
   return (
-    <div className={`fixed inset-0 bg-app-bg flex flex-col select-none overflow-hidden transition-colors duration-300 ${!isDark ? 'light' : 'dark'}`}>
+    <div className="fixed inset-0 bg-app-bg flex flex-col select-none overflow-hidden transition-colors duration-300">
       {showFullscreenPrompt && onRequestFullscreen && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}

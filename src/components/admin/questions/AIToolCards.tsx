@@ -1,5 +1,5 @@
 import { Bot, Notebook, Sparkles } from 'lucide-react'
-import { IconBadge, useTheme } from '../../common/AntigravityUI'
+import { IconBadge } from '../../common/AntigravityUI'
 
 interface AIToolCardsProps {
   setActiveTab: (tab: 'generate' | 'instructions' | 'json' | 'preview') => void
@@ -16,25 +16,23 @@ const AI_TOOLS = [
   {
     name: 'Claude AI',
     description: 'Advanced prompt-based question generation',
-    bgColor: 'bg-[#D97757]',
+    bgColor: 'bg-secondary',
     icon: Bot,
     url: 'https://claude.ai',
   },
   {
     name: 'ChatGPT',
     description: 'Multi-format question generation from documents',
-    bgColor: 'bg-[#10a37f]',
+    bgColor: 'bg-success',
     icon: Sparkles,
     url: 'https://chatgpt.com',
   },
 ]
 
 export function AIToolCards({ setActiveTab }: AIToolCardsProps) {
-  const { isDark } = useTheme()
-
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-      <div className={`p-6 rounded-3xl border ${!isDark ? 'bg-[#FDF5E2]/80 border-[#B07A14]/20' : 'bg-hover-bg/20 border-border-subtle/50'}`}>
+      <div className="p-6 rounded-3xl border bg-hover-bg/20 border-border-subtle/50">
         <div className="flex items-center gap-3 mb-6">
           <IconBadge
             icon={Bot}
@@ -43,8 +41,8 @@ export function AIToolCards({ setActiveTab }: AIToolCardsProps) {
             darkClassName="rounded-2xl bg-secondary/10 text-secondary"
           />
           <div>
-            <h3 className={`font-black text-sm uppercase tracking-widest ${!isDark ? 'font-cinzel text-[#3D1F08]' : 'text-text-primary'}`}>AI Question Generation</h3>
-            <p className={`text-[10px] font-bold tracking-wider opacity-60 ${!isDark ? 'font-garamond italic' : ''}`}>Use external AI tools to generate question sets</p>
+            <h3 className="font-black text-sm uppercase tracking-widest text-text-primary">AI Question Generation</h3>
+            <p className="text-[10px] font-bold tracking-wider opacity-60">Use external AI tools to generate question sets</p>
           </div>
         </div>
 
@@ -56,7 +54,7 @@ export function AIToolCards({ setActiveTab }: AIToolCardsProps) {
                 window.open(tool.url, '_blank')
                 setActiveTab('json')
               }}
-              className={`${tool.bgColor} dark:saturate-[0.85] dark:brightness-110 group relative overflow-hidden p-5 rounded-2xl text-left text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg`}
+              className={`${tool.bgColor} group relative overflow-hidden p-5 rounded-2xl text-left text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg`}
             >
               <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-white/5 group-hover:scale-150 transition-transform duration-700" />
               <tool.icon className="w-8 h-8 mb-3 opacity-90" />

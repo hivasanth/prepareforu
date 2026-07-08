@@ -147,6 +147,29 @@ export async function deleteTeacherExam(
   queryCache.invalidateByPrefix(`teacher_exams_${exam.sub_admin_id}`);
 }
 
+export async function fetchTeacherExamQuestions(examId: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('teacher_exam_questions')
+    .select('*')
+    .eq('teacher_exam_id', examId)
+    .order('display_order', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+export async function fetchTeacherExamAttempts(examId: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('attempts')
+    .select('*, users(full_name)')
+    .eq('teacher_exam_id', examId)
+    .eq('status', 'completed')
+    .order('score', { ascending: false })
+    .order('duration_seconds', { ascending: true })
+    .limit(50)
+  if (error) throw error
+  return data || []
+}
+
 export function getCachedTeacherExams(subAdminId: string): any[] {
   return queryCache.get(`teacher_exams_${subAdminId}`) || [];
 }

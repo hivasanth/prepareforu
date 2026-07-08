@@ -108,7 +108,7 @@ export function LanguageSelectionScreen({
             {teluguAvailable && (
               <div className="flex items-start gap-3 p-3.5 rounded-xl bg-amber-400/5 border border-amber-400/20">
                 <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium leading-relaxed">
+                <p className="text-[10px] text-amber-500 font-medium leading-relaxed">
                   Telugu is available for some questions. Questions without a Telugu translation will automatically show in English.
                 </p>
               </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Trash2 } from 'lucide-react'
-import { Button, Input, Label, useTheme } from '../../common/AntigravityUI'
+import { Button, Input, Label } from '../../common/AntigravityUI'
 import type { PromptTemplate } from './BulkUploadPanel'
 
 interface PromptEditorModalProps {
@@ -13,7 +13,6 @@ interface PromptEditorModalProps {
 }
 
 export function PromptEditorModal({ isOpen, editingPrompt, isSaving, onSave, onDelete, onClose }: PromptEditorModalProps) {
-  const { isDark } = useTheme()
   const [topicName, setTopicName] = useState('')
   const [promptText, setPromptText] = useState('')
   const [isDefault, setIsDefault] = useState(false)
@@ -40,19 +39,17 @@ export function PromptEditorModal({ isOpen, editingPrompt, isSaving, onSave, onD
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className={`relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[32px] p-6 md:p-8 ${
-          !isDark ? 'bg-[#FDF5E2]/98 border-2 border-[#B07A14]/40' : 'bg-card-bg border border-border-subtle/80 shadow-2xl'
-        }`}
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[32px] p-6 md:p-8 bg-card-bg border border-border-subtle/80 shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className={`text-sm font-black uppercase tracking-widest ${!isDark ? 'font-cinzel text-[#3D1F08]' : 'text-text-primary'}`}>Prompt Template Editor</h3>
+          <h3 className="text-sm font-black uppercase tracking-widest text-text-primary">Prompt Template Editor</h3>
           {editingPrompt.id && (
             <button onClick={() => onDelete(editingPrompt.id!)} aria-label="Delete prompt" className="p-2 rounded-lg text-danger hover:bg-danger/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
               <Trash2 size={16} />
             </button>
           )}
-          <button onClick={onClose} aria-label="Close editor" className={`p-2 rounded-full hover:bg-hover-bg/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${!isDark ? 'text-primary' : 'text-text-secondary'}`}>
+          <button onClick={onClose} aria-label="Close editor" className="p-2 rounded-full hover:bg-hover-bg/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-text-secondary">
             <X size={18} />
           </button>
         </div>
@@ -86,7 +83,7 @@ export function PromptEditorModal({ isOpen, editingPrompt, isSaving, onSave, onD
               onChange={(e) => setIsDefault(e.target.checked)}
               className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary"
             />
-            <span className={`text-xs font-bold uppercase tracking-wider ${!isDark ? 'text-[#3D1F08]' : 'text-text-primary'}`}>
+            <span className="text-xs font-bold uppercase tracking-wider text-text-primary">
               Set as subject default
             </span>
           </label>

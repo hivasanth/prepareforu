@@ -1,22 +1,16 @@
 import { useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { BarChart3, Calendar } from 'lucide-react'
-import { supabase } from '../../../lib/supabase'
 import { useSupabaseQuery } from '../../../hooks/useSupabaseQuery'
 import { useDateRange } from '../../../hooks/useDateRange'
 import { ErrorState } from '../../common/SharedComponents'
-import { format, parseISO, addDays } from 'date-fns'
-import { resolveExamIds, ATTEMPT_SOURCE_EXAM_TAB, KNOWN_EXAM_IDS } from '../../../lib/examUtils'
-import { FilterSelect, LoadingOverlay, useTheme } from '../../common/AntigravityUI'
+import { format, addDays } from 'date-fns'
+import { resolveExamIds, KNOWN_EXAM_IDS } from '../../../lib/examUtils'
+import { FilterSelect, LoadingOverlay } from '../../common/AntigravityUI'
 import { useBreakpoint } from '../../../hooks/useBreakpoint'
-
-interface AttemptRow {
-  started_at: string;
-  exam_id: string;
-}
+import { dashboardService } from '../../../services/dashboardService'
 
 export function DailyAttemptsChart({ selectedExam }: { selectedExam: string }) {
-  const { isDark } = useTheme();
   const { isXs } = useBreakpoint();
   const { ranges, selectedRangeId, setSelectedRangeId, selectedRange } = useDateRange()
 
@@ -29,28 +23,7 @@ export function DailyAttemptsChart({ selectedExam }: { selectedExam: string }) {
       }
 
       const resolvedIds = resolveExamIds(selectedExam)
-      let query = supabase
-        .from('attempts')
-        .select('started_at, exam_id')
-        .eq('source', ATTEMPT_SOURCE_EXAM_TAB)
-        .gte('started_at', selectedRange.start.toISOString())
-        .lte('started_at', selectedRange.end.toISOString())
-        .order('started_at', { ascending: true })
-      
-      if (resolvedIds.length > 0) {
-        query = query.in('exam_id', resolvedIds)
-      }
-
-      const res = await query
-      if (res.error) throw res.error
-
-      const rows = (res.data || []) as AttemptRow[]
-      const counts = rows.reduce<Record<string, number>>((acc, attempt) => {
-        const date = format(parseISO(attempt.started_at), 'yyyy-MM-dd')
-        acc[date] = (acc[date] || 0) + 1
-        return acc
-      }, {})
-
+      const counts = await dashboardService.fetchDailyAttempts(selectedRange, resolvedIds)
       return { data: counts, error: null }
     } catch (e) {
       return { data: null, error: e }
@@ -79,12 +52,12 @@ export function DailyAttemptsChart({ selectedExam }: { selectedExam: string }) {
     <div className="p-4 xs:p-6 sm:p-8 flex flex-col gap-4 sm:gap-6 lg:gap-8 h-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all ${!isDark ? 'ancient-icon-badge shadow-lg' : 'bg-primary/10 border border-primary/20 shadow-sm'}`}>
-            <BarChart3 className={`w-5 h-5 sm:w-6 sm:h-6 ${!isDark ? '' : 'text-primary'}`} />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all bg-primary/10 border border-primary/20 shadow-sm">
+            <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           </div>
           <div>
-            <h3 className={`m-0 text-lg sm:text-xl font-black text-text-primary ${!isDark ? 'font-cinzel' : ''}`}>Daily Attempts</h3>
-            <p className={`m-0 text-[10px] sm:text-xs text-text-secondary font-bold uppercase tracking-wider opacity-60 ${!isDark ? 'font-garamond italic' : ''}`}>
+            <h3 className="m-0 text-lg sm:text-xl font-black text-text-primary">Daily Attempts</h3>
+            <p className="m-0 text-[10px] sm:text-xs text-text-secondary font-bold uppercase tracking-wider opacity-60">
               Exam Volume Insight
             </p>
           </div>
@@ -123,11 +96,11 @@ export function DailyAttemptsChart({ selectedExam }: { selectedExam: string }) {
               <Tooltip 
                  cursor={{ fill: 'var(--primary)', opacity: 0.05 }}
                  contentStyle={{ 
-                   borderRadius: '16px', 
-                   border: !isDark ? '1.5px solid var(--ancient-gold)' : '1px solid var(--border-subtle)', 
-                   backgroundColor: !isDark ? 'var(--ancient-cream-light)' : 'var(--card-bg)', 
-                   boxShadow: !isDark ? '5px 6px 0px rgba(105, 62, 15, 0.4)' : '0 10px 15px -3px rgb(0 0 0 / 0.1)' 
-                 }}
+                    borderRadius: '16px', 
+                    border: '1px solid var(--border-subtle)', 
+                    backgroundColor: 'var(--card-bg)', 
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' 
+                  }}
                  itemStyle={{ fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'inherit' }}
                  labelStyle={{ fontWeight: 800, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase', fontFamily: 'inherit' }}
               />

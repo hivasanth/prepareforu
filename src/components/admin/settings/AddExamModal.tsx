@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, PlusCircle, Trash2, AlertCircle } from 'lucide-react'
 import { adminService } from '../../../services/adminService'
 import { generateRequestId } from '../../../utils/logger'
-import { Button, Input, Switch, Label, Stack, Grid, Card, Badge, useTheme } from '../../common/AntigravityUI'
+import { Button, Input, Switch, Label, Stack, Grid, Card, Badge } from '../../common/AntigravityUI'
 import { useToast } from '../../../hooks/useToast'
 import type { UserProfile } from '../../../types/auth.types'
 
@@ -15,7 +15,6 @@ interface AddExamModalProps {
 }
 
 export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamModalProps) {
-  const { isDark } = useTheme()
   const { showSuccess, showError } = useToast()
 
   const [examId, setExamId] = useState('')
@@ -121,22 +120,18 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: 'spring', duration: 0.4 }}
-            className={`relative w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10 flex flex-col p-6 md:p-8 ${
-              !isDark
-                ? 'bg-[#FDF5E2]/98 border-2 border-[#B07A14]/40 text-[#3D1F08] shadow-2xl rounded-[24px]'
-                : 'bg-card-bg/98 border border-border-subtle/80 text-text-primary shadow-2xl rounded-[24px] backdrop-blur-xl'
-            }`}
+            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10 flex flex-col p-6 md:p-8 bg-card-bg/98 border border-border-subtle/80 text-text-primary shadow-2xl rounded-[24px] backdrop-blur-xl"
           >
             <div className="flex items-center justify-between pb-6 border-b border-border-subtle/30">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl ${!isDark ? 'ancient-icon-badge shadow-sm' : 'bg-primary/10 text-primary'}`}>
+                <div className="p-2 rounded-xl bg-primary/10 text-primary">
                   <Plus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className={`text-lg md:text-xl font-black uppercase tracking-widest ${!isDark ? 'font-cinzel text-[#3D1F08]' : 'text-text-primary'}`}>
+                  <h2 className="text-lg md:text-xl font-black uppercase tracking-widest text-text-primary">
                     Add New Dynamic Exam
                   </h2>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider opacity-60 ${!isDark ? 'font-garamond italic' : ''}`}>
+                  <p className="text-[10px] uppercase font-bold tracking-wider opacity-60">
                     Deploy a new dynamic standard schema globally
                   </p>
                 </div>
@@ -145,7 +140,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                 type="button"
                 onClick={onClose}
                 aria-label="Close modal"
-                className={`p-2 rounded-full transition-colors hover:bg-hover-bg/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${!isDark ? 'text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+                className="p-2 rounded-full transition-colors hover:bg-hover-bg/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-text-secondary hover:text-text-primary"
               >
                 <X size={18} />
               </button>
@@ -153,8 +148,8 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
 
             <form onSubmit={handleCreateExam} className="mt-6 space-y-6">
               <Grid cols={2} gap={20}>
-                <Card variant="subtle" className={`flex flex-col gap-4 p-5 ${!isDark ? 'bg-white/50 border-[#B07A14]/20' : 'bg-hover-bg/20'}`}>
-                  <span className={`text-xs font-black uppercase tracking-widest ${!isDark ? 'font-cinzel text-[#3D1F08]' : 'text-primary'}`}>General Metadata</span>
+                <Card variant="subtle" className="flex flex-col gap-4 p-5 bg-hover-bg/20">
+                  <span className="text-xs font-black uppercase tracking-widest text-primary">General Metadata</span>
                   <Stack gap="sm">
                     <Label>Exam Key (Unique ID)</Label>
                     <Input placeholder="e.g. GATE_CS" value={examId} onChange={(e) => setExamId(e.target.value.toUpperCase().replace(/\s+/g, '_'))} required />
@@ -169,8 +164,8 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                   </Stack>
                 </Card>
 
-                <Card variant="subtle" className={`flex flex-col gap-4 p-5 ${!isDark ? 'bg-white/50 border-[#B07A14]/20' : 'bg-hover-bg/20'}`}>
-                  <span className={`text-xs font-black uppercase tracking-widest ${!isDark ? 'font-cinzel text-[#3D1F08]' : 'text-primary'}`}>Exam Parameters</span>
+                <Card variant="subtle" className="flex flex-col gap-4 p-5 bg-hover-bg/20">
+                  <span className="text-xs font-black uppercase tracking-widest text-primary">Exam Parameters</span>
                   <Grid cols={2} gap={12}>
                     <Stack gap="sm">
                       <Label>Total Questions</Label>
@@ -192,8 +187,8 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
               </Grid>
 
               <Grid cols={2} gap={20}>
-                <Card variant="subtle" className={`flex flex-col gap-4 p-5 ${!isDark ? 'bg-white/50 border-[#B07A14]/20' : 'bg-hover-bg/20'}`}>
-                  <span className={`text-xs font-black uppercase tracking-widest ${!isDark ? 'font-cinzel text-[#3D1F08]' : 'text-primary'}`}>Initial Paper Details</span>
+                <Card variant="subtle" className="flex flex-col gap-4 p-5 bg-hover-bg/20">
+                  <span className="text-xs font-black uppercase tracking-widest text-primary">Initial Paper Details</span>
                   <Stack gap="sm">
                     <Label>Paper Name</Label>
                     <Input placeholder="e.g. Core Paper" value={paperName} onChange={(e) => setPaperName(e.target.value)} required />
@@ -208,8 +203,8 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                           onClick={() => setPaperStage(stage as any)}
                           className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg border transition-all ${
                             paperStage === stage
-                              ? (!isDark ? 'bg-primary text-white border-primary shadow-sm' : 'bg-primary/20 text-primary border-primary')
-                              : (!isDark ? 'bg-[#F4E5C4]/30 border-primary/25 text-primary/80 hover:bg-[#F4E5C4]/50' : 'bg-hover-bg/40 border-border-subtle/50 text-text-secondary hover:text-text-primary')
+                              ? 'bg-primary/20 text-primary border-primary'
+                              : 'bg-hover-bg/40 border-border-subtle/50 text-text-secondary hover:text-text-primary'
                           }`}
                         >
                           {stage}
@@ -219,8 +214,8 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                   </Stack>
                 </Card>
 
-                <Card variant="subtle" className={`flex flex-col gap-4 p-5 ${!isDark ? 'bg-white/50 border-[#B07A14]/20' : 'bg-hover-bg/20'}`}>
-                  <span className={`text-xs font-black uppercase tracking-widest ${!isDark ? 'font-cinzel text-[#3D1F08]' : 'text-primary'}`}>Negative Marking Penalty</span>
+                <Card variant="subtle" className="flex flex-col gap-4 p-5 bg-hover-bg/20">
+                  <span className="text-xs font-black uppercase tracking-widest text-primary">Negative Marking Penalty</span>
                   <Stack gap="md" className="p-4 bg-hover-bg/10 rounded-xl border border-border-subtle/30">
                     <Switch label="Enable Negative Penalty" checked={negativeMarking} onChange={setNegativeMarking} />
                     {negativeMarking && (
@@ -233,9 +228,9 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                 </Card>
               </Grid>
 
-              <Card variant="subtle" className={`flex flex-col gap-4 p-5 ${!isDark ? 'bg-white/50 border-[#B07A14]/20' : 'bg-hover-bg/20'}`}>
+              <Card variant="subtle" className="flex flex-col gap-4 p-5 bg-hover-bg/20">
                 <div className="flex items-center justify-between pb-2 border-b border-border-subtle/20">
-                  <span className={`text-xs font-black uppercase tracking-widest ${!isDark ? 'font-cinzel text-[#3D1F08]' : 'text-primary'}`}>Subject Quota Allocation</span>
+                  <span className="text-xs font-black uppercase tracking-widest text-primary">Subject Quota Allocation</span>
                   <Button type="button" onClick={addModalSubject} variant="secondary" className="!h-9 !px-3 text-[10px]">
                     <PlusCircle size={14} className="mr-1.5" /> Add Subject
                   </Button>
@@ -243,9 +238,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
 
                 <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 form-scrollbar">
                   {modalSubjects.map((sub, idx) => (
-                    <div key={idx} className={`p-4 rounded-xl border flex flex-col md:flex-row items-center gap-4 transition-all ${
-                      !isDark ? 'bg-[#F4E5C4]/20 border-primary/10' : 'bg-hover-bg/10 border-border-subtle/30'
-                    }`}>
+                    <div key={idx} className="p-4 rounded-xl border flex flex-col md:flex-row items-center gap-4 transition-all bg-hover-bg/10 border-border-subtle/30">
                       <div className="flex-1 w-full">
                         <Stack gap="xs">
                           <Label>Subject Name</Label>
@@ -273,7 +266,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                   ))}
                 </div>
 
-                <div className={`pt-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 ${!isDark ? 'border-primary/20' : 'border-border-subtle/30'}`}>
+                <div className="pt-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 border-border-subtle/30">
                   <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                     <Stack direction="row" align="center" gap="sm">
                       <Label>Running Questions Sum:</Label>
@@ -292,7 +285,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                 </div>
               </Card>
 
-              <div className={`pt-6 border-t flex justify-end gap-3 ${!isDark ? 'border-primary/20' : 'border-border-subtle/30'}`}>
+              <div className="pt-6 border-t flex justify-end gap-3 border-border-subtle/30">
                 <Button type="button" variant="secondary" onClick={onClose} className="!px-6">Cancel</Button>
                 <Button type="submit" variant="primary" disabled={isSubmitting || !isSumValid} loading={isSubmitting} className="!px-8">Deploy dynamic exam</Button>
               </div>
