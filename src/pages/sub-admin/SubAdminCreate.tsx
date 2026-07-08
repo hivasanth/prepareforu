@@ -37,8 +37,10 @@ import {
   Card,
   Button,
   IconBadge,
-  useTheme
 } from '../../components/common/AntigravityUI'
+import { AdminCard } from '../../components/admin/common/AdminCard'
+import { AdminIconWrap } from '../../components/admin/common/AdminIconWrap'
+import { AdminText } from '../../components/admin/common/AdminText'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type DiagramData = 
@@ -251,7 +253,6 @@ function CompactDateTimePicker({ value, onChange, minStr, getTypo }: { value: st
 // ─── Component ──────────────────────────────────────────────────────────────
 export default function SubAdminCreate() {
   const { user, loading: authLoading } = useAuth()
-  const { isDark } = useTheme()
   if (authLoading) return <GuardLoader />
   if (!isSubAdmin(user)) return <Navigate to="/unauthorized" replace />
   const { breakpoint } = useBreakpoint()
@@ -684,8 +685,8 @@ Return ONLY the JSON array. Do not include markdown blocks or any other text.`
         >
           {/* Glow orb */}
           <div className="relative">
-            <div className={`absolute inset-0 blur-[60px] rounded-full scale-[2] animate-pulse pointer-events-none ${!isDark ? 'bg-primary/20' : 'bg-primary/30'}`} />
-            <div className={`relative w-36 h-36 rounded-full border-2 flex items-center justify-center shadow-2xl backdrop-blur-sm ${!isDark ? 'ancient-card border-primary/30' : 'bg-gradient-to-br from-primary/20 to-primary/5 border-primary/30 shadow-primary/20'}`}>
+            <div className="absolute inset-0 blur-[60px] rounded-full scale-[2] animate-pulse pointer-events-none bg-primary/20" />
+            <div className="relative w-36 h-36 rounded-full border-2 flex items-center justify-center shadow-2xl backdrop-blur-sm bg-gradient-to-br from-primary/20 to-primary/5 border-primary/30">
               <Rocket size={64} className="text-primary drop-shadow-lg" style={{ animation: 'bounce 2s infinite' }} />
             </div>
             {/* Ring decorations */}
@@ -707,7 +708,7 @@ Return ONLY the JSON array. Do not include markdown blocks or any other text.`
           <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm pt-2">
             <button
               onClick={() => navigate('/sub-admin/my-exams')}
-              className={`flex-1 font-black uppercase tracking-widest text-xs py-4 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 ${!isDark ? 'ancient-nav-item-active' : 'bg-primary text-white shadow-primary/25 hover:scale-105 active:scale-95'}`}
+              className="flex-1 font-black uppercase tracking-widest text-xs py-4 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 bg-primary text-white shadow-md"
             >
               <BookOpen size={15} /> View My Exams
             </button>
@@ -762,8 +763,8 @@ Return ONLY the JSON array. Do not include markdown blocks or any other text.`
                               }}
                               className={`px-6 py-3 rounded-xl font-black transition-all ${
                                 targetCount === c && promptPhase !== 'count'
-                                  ? (!isDark ? 'ancient-nav-item-active scale-105' : 'bg-primary text-white shadow-lg shadow-primary/25 scale-105')
-                                  : (!isDark ? 'ancient-card text-text-secondary' : 'bg-hover-bg/50 text-text-secondary border-2 border-border-subtle/10 hover:border-primary/30')
+                                  ? 'bg-primary text-white shadow-lg'
+                                  : 'bg-hover-bg/50 text-text-secondary border-2 border-border-subtle/10'
                               }`}
                               style={{ fontSize: getTypo('stepLabel') }}
                             >

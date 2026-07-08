@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { Navigate } from 'react-router-dom'
 import { 
   Users, 
-  Search, 
   Calendar, 
   RefreshCcw, 
   Copy, 
@@ -31,21 +30,19 @@ import { useToast } from '../../hooks/useToast'
 import { 
   PageContainer, 
   Stack, 
-  FilterBar, 
-  FilterSelect, 
-  Input, 
-  IconButton, 
+  IconButton,
   SectionReveal, 
-  Grid, 
   Card, 
   Badge, 
   Label,
   Button,
   StatCard,
   DataGrid,
-  Body,
-  useTheme
+  Body
 } from '../../components/common/AntigravityUI'
+import { AdminFilterBar } from '../../components/admin/common/AdminFilterBar'
+import { AdminIconWrap } from '../../components/admin/common/AdminIconWrap'
+import { AdminText } from '../../components/admin/common/AdminText'
 import { AdminModal } from '../../components/admin/common/AdminModal'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -75,7 +72,6 @@ interface Student {
 
 export default function SubAdminStudents() {
   const { user, loading: authLoading } = useAuth()
-  const { isDark } = useTheme()
   const { showSuccess } = useToast()
 
   const mountedRef = useRef(true)
@@ -211,30 +207,17 @@ export default function SubAdminStudents() {
 
       <Stack gap="lg">
         <SectionReveal>
-          <FilterBar>
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="flex-1 max-w-md">
-                <Input 
-                  leftIcon={Search}
-                  placeholder="Search name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <FilterSelect 
-                icon={Calendar}
-                placeholder="All Time"
-                value={monthFilter}
-                onChange={setMonthFilter}
-                options={monthOptions}
-                className="min-w-[140px] shrink-0"
-              />
-            </div>
-            <IconButton onClick={fetchData} loading={loading} className="shrink-0">
-              <RefreshCcw size={18} />
-            </IconButton>
-          </FilterBar>
+          <AdminFilterBar
+            searchPlaceholder="Search name or email..."
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            monthValue={monthFilter}
+            onMonthChange={setMonthFilter}
+            monthOptions={monthOptions}
+            monthPlaceholder="All Time"
+            onRefresh={fetchData}
+            loading={loading}
+          />
         </SectionReveal>
 
         {loading ? (
@@ -284,11 +267,11 @@ export default function SubAdminStudents() {
                     label: 'Student',
                     render: (_: any, s: Student) => (
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${!isDark ? 'ancient-icon-badge' : 'bg-primary/10 text-primary'}`}>
-                          <Users size={14} className={!isDark ? 'text-white' : 'text-primary'} />
-                        </div>
+                        <AdminIconWrap size="sm" rounded="full">
+                          <Users size={14} />
+                        </AdminIconWrap>
                         <div className="min-w-0">
-                          <p className={`font-bold text-text-primary truncate text-[13px] ${!isDark ? 'font-cinzel' : ''}`}>{s.full_name}</p>
+                          <AdminText as="p" variant="cinzel" className="font-bold text-text-primary truncate text-[13px]">{s.full_name}</AdminText>
                           <p className="text-[10px] text-text-secondary opacity-50 truncate">{s.email}</p>
                         </div>
                       </div>
@@ -332,11 +315,7 @@ export default function SubAdminStudents() {
                         <button
                           onClick={() => setSelectedStudent(s)}
                           title="View Analytics"
-                          className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all duration-200
-                            ${!isDark
-                              ? 'bg-white border-stone-300 text-stone-700 hover:bg-primary hover:border-primary hover:text-white'
-                              : 'bg-primary/10 border-primary/20 text-primary hover:bg-primary hover:border-primary hover:text-white'
-                            }`}
+                          className="w-9 h-9 flex items-center justify-center rounded-xl border transition-all duration-200 bg-primary/10 border-primary/20 text-primary hover:bg-primary hover:border-primary hover:text-white"
                         >
                           <Eye size={16} />
                         </button>

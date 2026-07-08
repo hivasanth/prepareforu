@@ -6,7 +6,6 @@ import { parseHeading } from '../../../utils/parseOutlineText'
 
 interface AdminTopicPreviewRendererProps {
   topic: StudyTopic
-  isDark?: boolean
 }
 
 function tagBadge(tag: string) {

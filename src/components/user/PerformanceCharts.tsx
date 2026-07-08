@@ -1,17 +1,18 @@
 import React from 'react'
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts'
+import { useTheme } from '../../context/ThemeContext'
 
 interface ChartProps {
   type: 'trend' | 'distribution';
   data: any[];
   hasEnoughData?: boolean;
-  isDark?: boolean;
 }
 
-const CustomTooltip = ({ active, payload, label, isDark }: any) => {
+const CustomTooltip = ({ active, payload, label }: any) => {
+  const { isDark } = useTheme()
   if (active && payload && payload.length) {
     const p = payload[0];
     const pt = p.payload;
@@ -38,12 +39,12 @@ const CustomTooltip = ({ active, payload, label, isDark }: any) => {
   return null
 }
 
-const PerformanceCharts: React.FC<ChartProps> = ({ 
+const PerformanceCharts: React.FC<ChartProps> = ({
   type,
   data,
   hasEnoughData = true,
-  isDark = true
 }) => {
+  const { isDark } = useTheme()
   const [isMounted, setIsMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -68,13 +69,13 @@ const PerformanceCharts: React.FC<ChartProps> = ({
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={validData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)'} />
-            <XAxis 
+            <XAxis
               dataKey="sortKey"
               scale="time"
               type="number"
               domain={['dataMin', 'dataMax']}
-              axisLine={false} 
-              tickLine={false} 
+              axisLine={false}
+              tickLine={false}
               tick={{ fill: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', fontSize: 10, fontWeight: 700 }}
               tickFormatter={(v: number) => {
                 const d = new Date(v);
@@ -83,20 +84,20 @@ const PerformanceCharts: React.FC<ChartProps> = ({
               dy={10}
               minTickGap={40}
             />
-            <YAxis 
-              axisLine={false} 
-              tickLine={false} 
+            <YAxis
+              axisLine={false}
+              tickLine={false}
               tick={{ fill: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', fontSize: 10, fontWeight: 700 }}
               domain={[0, 100]}
               tickFormatter={(v: number) => `${v}%`}
             />
-            <Tooltip content={<CustomTooltip isDark={isDark} />} />
-            <Line 
-              type="monotone" 
-              dataKey="accuracy" 
+            <Tooltip content={<CustomTooltip />} />
+            <Line
+              type="monotone"
+              dataKey="accuracy"
               name="Accuracy"
-              stroke="var(--primary)" 
-              strokeWidth={4} 
+              stroke="var(--primary)"
+              strokeWidth={4}
               dot={{ r: 4, fill: 'var(--primary)', strokeWidth: 2, stroke: '#fff' }}
               activeDot={{ r: 6, strokeWidth: 0 }}
               animationDuration={0}
@@ -131,9 +132,9 @@ const PerformanceCharts: React.FC<ChartProps> = ({
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip isDark={isDark} />} />
-            <Legend 
-              verticalAlign="bottom" 
+            <Tooltip content={<CustomTooltip />} />
+            <Legend
+              verticalAlign="bottom"
               align="center"
               iconType="circle"
               wrapperStyle={{ paddingTop: '10px' }}

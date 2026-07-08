@@ -21,8 +21,6 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronLeft,
-  Search,
-  Calendar,
   FileText,
   Loader2,
 } from 'lucide-react'
@@ -33,9 +31,6 @@ import { useToast } from '../../hooks/useToast'
 import { 
   PageContainer,
   Stack, 
-  FilterBar, 
-  FilterSelect, 
-  Input, 
   IconButton, 
   SectionReveal, 
   Grid, 
@@ -43,8 +38,11 @@ import {
   Badge, 
   Label,
   Button,
-  useTheme
 } from '../../components/common/AntigravityUI'
+import { AdminFilterBar } from '../../components/admin/common/AdminFilterBar'
+import { AdminCard } from '../../components/admin/common/AdminCard'
+import { AdminIconWrap } from '../../components/admin/common/AdminIconWrap'
+import { AdminText } from '../../components/admin/common/AdminText'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface TeacherExamOption {
@@ -119,7 +117,6 @@ const fmtTime = (secs: number | null) => {
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function SubAdminExams() {
   const { user, loading: authLoading } = useAuth()
-  const { isDark } = useTheme()
   if (authLoading) return <GuardLoader />
   if (!isSubAdmin(user)) return <Navigate to="/unauthorized" replace />
   const { breakpoint } = useBreakpoint()
@@ -479,7 +476,7 @@ export default function SubAdminExams() {
                 onClick={copyText}
                 disabled={!summaryStats}
                 style={{ height: btnH }}
-                className={`flex items-center gap-2 px-4 border rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-40 ${!isDark ? 'ancient-card hover:border-primary/30' : 'bg-card-bg border-border-subtle/30 text-text-primary hover:border-primary/30'}`}
+                className="flex items-center gap-2 px-4 border rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-40 bg-card-bg border-border-subtle/30 text-text-primary hover:border-primary/30"
               >
                 {copied ? <><Check size={13} className="text-green-500" /> Copied</> : <><Copy size={13} /> Copy Summary</>}
               </button>
@@ -487,7 +484,7 @@ export default function SubAdminExams() {
                 onClick={downloadCSV}
                 disabled={!evalData.attempts.length}
                 style={{ height: btnH }}
-                className={`flex items-center gap-2 px-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-md transition-all disabled:opacity-40 ${!isDark ? 'ancient-nav-item-active' : 'bg-primary text-white shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]'}`}
+                className="flex items-center gap-2 px-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-md transition-all disabled:opacity-40 bg-primary text-white shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Download size={13} /> Export CSV
               </button>
@@ -500,29 +497,16 @@ export default function SubAdminExams() {
       {!selectedExamId && (
         <Stack gap="lg">
           <SectionReveal>
-            <FilterBar>
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="flex-1 max-w-md">
-                  <Input 
-                    leftIcon={Search}
-                    placeholder="Search exams..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full uppercase"
-                  />
-                </div>
-                <FilterSelect 
-                  icon={Calendar}
-                  value={monthFilter}
-                  onChange={setMonthFilter}
-                  options={monthOptions}
-                  className="min-w-[140px] shrink-0"
-                />
-              </div>
-              <IconButton onClick={fetchExams} loading={examsLoading} className="shrink-0">
-                <RefreshCcw size={18} />
-              </IconButton>
-            </FilterBar>
+            <AdminFilterBar
+              searchPlaceholder="Search exams..."
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              monthValue={monthFilter}
+              onMonthChange={setMonthFilter}
+              monthOptions={monthOptions}
+              onRefresh={fetchExams}
+              loading={examsLoading}
+            />
           </SectionReveal>
 
           {examsLoading ? (
@@ -554,7 +538,7 @@ export default function SubAdminExams() {
                 <SectionReveal key={exam.id} delay={idx * 0.05}>
                   <Card 
                     variant="default" 
-                    className={`p-6 flex flex-col h-full group relative cursor-pointer transition-all duration-300 ancient-3d-lift ${!isDark ? 'ancient-card hover:border-primary/30' : 'hover:border-primary/30'}`} 
+                    className="p-6 flex flex-col h-full group relative cursor-pointer transition-all duration-300 ancient-3d-lift hover:border-primary/30" 
                     onClick={() => handleExamChange(exam.id)}
                   >
                     <div className="flex justify-between items-start mb-4">
@@ -567,9 +551,9 @@ export default function SubAdminExams() {
                     </div>
 
                     <div className="space-y-2 mb-6">
-                      <h3 className={`font-black text-text-primary text-lg leading-tight uppercase group-hover:text-primary transition-colors truncate ${!isDark ? 'font-cinzel' : ''}`}>
+                      <AdminText as="h3" variant="cinzel" className="font-black text-text-primary text-lg leading-tight uppercase group-hover:text-primary transition-colors truncate">
                         {exam.title}
-                      </h3>
+                      </AdminText>
                       <div className="flex items-center gap-2 text-text-secondary font-bold text-[11px] opacity-40 uppercase tracking-widest">
                         <Clock size={12} />
                         {new Date(exam.created_at).toLocaleDateString()}
@@ -680,7 +664,7 @@ export default function SubAdminExams() {
                    <Card
                     key={i}
                     variant="default"
-                    className={`flex flex-col justify-between ${!isDark ? 'ancient-card' : 'border-border-subtle/20'}`}
+                    className="flex flex-col justify-between border-border-subtle/20"
                     style={{ minHeight: cardH, padding: cardPad }}
                   >
                     <div className={`flex items-center gap-1.5 ${card.color} opacity-70`}>
@@ -768,14 +752,14 @@ export default function SubAdminExams() {
                     <Card
                       key={qs.question_id}
                       variant="default"
-                      className={`p-4 space-y-3 ${!isDark ? 'ancient-card' : 'border-border-subtle/20'}`}
+                      className="p-4 space-y-3 border-border-subtle/20"
                     >
                       {/* Question header */}
                       <div className="flex items-start gap-2">
-                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5 ${!isDark ? 'ancient-icon-badge' : 'bg-primary/10 text-primary'}`}>
+                        <AdminIconWrap size="sm" rounded="lg" className="w-6 h-6 mt-0.5">
                           {qs.display_order}
-                        </div>
-                        <p className={`font-bold text-text-primary leading-snug line-clamp-2 ${!isDark ? 'font-garamond' : ''}`} style={{ fontSize: qFont }}>
+                        </AdminIconWrap>
+                        <p className="font-bold text-text-primary leading-snug line-clamp-2" style={{ fontSize: qFont }}>
                           {qs.question_text_en}
                         </p>
                       </div>
@@ -795,7 +779,7 @@ export default function SubAdminExams() {
                             initial={{ width: 0 }}
                             animate={{ width: `${qs.correctPct}%` }}
                             transition={{ duration: 0.5, delay: i * 0.02 }}
-                            className={`h-full rounded-full ${!isDark ? 'bg-primary' : 'bg-green-500/70'}`}
+                            className="h-full rounded-full bg-primary"
                           />
                         </div>
 

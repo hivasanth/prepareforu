@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext'
 import { AdminSelectionTabs } from '../../components/admin/shared/AdminSelectionTabs'
 import { PageHeader } from '../../components/admin/PageHeader'
 import { SettingsCard } from '../../components/admin/settings/SettingsCard'
+import { SubjectCardItem } from '../../components/admin/settings/SubjectCardItem'
 import { SubjectPieChart } from '../../components/admin/settings/SubjectPieChart'
 import { AddExamModal } from '../../components/admin/settings/AddExamModal'
 import { 
@@ -29,9 +30,9 @@ import {
   Badge, 
   Label, 
   SectionReveal, 
-  Grid,
-  useTheme
+  Grid
 } from '../../components/common/AntigravityUI'
+import { AdminText } from '../../components/admin/common/AdminText'
 import { useToast, ToastContainer } from '../../hooks/useToast'
 import { EmptyState } from '../../components/common/SharedComponents'
 import { GuardLoader } from '../../guards/Guards'
@@ -39,7 +40,6 @@ import { motion } from 'framer-motion'
 
 export default function AdminSettings() {
   const { user, loading: authLoading } = useAuth()
-  const { isDark } = useTheme()
   const { selectedExam, selectedPaper, selectedSubject, setSelectedExam, setSelectedPaper, setSelectedSubject } = useAdminFilters()
   const { toasts, showSuccess, showError } = useToast()
 
@@ -202,44 +202,24 @@ export default function AdminSettings() {
                 <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 form-scrollbar">
                   {subjects.map((sub, idx) => (
                     <div key={sub.id} id={`subject-${sub.subject_name}`}>
-                      <Stack 
-                        gap="sm" 
-                        className={`p-4 rounded-2xl border-2 transition-all duration-300 ancient-3d-lift ${
-                          selectedSubject === sub.subject_name 
-                          ? (!isDark ? 'bg-[var(--ancient-cream)] border-primary shadow-xl scale-[1.03] z-20' : 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]') 
-                          : (!isDark ? 'bg-white/40 border-primary/10' : 'bg-hover-bg/30 border-border-subtle/50')
-                        }`}
-                      >
-                        <Stack direction="row" justify="between" align="center">
-                          <Label className={selectedSubject === sub.subject_name ? 'text-primary font-black' : ''}>
-                            #{idx + 1} {sub.subject_name}
-                          </Label>
-                          {selectedSubject === sub.subject_name && (
-                            <Badge variant="secondary" className="text-[8px] animate-pulse !bg-secondary !text-[#1C0F0A]">Selected</Badge>
-                          )}
-                        </Stack>
-                        <Grid cols={2} gap={10}>
-                          <Stack gap="xs">
-                            <Label>Questions</Label>
-                            <Input type="number" value={sub.question_count} onChange={(e) => {
-                              const ns = [...subjects]; ns[idx].question_count = Number(e.target.value); setSubjects(ns);
-                            }} />
-                          </Stack>
-                          <Stack gap="xs">
-                            <Label>Marks/Q</Label>
-                            <Input type="number" value={sub.marks_per_question} onChange={(e) => {
-                              const ns = [...subjects]; ns[idx].marks_per_question = Number(e.target.value); setSubjects(ns);
-                            }} />
-                          </Stack>
-                        </Grid>
-                      </Stack>
+                      <SubjectCardItem
+                        subject={sub}
+                        index={idx}
+                        isSelected={selectedSubject === sub.subject_name}
+                        onQuestionCountChange={(value) => {
+                          const ns = [...subjects]; ns[idx].question_count = value; setSubjects(ns);
+                        }}
+                        onMarksChange={(value) => {
+                          const ns = [...subjects]; ns[idx].marks_per_question = value; setSubjects(ns);
+                        }}
+                      />
                     </div>
                   ))}
                 </div>
-                <Stack direction="row" justify="between" className={`pt-4 border-t ${!isDark ? 'border-primary/20' : 'border-border-subtle/50'}`}>
-                  <Label className={!isDark ? '!opacity-100 !text-primary text-[12px] font-black' : 'text-primary font-black'}>Running Total Questions</Label>
+                <Stack direction="row" justify="between" className="pt-4 border-t border-border-subtle/50">
+                  <AdminText variant="cinzel" className="text-primary font-black text-[12px]">Running Total Questions</AdminText>
                   <Badge variant={subjects.reduce((s, b) => s + b.question_count, 0) === config.total_questions ? 'success' : 'danger'}
-                    className={!isDark ? 'scale-110 shadow-md !font-black !text-[12px]' : '!font-black !text-[12px]'}>
+                    className="!font-black !text-[12px]">
                     {subjects.reduce((s, b) => s + b.question_count, 0)} / {config.total_questions}
                   </Badge>
                 </Stack>

@@ -10,13 +10,12 @@ import {
   PageContainer, 
   Stack, 
   SectionReveal, 
-  Card,
-  useTheme
+  Card
 } from '../../components/common/AntigravityUI'
+import { AdminTabTrack } from '../../components/admin/common/AdminTabTrack'
 
 export default function AdminOverview() {
   const { loading } = useAuth()
-  const { isDark } = useTheme()
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedExam = searchParams.get('exam') || 'all'
 
@@ -37,13 +36,13 @@ export default function AdminOverview() {
 
       <Stack gap="lg">
         <SectionReveal className="flex justify-center lg:justify-start w-full">
-          <div className={`w-fit max-w-full overflow-x-auto custom-scrollbar p-1 ${!isDark ? 'ancient-tab-track shadow-md' : 'bg-card-bg/50 border border-border-subtle rounded-2xl'}`}>
+          <AdminTabTrack>
             <ExamTabs 
               selectedExam={selectedExam} 
               setSelectedExam={setSelectedExam} 
               className="bg-transparent border-none p-0 w-fit"
             />
-          </div>
+          </AdminTabTrack>
         </SectionReveal>
 
         <StatsGrid selectedExam={selectedExam} />

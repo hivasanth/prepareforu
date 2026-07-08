@@ -7,7 +7,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 import { 
   Button, 
@@ -16,11 +16,11 @@ import {
   Grid, 
   ScoreCard, 
   ResultStatCard, 
-  H3,
-  Body,
   Label,
   IconBadge
 } from '../../components/common/AntigravityUI';
+import { ExamPageLoading } from '../../components/exam/ExamPageLoading';
+import { ExamPageError } from '../../components/exam/ExamPageError';
 
 import { useAuth } from '../../context/AuthContext';
 import { fetchAttemptResult } from '../../services/examService';
@@ -98,31 +98,17 @@ export default function ResultsPage() {
   }, [loadData]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-app-bg">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          <span className="text-base font-semibold text-text-secondary">Compiling Performance Metrics...</span>
-        </div>
-      </div>
-    );
+    return <ExamPageLoading message="Compiling Performance Metrics..." />;
   }
 
   if (error) {
     return (
-      <PageContainer>
-        <div className="py-20 flex flex-col items-center justify-center text-center space-y-6">
-          <IconBadge icon={AlertCircle} size="4xl" className="rounded-[18px]" darkClassName="bg-danger/10 text-danger" />
-          <Stack gap={8}>
-            <H3>Analysis Error</H3>
-            <Body secondary>{error}</Body>
-          </Stack>
-          <Stack gap={12} className="w-full max-w-xs">
-            <Button onClick={() => loadData()} fullWidth>Retry Analysis</Button>
-            <Button variant="secondary" onClick={() => navigate('/dashboard')} fullWidth>Return Home</Button>
-          </Stack>
-        </div>
-      </PageContainer>
+      <ExamPageError
+        title="Analysis Error"
+        message={error}
+        onRetry={() => loadData()}
+        onBack={() => navigate('/dashboard')}
+      />
     );
   }
 

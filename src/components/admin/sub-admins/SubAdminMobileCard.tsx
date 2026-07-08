@@ -7,7 +7,6 @@ interface SubAdminMobileCardProps {
   sa: SubAdminRow
   onRemove: (sa: SubAdminRow) => void
   removingSa: string | null
-  isDark?: boolean
 }
 
 export function SubAdminMobileCard({ sa, onRemove, removingSa }: SubAdminMobileCardProps) {

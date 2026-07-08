@@ -14,7 +14,6 @@ interface LangInputPanelProps {
   parsed: TopicSection[] | null
   onParse: () => void
   onCopyPrompt: () => void
-  isDark?: boolean
 }
 
 export function LangInputPanel({

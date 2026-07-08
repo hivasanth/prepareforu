@@ -27,9 +27,10 @@ import {
   Button, 
   Badge, 
   Label,
-  Body,
-  useTheme
+  Body
 } from '../../components/common/AntigravityUI'
+import { AdminIconWrap } from '../../components/admin/common/AdminIconWrap'
+import { AdminText } from '../../components/admin/common/AdminText'
 import { useToast } from '../../hooks/useToast'
 
 /* ─── TYPES ─────────────────────────────────────────────────────────────────── */
@@ -47,7 +48,6 @@ interface RecentActivity {
 
 export default function SubAdminDashboard() {
   const { user, loading: authLoading } = useAuth()
-  const { isDark } = useTheme()
   const navigate = useNavigate()
   const { showError } = useToast()
   
@@ -177,10 +177,10 @@ export default function SubAdminDashboard() {
             <Stack gap="md">
               <div className="flex items-center justify-between">
                 <Stack direction="row" gap="sm" align="center">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${!isDark ? 'ancient-icon-badge shadow-sm scale-90' : 'text-primary'}`}>
+                  <AdminIconWrap size="sm" rounded="lg" className="shadow-sm scale-90">
                     <FileText size={18} />
-                  </div>
-                  <Label className={!isDark ? 'font-cinzel' : ''}>Recent Deployments</Label>
+                  </AdminIconWrap>
+                  <AdminText as="span" variant="cinzel">Recent Deployments</AdminText>
                 </Stack>
                 <Button variant="secondary" onClick={() => navigate('/sub-admin/my-exams')} className="!h-8 px-3 text-[10px]">
                   View All
@@ -210,13 +210,13 @@ export default function SubAdminDashboard() {
                     <Card 
                       key={exam.id} 
                       variant="default" 
-                      className={`p-4 group transition-all cursor-pointer ${!isDark ? 'ancient-card hover:border-primary/50' : 'hover:border-primary/30'}`}
+                      className="p-4 group transition-all cursor-pointer hover:border-primary/30"
                       onClick={() => setSelectedExam(exam)}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className={`font-black text-text-primary uppercase tracking-tight truncate flex-1 mr-4 ${!isDark ? 'font-cinzel text-xs' : ''}`}>
+                        <AdminText as="h4" variant="cinzel" className="font-black text-text-primary uppercase tracking-tight truncate flex-1 mr-4">
                           {exam.title}
-                        </h4>
+                        </AdminText>
                         <Badge variant={exam.status === 'published' ? 'primary' : 'default'}>
                           {exam.status}
                         </Badge>
@@ -247,10 +247,10 @@ export default function SubAdminDashboard() {
             <Stack gap="md">
               <div className="flex items-center justify-between">
                 <Stack direction="row" gap="sm" align="center">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${!isDark ? 'ancient-icon-badge shadow-sm scale-90' : 'text-secondary'}`}>
+                  <AdminIconWrap size="sm" rounded="lg" className="shadow-sm scale-90">
                     <Activity size={18} />
-                  </div>
-                  <Label className={!isDark ? 'font-cinzel' : ''}>Last Engagements</Label>
+                  </AdminIconWrap>
+                  <AdminText as="span" variant="cinzel">Last Engagements</AdminText>
                 </Stack>
                 <Button variant="secondary" onClick={() => navigate('/sub-admin/students')} className="!h-8 px-3 text-[10px]">
                   View All
@@ -281,17 +281,17 @@ export default function SubAdminDashboard() {
                     <Card 
                       key={attempt.id} 
                       variant="subtle"
-                      className={`flex items-center justify-between p-3 border border-border-subtle/30 rounded-2xl transition-all group cursor-default ${!isDark ? 'ancient-card hover:border-secondary/30' : 'bg-card-bg hover:border-secondary/30'}`}
+                      className="flex items-center justify-between p-3 border border-border-subtle/30 rounded-2xl transition-all group cursor-default bg-card-bg hover:border-secondary/30"
                     >
                       <Stack direction="row" gap="md" align="center">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${!isDark ? 'ancient-icon-badge' : 'bg-secondary/10 text-secondary'}`}>
+                        <AdminIconWrap size="sm" rounded="xl" className="font-black text-xs">
                           {attempt.users?.full_name?.charAt(0) || 'S'}
-                        </div>
+                        </AdminIconWrap>
                         <Stack gap={0}>
-                          <span className={`text-xs font-black text-text-primary uppercase tracking-tight truncate max-w-[150px] ${!isDark ? 'font-cinzel' : ''}`}>
+                          <AdminText as="span" variant="cinzel" className="text-xs font-black text-text-primary uppercase tracking-tight truncate max-w-[150px]">
                             {attempt.users?.full_name || 'Anonymous'}
-                          </span>
-                          <span className={`text-[9px] text-text-secondary font-bold opacity-50 uppercase tracking-widest ${!isDark ? 'font-garamond italic' : ''}`}>
+                          </AdminText>
+                          <span className="text-[9px] text-text-secondary font-bold opacity-50 uppercase tracking-widest">
                             {new Date(attempt.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </Stack>

@@ -1,27 +1,16 @@
-import { 
-  BookOpen, Target, TrendingUp, Trophy
-} from 'lucide-react'
-import { Suspense, lazy } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { useBreakpoint } from '../../hooks/useBreakpoint'
-import { 
-  LoadingSkeleton,
+import {
   EmptyState,
   ErrorState
 } from '../../components/common/SharedComponents'
-import { 
-  Card, 
-  StatCard, 
+import {
   PageContainer,
-  Tabs,
   Stack,
-  useTheme,
-  IconBadge
 } from '../../components/common/AntigravityUI'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useStableFetch } from '../../hooks/useStableFetch'
-import { 
-  fetchPerformanceAttempts, 
+import {
+  fetchPerformanceAttempts,
   fetchPerformanceAnswers,
   fetchPerformanceMetadata,
   clearPerformanceCache,
@@ -34,11 +23,10 @@ import {
 import { getAllowedExamIds } from '../../utils/examUtils'
 import { UserSelectionTabs } from '../../components/user/UserSelectionTabs'
 import { SectionReveal } from '../../components/common/AntigravityAnimation'
-
-import { SubjectInsightsCard } from './PerformanceViews/SubjectInsightsCard'
-
-// Lazy load heavy chart components
-const PerformanceCharts = lazy(() => import('./PerformanceCharts'))
+import { PerformanceSkeleton } from '../../components/user/PerformanceSkeleton'
+import { PerformanceMetricsGrid } from '../../components/user/PerformanceMetricsGrid'
+import { PerformanceAnalyticsSection } from '../../components/user/PerformanceAnalyticsSection'
+import { PerformanceTimeRangeTabs } from '../../components/user/PerformanceTimeRangeTabs'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface Attempt {
@@ -66,10 +54,7 @@ type TimeRange = '7d' | '30d' | 'all'
 // ─── Component ──────────────────────────────────────────────────────────────
 export default function UserPerformance() {
   const { user, loading: authLoading } = useAuth()
-  const { isDark } = useTheme()
-  
-  const { isXs, isSm } = useBreakpoint()
-  const isMobile = isXs || isSm
+
   const isAppsc = user?.exam_selection === 'APPSC_GROUPS' || user?.exam_selection === 'APPSC';
 
   const attemptsCacheKey = useMemo(() => {
@@ -98,7 +83,7 @@ export default function UserPerformance() {
   });
   const [error, setError] = useState<string | null>(null)
   const { nextId, isStale } = useStableFetch();
-  
+
   // ── Filters
   const [selectedExamId, setSelectedExamId] = useState<string>('')
   const [selectedPaperId, setSelectedPaperId] = useState<string>('')
@@ -116,7 +101,7 @@ export default function UserPerformance() {
     if (authLoading) return
     if (!user?.id || !user?.exam_selection) return
     const id = nextId()
-    
+
     if (force) {
       clearPerformanceCache(user.id)
     } else if (getCachedAttempts(user?.id || '')?.length) {
@@ -124,7 +109,7 @@ export default function UserPerformance() {
     } else {
       setLoading(true)
     }
-    
+
     setError(null)
     try {
       const allowedIds = getAllowedExamIds(user.exam_selection)
@@ -148,6 +133,12 @@ export default function UserPerformance() {
       if (!isStale(id)) setLoading(false)
     }
   }, [authLoading, user?.id, user?.exam_selection, attemptsCacheKey, isAppsc])
+
+  const isMounted = useRef(true)
+  useEffect(() => {
+    isMounted.current = true
+    return () => { isMounted.current = false }
+  }, [])
 
   useEffect(() => {
     loadInitialData(true)
@@ -280,19 +271,19 @@ export default function UserPerformance() {
   if (loading) return <PerformanceSkeleton />
   if (error) return (
     <PageContainer>
-      <ErrorState 
-        message={error} 
-        onRetry={() => loadInitialData(true)} 
+      <ErrorState
+        message={error}
+        onRetry={() => loadInitialData(true)}
       />
     </PageContainer>
   )
   if (allAttempts.length === 0) return (
     <PageContainer>
       <div className="py-8">
-        <EmptyState 
+        <EmptyState
           icon="📈"
-          title="No exam activity yet" 
-          subtitle="Complete exams in the Exams tab to see your performance analytics here." 
+          title="No exam activity yet"
+          subtitle="Complete exams in the Exams tab to see your performance analytics here."
           actionLabel="Start Today's Exam"
           onAction={() => window.location.href = '/exams'}
         />
@@ -321,101 +312,31 @@ export default function UserPerformance() {
           </SectionReveal>
         )}
 
-        {!isMobile && (
-          <div className="w-fit max-w-full">
-            <Tabs 
-              options={[
-                { id: '7d', label: '7 Days' },
-                { id: '30d', label: '30 Days' },
-                { id: 'all', label: 'All Time' }
-              ]}
-              activeId={selectedTimeRange}
-              variant="secondary"
-              onChange={(val) => setSelectedTimeRange(val as TimeRange)}
+        <PerformanceTimeRangeTabs
+          selectedTimeRange={selectedTimeRange}
+          onChange={setSelectedTimeRange}
+        />
+
+        {filteredAttempts.length === 0 ? (
+          <EmptyState
+            icon="🔍"
+            title="No data found"
+            subtitle="Try adjusting your filters to see results, or start a new exam to build your performance profile."
+            actionLabel="Start Today's Exam"
+            onAction={() => window.location.href = '/exams'}
+          />
+        ) : (
+          <div className="space-y-8">
+            <PerformanceMetricsGrid metrics={metrics} />
+            <PerformanceAnalyticsSection
+              trendData={trendData}
+              hasEnoughTrendData={hasEnoughTrendData}
+              distribution={distribution}
+              subjectStats={subjectStats}
             />
           </div>
         )}
-
-      {filteredAttempts.length === 0 ? (
-        <EmptyState 
-          icon="🔍"
-          title="No data found"
-          subtitle="Try adjusting your filters to see results, or start a new exam to build your performance profile."
-          actionLabel="Start Today's Exam"
-          onAction={() => window.location.href = '/exams'}
-        />
-      ) : (
-        <div className="space-y-8">
-        {/* ── Summary Metrics ── */}
-        <section className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4'}`}>
-            <StatCard icon={BookOpen} label="Total Exams" value={metrics?.total || 0} color="#2563EB" />
-            <StatCard icon={Target} label="Avg Accuracy" value={`${metrics?.avgAccuracy || 0}%`} color="#7C3AED" />
-            <StatCard icon={TrendingUp} label="Average Score" value={metrics?.avgScore || 0} color="#0891B2" />
-            <StatCard icon={Trophy} label="Best Score" value={metrics?.bestScore || 0} color="#16A34A" />
-          </section>
-
-        {/* ── Analytics Section ── */}
-        <section className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-            
-          {/* Performance Trend (Span 2 on L/XL) */}
-          <Card className="col-span-1 lg:col-span-2 p-6 shadow-xl relative overflow-hidden group border border-border-subtle hover:border-primary/50 transition-colors duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className={`text-[14px] lg:text-[16px] font-bold text-text-primary uppercase tracking-tight mb-1 m-0 ${!isDark ? 'font-cinzel' : ''}`}>Accuracy Trend</h3>
-                    <p className={`text-[11px] text-text-secondary opacity-50 uppercase tracking-widest m-0 ${!isDark ? 'font-garamond italic' : ''}`}>Accuracy percentage over time</p>
-                  </div>
-                  <IconBadge icon={TrendingUp} size="xl" shape="rounded" className="group-hover:scale-110 transition-transform duration-500" />
-                </div>
-                <div className="h-[260px] lg:h-[300px] animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                  <Suspense fallback={<LoadingSkeleton height="100%" borderRadius={16} />}>
-                    <PerformanceCharts type="trend" data={trendData} hasEnoughData={hasEnoughTrendData} isDark={isDark} />
-                  </Suspense>
-                </div>
-              </div>
-            </Card>
-
-            {/* Answer Distribution */}
-            <Card className="p-6 shadow-xl flex flex-col">
-              <h3 className={`text-[14px] lg:text-[16px] font-bold text-text-primary uppercase tracking-tight mb-2 m-0 ${!isDark ? 'font-cinzel' : ''}`}>Answer Distribution</h3>
-              <p className={`text-[11px] text-text-secondary opacity-50 uppercase tracking-widest mb-6 m-0 ${!isDark ? 'font-garamond italic' : ''}`}>Response breakdown</p>
-              <div className="flex-1 min-h-[220px]">
-                <Suspense fallback={<LoadingSkeleton height="100%" borderRadius={16} />}>
-                    <PerformanceCharts type="distribution" data={distribution} isDark={isDark} />
-                </Suspense>
-              </div>
-            </Card>
-
-          {/* Subject Insights */}
-            <SubjectInsightsCard subjectStats={subjectStats} />
-          </section>
-
-        </div>
-      )}
       </Stack>
-    </PageContainer>
-  )
-}
-
-// ─── Subcomponents ──────────────────────────────────────────────────────────
-
-function PerformanceSkeleton() {
-  return (
-    <PageContainer>
-      <div className="space-y-8 animate-in fade-in duration-500">
-      <LoadingSkeleton height={80} borderRadius={24} />
-      <LoadingSkeleton height={140} borderRadius={24} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-         {[1,2,3,4].map(i => <LoadingSkeleton key={i} height={80} borderRadius={20} />)}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <LoadingSkeleton height={400} borderRadius={24} />
-        </div>
-        <LoadingSkeleton height={400} borderRadius={24} />
-      </div>
-      </div>
     </PageContainer>
   )
 }

@@ -8,7 +8,6 @@ import { FormattedBodyText } from '../../common/FormattedBodyText'
 interface ParsedPreviewProps {
   sections: TopicSection[]
   lang: 'en' | 'te'
-  isDark?: boolean
 }
 
 export function ParsedPreview({ sections, lang }: ParsedPreviewProps) {

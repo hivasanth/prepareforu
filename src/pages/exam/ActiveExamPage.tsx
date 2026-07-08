@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Layers, BookOpen, Send } from 'lucide-react';
+import { AlertCircle, Layers, BookOpen } from 'lucide-react';
 import { Button, IconBadge } from '../../components/common/AntigravityUI';
-import { useTheme } from '../../context/ThemeContext';
 
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../hooks/useToast';
@@ -22,6 +21,7 @@ import {
   MobileQuestionStrip,
   SubmitExamModal,
 } from '../../components/exam';
+import { ExamFinishButton } from '../../components/exam/ExamFinishButton';
 
 import { supabase } from '../../lib/supabase';
 import {
@@ -53,7 +53,6 @@ export default function ActiveExamPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showError, showToast } = useToast();
-  const { isDark } = useTheme();
 
   const [loading, setLoading] = useState(true);
   const [paper, setPaper] = useState<ExamPaper | null>(null);
@@ -845,17 +844,7 @@ export default function ActiveExamPage() {
           <IconBadge icon={Layers} size="lg" className="hidden sm:flex" />
         }
         rightActions={
-          <button
-            onClick={() => setIsSubmitModalOpen(true)}
-            className={`flex items-center gap-2 px-6 py-2.5 text-xs rounded-[13px] uppercase tracking-widest shadow-lg font-black transition-all active:scale-95 ${
-              isDark
-                ? 'bg-danger text-white shadow-danger/20 hover:bg-danger/90'
-                : 'ancient-btn-danger'
-            }`}
-          >
-            <Send size={14} />
-            <span>Finish</span>
-          </button>
+          <ExamFinishButton onClick={() => setIsSubmitModalOpen(true)} />
         }
       />
 

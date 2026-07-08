@@ -1,4 +1,4 @@
-import { ProgressBar, useTheme } from '../../../components/common/AntigravityUI'
+import { ProgressBar, useTheme } from '../common/AntigravityUI'
 
 interface SubjectInsightItemProps {
   label: string;

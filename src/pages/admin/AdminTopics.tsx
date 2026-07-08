@@ -10,8 +10,10 @@ import {
 import { AdminSelectionTabs } from '../../components/admin/shared/AdminSelectionTabs'
 import {
   PageContainer, Stack, Button,
-  Label, SectionReveal, useTheme
+  Label, SectionReveal, Switch
 } from '../../components/common/AntigravityUI'
+import { AdminText } from '../../components/admin/common/AdminText'
+import { AdminIconWrap } from '../../components/admin/common/AdminIconWrap'
 import { useToast, ToastContainer } from '../../hooks/useToast'
 import { useAdminFilters } from '../../hooks/useAdminFilters'
 import { GuardLoader } from '../../guards/Guards'
@@ -33,7 +35,6 @@ import { AdminTopicPreviewRenderer } from '../../components/admin/topics/AdminTo
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AdminTopics() {
   const { user, loading: authLoading } = useAuth()
-  const { isDark } = useTheme()
   const { toasts, showSuccess, showError } = useToast()
   const { selectedExam, selectedPaper, selectedSubject, setSelectedExam, setSelectedPaper, setSelectedSubject } = useAdminFilters()
 
@@ -255,9 +256,9 @@ export default function AdminTopics() {
           <SectionReveal>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className={`font-black text-base uppercase tracking-wider ${!isDark ? 'font-cinzel text-[var(--ancient-brown-deep)]' : 'text-text-primary'}`}>
+                <AdminText as="h2" variant="cinzel" className="font-black text-base uppercase tracking-wider">
                   Topics — {selectedSubject}
-                </h2>
+                </AdminText>
                 <p className="text-xs text-text-secondary mt-0.5">
                   {topics.length} topic{topics.length !== 1 ? 's' : ''} · sorted by number order
                 </p>
@@ -282,7 +283,7 @@ export default function AdminTopics() {
                 <div className="space-y-2" aria-live="polite" aria-label="Topics list">
                   {topics.map((topic, idx) => (
                     <TopicListItem
-                      key={topic.id} topic={topic} index={idx} isDark={isDark}
+                      key={topic.id} topic={topic} index={idx}
                       onPreview={() => setPreviewTopic(topic)}
                       onEdit={() => openEdit(topic)}
                       onDelete={() => handleDelete(topic)}
@@ -306,9 +307,9 @@ export default function AdminTopics() {
         title={editingTopic ? 'Edit Topic' : 'Add New Topic'}
         description={`${selectedExam} → ${selectedSubject}`}
         headerBadge={(
-          <div className={`p-2 rounded-xl inline-flex ${!isDark ? 'ancient-icon-badge' : 'bg-primary/10'}`}>
+          <AdminIconWrap>
             <BookMarked className="w-5 h-5 text-primary" />
-          </div>
+          </AdminIconWrap>
         )}
         footer={(
           <>
@@ -335,9 +336,7 @@ export default function AdminTopics() {
             <input
               type="number" min={1} value={displayOrder}
               onChange={e => setDisplayOrder(Number(e.target.value))}
-              className={`w-16 text-sm rounded-xl px-3 py-2 border outline-none ${
-                !isDark ? 'bg-white border-primary/20 text-[var(--ancient-brown-deep)]' : 'bg-hover-bg border-border-subtle text-text-primary'
-              }`}
+              className="w-16 text-sm rounded-xl px-3 py-2 border outline-none bg-hover-bg border-border-subtle text-text-primary"
             />
           </div>
 
@@ -348,33 +347,15 @@ export default function AdminTopics() {
               placeholder="YouTube link (optional)"
               value={youtubeUrl}
               onChange={e => setYoutubeUrl(e.target.value)}
-              className={`flex-1 text-sm rounded-xl px-3 py-2 border outline-none transition-colors ${
-                !isDark
-                  ? 'bg-white border-primary/20 text-[var(--ancient-brown-deep)] focus:border-primary placeholder-[#C4A882]'
-                  : 'bg-hover-bg border-border-subtle text-text-primary focus:border-primary placeholder-text-secondary'
-              }`}
+              className="flex-1 text-sm rounded-xl px-3 py-2 border outline-none transition-colors bg-hover-bg border-border-subtle text-text-primary focus:border-primary placeholder-text-secondary"
             />
           </div>
 
-          <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border ${
-            !isDark ? 'bg-white/40 border-primary/15' : 'bg-hover-bg/20 border-border-subtle/40'
-          }`}>
-            <span className="text-xs font-bold">Visible to students</span>
-            <button
-              onClick={() => setIsPublished(v => !v)}
-              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                isPublished ? 'bg-success' : (!isDark ? 'bg-primary/20' : 'bg-hover-bg')
-              }`}
-            >
-              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
-                isPublished ? 'left-6' : 'left-1'
-              }`} />
-            </button>
-          </div>
+          <Switch label="Visible to students" checked={isPublished} onChange={setIsPublished} />
         </div>
 
         {/* Language Tabs */}
-        <div role="tablist" className={`flex gap-1 p-1 rounded-2xl mb-5 ${!isDark ? 'bg-primary/8' : 'bg-hover-bg/40'}`}>
+        <div role="tablist" className="flex gap-1 p-1 rounded-2xl mb-5 bg-hover-bg/40">
           {([{ key: 'en', label: 'English', icon: Globe, parsed: parsedEn },
             { key: 'te', label: 'Telugu', icon: Languages, parsed: parsedTe }] as const).map(({ key, label, icon: Icon, parsed }) => (
             <button
@@ -385,7 +366,7 @@ export default function AdminTopics() {
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                 activeLang === key
                   ? 'bg-primary text-white shadow-md'
-                  : (!isDark ? 'text-primary/60 hover:text-primary' : 'text-text-secondary hover:text-text-primary')
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               <Icon size={13} /> {label}
@@ -417,7 +398,6 @@ export default function AdminTopics() {
                   parsed={isEn ? parsedEn : parsedTe}
                   onParse={isEn ? handleParseEn : handleParseTe}
                   onCopyPrompt={handleCopyAiPrompt}
-                  isDark={isDark}
                 />
               </motion.div>
             )
@@ -432,9 +412,9 @@ export default function AdminTopics() {
         title="Preview Topic"
         description={`${selectedExam} → ${selectedSubject}`}
         headerBadge={(
-          <div className={`p-2 rounded-xl inline-flex ${!isDark ? 'ancient-icon-badge' : 'bg-primary/10'}`}>
+          <AdminIconWrap>
             <BookOpen className="w-5 h-5 text-primary" />
-          </div>
+          </AdminIconWrap>
         )}
         footer={(
           <>
@@ -457,7 +437,7 @@ export default function AdminTopics() {
           </>
         )}
       >
-        <AdminTopicPreviewRenderer topic={previewTopic!} isDark={isDark} />
+        <AdminTopicPreviewRenderer topic={previewTopic!} />
       </AdminModal>
 
       {/* ─── Delete Confirmation Modal ───────────────────────────────────────── */}

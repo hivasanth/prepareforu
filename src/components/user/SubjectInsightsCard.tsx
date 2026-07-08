@@ -1,5 +1,5 @@
 import { Zap, AlertTriangle, Brain } from 'lucide-react'
-import { Card, useTheme } from '../../../components/common/AntigravityUI'
+import { Card, useTheme } from '../common/AntigravityUI'
 import { SubjectInsightItem } from './SubjectInsightItem'
 
 interface SubjectStat {

@@ -17,7 +17,6 @@ interface TopicListItemProps {
   onMoveDown: () => void
   isFirst: boolean
   isLast: boolean
-  isDark?: boolean
 }
 
 export const TopicListItem = React.memo(function TopicListItem({
