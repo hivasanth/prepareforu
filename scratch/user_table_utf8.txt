@@ -1,0 +1,1122 @@
+﻿<USER_REQUEST>
+S.No
+Exam Type
+Exam Name
+Paper Name
+Subject Name
+Topic Name (English)
+Topic Name (Telugu)
+1
+Bank Exams
+Bank Exams
+Prelims Paper
+Quantitative Aptitude & Data Interpretation
+Calculation & Speed Mathematics
+à°—à°£à°¨ à°®à°°à°¿à°¯à± à°µà±‡à°—à°µà°‚à°¤à°®à±ˆà°¨ à°—à°£à°¿à°¤à°‚
+2
+Bank Exams
+Bank Exams
+Prelims Paper
+Quantitative Aptitude & Data Interpretation
+Number Series
+à°¸à°‚à°–à±à°¯à°¾ à°¶à±à°°à±‡à°£à±à°²à±
+3
+Bank Exams
+Bank Exams
+Prelims Paper
+Quantitative Aptitude & Data Interpretation
+Arithmetic
+à°…à°‚à°•à°—à°£à°¿à°¤à°‚
+4
+Bank Exams
+Bank Exams
+Prelims Paper
+Quantitative Aptitude & Data Interpretation
+Time & Work
+à°¸à°®à°¯à°‚ à°®à°°à°¿à°¯à± à°ªà°¨à°¿
+5
+Bank Exams
+Bank Exams
+Prelims Paper
+Quantitative Aptitude & Data Interpretation
+Time, Speed & Distance
+à°¸à°®à°¯à°‚, à°µà±‡à°—à°‚ à°®à°°à°¿à°¯à± à°¦à±‚à°°à°‚
+6
+Bank Exams
+Bank Exams
+Prelims Paper
+Quantitative Aptitude & Data Interpretation
+Mensuration
+à°•à±à°·à±‡à°¤à±à°°à°®à°¿à°¤à°¿
+7
+Bank Exams
+Bank Exams
+Prelims Paper
+Quantitative Aptitude & Data Interpretation
+Data Interpretation
+à°¡à±‡à°Ÿà°¾ à°µà°¿à°¶à±à°²à±‡à°·à°£
+8
+Bank Exams
+Bank Exams
+Prelims Paper
+Reasoning Ability & Computer Aptitude
+Logical Reasoning
+à°¤à°¾à°°à±à°•à°¿à°• à°µà°¿à°¶à±à°²à±‡à°·à°£
+9
+Bank Exams
+Bank Exams
+Prelims Paper
+Reasoning Ability & Computer Aptitude
+Puzzles & Seating Arrangement
+à°ªà°œà°¿à°²à±à°¸à± à°®à°°à°¿à°¯à± à°•à±‚à°°à±à°šà±à°¨à±‡ à°…à°®à°°à°¿à°•à°²à±
+10
+Bank Exams
+Bank Exams
+Prelims Paper
+Reasoning Ability & Computer Aptitude
+Advanced Logical Reasoning
+à°‰à°¨à±à°¨à°¤ à°¸à±à°¥à°¾à°¯à°¿ à°¤à°¾à°°à±à°•à°¿à°• à°µà°¿à°¶à±à°²à±‡à°·à°£
+11
+Bank Exams
+Bank Exams
+Prelims Paper
+Reasoning Ability & Computer Aptitude
+Computer Aptitude
+à°•à°‚à°ªà±à°¯à±‚à°Ÿà°°à± à°†à°ªà±à°Ÿà°¿à°Ÿà±à°¯à±‚à°¡à±
+12
+Bank Exams
+Bank Exams
+Prelims Paper
+English Language
+Grammar
+â€”
+13
+Bank Exams
+Bank Exams
+Prelims Paper
+English Language
+Vocabulary
+â€”
+14
+Bank Exams
+Bank Exams
+Prelims Paper
+English Language
+Reading Comprehension & Cloze Test
+â€”
+15
+Bank Exams
+Bank Exams
+Prelims Paper
+English Language
+Para Jumbles, Sentence Arrangement & Sentence Connectors
+â€”
+16
+Bank Exams
+Bank Exams
+Prelims Paper
+English Language
+Error Spotting, Sentence Improvement & Mixed English Language
+â€”
+17
+Bank Exams
+Bank Exams
+Prelims Paper
+General, Banking & Financial Awareness
+Banking Awareness
+à°¬à±à°¯à°¾à°‚à°•à°¿à°‚à°—à± à°…à°µà°—à°¾à°¹à°¨
+18
+Bank Exams
+Bank Exams
+Prelims Paper
+General, Banking & Financial Awareness
+Financial & Economic Awareness
+à°†à°°à±à°¥à°¿à°• à°®à°°à°¿à°¯à± à°†à°°à±à°¥à°¿à°• à°µà±à°¯à°µà°¸à±à°¥ à°…à°µà°—à°¾à°¹à°¨
+19
+Bank Exams
+Bank Exams
+Prelims Paper
+General, Banking & Financial Awareness
+Current Affairs
+à°¸à°®à°•à°¾à°²à±€à°¨ à°µà±à°¯à°µà°¹à°¾à°°à°¾à°²à±
+20
+Bank Exams
+Bank Exams
+Prelims Paper
+General, Banking & Financial Awareness
+Static General Knowledge
+à°¸à±à°¥à°¿à°° à°¸à°¾à°§à°¾à°°à°£ à°œà±à°žà°¾à°¨à°‚
+21
+Bank Exams
+Bank Exams
+Prelims Paper
+Computer Knowledge
+Computer Fundamentals & Hardware
+à°•à°‚à°ªà±à°¯à±‚à°Ÿà°°à± à°ªà±à°°à°¾à°¥à°®à°¿à°•à°¾à°²à± & à°¹à°¾à°°à±à°¡à±à°µà±‡à°°à±
+22
+Bank Exams
+Bank Exams
+Prelims Paper
+Computer Knowledge
+Software, Operating Systems & MS Office
+à°¸à°¾à°«à±à°Ÿà±à°µà±‡à°°à±, à°†à°ªà°°à±‡à°Ÿà°¿à°‚à°—à± à°¸à°¿à°¸à±à°Ÿà°®à±à°¸à± & MS Office
+23
+Bank Exams
+Bank Exams
+Prelims Paper
+Computer Knowledge
+Networking, Internet & Cyber Security
+à°¨à±†à°Ÿà±à°µà°°à±à°•à°¿à°‚à°—à±, à°‡à°‚à°Ÿà°°à±à°¨à±†à°Ÿà± & à°¸à±ˆà°¬à°°à± à°­à°¦à±à°°à°¤
+24
+Bank Exams
+Bank Exams
+Prelims Paper
+Computer Knowledge
+Database, Programming Concepts & Emerging Technologies
+à°¡à±‡à°Ÿà°¾à°¬à±‡à°¸à±, à°ªà±à°°à±‹à°—à±à°°à°¾à°®à°¿à°‚à°—à± à°­à°¾à°µà°¨à°²à± & à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿ à°šà±†à°‚à°¦à±à°¤à±à°¨à±à°¨ à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤à°²à±
+
+
+S.No
+Exam Type
+Exam Name
+Paper Name
+Subject Name
+Topic Name (English)
+Topic Name (Telugu)
+1
+APPSC
+Group 1
+General Studies
+History and Culture
+Indus Valley Civilization & Early Historic India
+à°¸à°¿à°‚à°§à± à°²à±‹à°¯ à°¨à°¾à°—à°°à°¿à°•à°¤ à°®à°°à°¿à°¯à± à°ªà±à°°à°¾à°°à°‚à°­ à°šà°¾à°°à°¿à°¤à±à°°à°• à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚
+2
+APPSC
+Group 1
+General Studies
+History and Culture
+Early Medieval India & South Indian Dynasties
+à°ªà±à°°à°¾à°°à°‚à°­ à°®à°§à±à°¯à°¯à±à°— à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚ à°®à°°à°¿à°¯à± à°¦à°•à±à°·à°¿à°£ à°­à°¾à°°à°¤ à°°à°¾à°œà°µà°‚à°¶à°¾à°²à±
+3
+APPSC
+Group 1
+General Studies
+History and Culture
+Delhi Sultanate, Vijayanagara & Mughal India
+à°¢à°¿à°²à±à°²à±€ à°¸à±à°²à±à°¤à°¾à°¨à±‡à°Ÿà±, à°µà°¿à°œà°¯à°¨à°—à°° à°¸à°¾à°®à±à°°à°¾à°œà±à°¯à°‚ à°®à°°à°¿à°¯à± à°®à±Šà°˜à°²à± à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚
+4
+APPSC
+Group 1
+General Studies
+History and Culture
+European Companies & British Expansion in India
+à°¯à±‚à°°à±‹à°ªà°¿à°¯à°¨à± à°µà°¾à°£à°¿à°œà±à°¯ à°¸à°‚à°¸à±à°¥à°²à± à°®à°°à°¿à°¯à± à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚à°²à±‹ à°¬à±à°°à°¿à°Ÿà°¿à°·à± à°µà°¿à°¸à±à°¤à°°à°£
+5
+APPSC
+Group 1
+General Studies
+History and Culture
+Revolt of 1857 & Indian Freedom Movement
+1857 à°¤à°¿à°°à±à°—à±à°¬à°¾à°Ÿà± à°®à°°à°¿à°¯à± à°­à°¾à°°à°¤ à°¸à±à°µà°¾à°¤à°‚à°¤à±à°°à±à°¯ à°‰à°¦à±à°¯à°®à°‚
+6
+APPSC
+Group 1
+General Studies
+History and Culture
+Gandhi, Ambedkar & Post-Independence India
+à°—à°¾à°‚à°§à±€, à°…à°‚à°¬à±‡à°¦à±à°•à°°à± à°®à°°à°¿à°¯à± à°¸à±à°µà°¾à°¤à°‚à°¤à±à°°à±à°¯à°¾à°¨à°‚à°¤à°° à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚
+7
+APPSC
+Group 1
+General Studies
+Constitution, Polity, Social Justice and International Relations
+Indian Constitution â€“ Evolution & Core Features
+à°­à°¾à°°à°¤ à°°à°¾à°œà±à°¯à°¾à°‚à°—à°‚ â€“ à°ªà°°à°¿à°£à°¾à°®à°‚ à°®à°°à°¿à°¯à± à°ªà±à°°à°§à°¾à°¨ à°²à°•à±à°·à°£à°¾à°²à±
+8
+APPSC
+Group 1
+General Studies
+Constitution, Polity, Social Justice and International Relations
+Federal Structure â€“ Union, States & Legislature
+à°¸à°®à°¾à°–à±à°¯ à°µà±à°¯à°µà°¸à±à°¥ â€“ à°•à±‡à°‚à°¦à±à°°à°‚, à°°à°¾à°·à±à°Ÿà±à°°à°¾à°²à± à°®à°°à°¿à°¯à± à°¶à°¾à°¸à°¨à°¸à°­
+9
+APPSC
+Group 1
+General Studies
+Constitution, Polity, Social Justice and International Relations
+Constitutional Bodies & Governance
+à°°à°¾à°œà±à°¯à°¾à°‚à°— à°¸à°‚à°¸à±à°¥à°²à± à°®à°°à°¿à°¯à± à°ªà°¾à°²à°¨
+10
+APPSC
+Group 1
+General Studies
+Constitution, Polity, Social Justice and International Relations
+Governance Reforms, LPG & Institutions
+à°ªà°¾à°²à°¨à°¾ à°¸à°‚à°¸à±à°•à°°à°£à°²à±, à°Žà°²à±à°ªà±€à°œà±€ (à°‰à°¦à°¾à°°à±€à°•à°°à°£, à°ªà±à°°à±ˆà°µà±‡à°Ÿà±€à°•à°°à°£, à°ªà±à°°à°ªà°‚à°šà±€à°•à°°à°£) à°®à°°à°¿à°¯à± à°¸à°‚à°¸à±à°¥à°²à±
+11
+APPSC
+Group 1
+General Studies
+Constitution, Polity, Social Justice and International Relations
+Rights Issues & Social Justice
+à°¹à°•à±à°•à±à°² à°¸à°®à°¸à±à°¯à°²à± à°®à°°à°¿à°¯à± à°¸à°¾à°®à°¾à°œà°¿à°• à°¨à±à°¯à°¾à°¯à°‚
+12
+APPSC
+Group 1
+General Studies
+Constitution, Polity, Social Justice and International Relations
+Indiaâ€™s Foreign Policy & Government Programmes
+à°­à°¾à°°à°¤ à°µà°¿à°¦à±‡à°¶à°¾à°‚à°— à°µà°¿à°§à°¾à°¨à°‚ à°®à°°à°¿à°¯à± à°ªà±à°°à°­à±à°¤à±à°µ à°•à°¾à°°à±à°¯à°•à±à°°à°®à°¾à°²à±
+13
+APPSC
+Group 1
+General Studies
+Indian and Andhra Pradesh Economy and Planning
+Basic Characteristics of Indian Economy
+à°­à°¾à°°à°¤ à°†à°°à±à°¥à°¿à°• à°µà±à°¯à°µà°¸à±à°¥ à°¯à±Šà°•à±à°• à°ªà±à°°à°¾à°¥à°®à°¿à°• à°²à°•à±à°·à°£à°¾à°²à±
+14
+APPSC
+Group 1
+General Studies
+Indian and Andhra Pradesh Economy and Planning
+National Income
+à°œà°¾à°¤à±€à°¯ à°†à°¦à°¾à°¯à°‚
+15
+APPSC
+Group 1
+General Studies
+Indian and Andhra Pradesh Economy and Planning
+Indian Agriculture
+à°­à°¾à°°à°¤ à°µà±à°¯à°µà°¸à°¾à°¯à°‚
+16
+APPSC
+Group 1
+General Studies
+Indian and Andhra Pradesh Economy and Planning
+Financial Institutions
+à°†à°°à±à°¥à°¿à°• à°¸à°‚à°¸à±à°¥à°²à±
+17
+APPSC
+Group 1
+General Studies
+Indian and Andhra Pradesh Economy and Planning
+Andhra Pradesh Economy after Bifurcation
+à°µà°¿à°­à°œà°¨ à°…à°¨à°‚à°¤à°° à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°†à°°à±à°¥à°¿à°• à°µà±à°¯à°µà°¸à±à°¥
+18
+APPSC
+Group 1
+General Studies
+Indian and Andhra Pradesh Economy and Planning
+A.P. Reorganisation Act, 2014
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°ªà±à°¨à°°à±à°µà±à°¯à°µà°¸à±à°¥à±€à°•à°°à°£ à°šà°Ÿà±à°Ÿà°‚, 2014
+19
+APPSC
+Group 1
+General Studies
+Geography
+General Geography
+à°¸à°¾à°§à°¾à°°à°£ à°­à±‚à°—à±‹à°³ à°¶à°¾à°¸à±à°¤à±à°°à°‚
+20
+APPSC
+Group 1
+General Studies
+Geography
+Physical Geography
+à°­à±Œà°¤à°¿à°• à°­à±‚à°—à±‹à°³ à°¶à°¾à°¸à±à°¤à±à°°à°‚
+21
+APPSC
+Group 1
+General Studies
+Geography
+Social Geography
+à°¸à°¾à°®à°¾à°œà°¿à°• à°­à±‚à°—à±‹à°³ à°¶à°¾à°¸à±à°¤à±à°°à°‚
+22
+APPSC
+Group 1
+General Studies
+Geography
+Economic Geography
+à°†à°°à±à°¥à°¿à°• à°­à±‚à°—à±‹à°³ à°¶à°¾à°¸à±à°¤à±à°°à°‚
+
+
+
+
+S.No
+Exam Type
+Exam Name
+Paper Name
+Subject Name
+Topic Name (English)
+Topic Name (Telugu)
+1
+APPSC
+Group 1
+General Aptitude
+General Mental and Psychological Abilities
+Logical & Analytical Reasoning
+à°¤à°¾à°°à±à°•à°¿à°• à°®à°°à°¿à°¯à± à°µà°¿à°¶à±à°²à±‡à°·à°£à°¾à°¤à±à°®à°• à°¤à°°à±à°•à°‚
+2
+APPSC
+Group 1
+General Aptitude
+General Mental and Psychological Abilities
+Reasoning + Basic Math Concepts
+à°¤à°¾à°°à±à°•à°¿à°•à°‚ à°®à°°à°¿à°¯à± à°ªà±à°°à°¾à°¥à°®à°¿à°• à°—à°£à°¿à°¤ à°­à°¾à°µà°¨à°²à±
+3
+APPSC
+Group 1
+General Aptitude
+General Mental and Psychological Abilities
+Quantitative Aptitude & Geometry
+à°ªà°°à°¿à°®à°¾à°£à°¾à°¤à±à°®à°• à°¸à°¾à°®à°°à±à°¥à±à°¯à°‚ à°®à°°à°¿à°¯à± à°œà±à°¯à°¾à°®à°¿à°¤à°¿
+4
+APPSC
+Group 1
+General Aptitude
+General Mental and Psychological Abilities
+Algebra, Data & Intelligence
+à°¬à±€à°œà°—à°£à°¿à°¤à°‚, à°¡à±‡à°Ÿà°¾ à°®à°°à°¿à°¯à± à°®à±‡à°§à°¸à±à°¸à±
+5
+APPSC
+Group 1
+General Aptitude
+Science and Technology
+Science and Technology
+à°¸à±ˆà°¨à±à°¸à± à°®à°°à°¿à°¯à± à°Ÿà±†à°•à±à°¨à°¾à°²à°œà±€
+6
+APPSC
+Group 1
+General Aptitude
+Science and Technology
+Information and Communication Technology (ICT)
+à°¸à°®à°¾à°šà°¾à°° à°®à°°à°¿à°¯à± à°¸à°®à°¾à°šà°¾à°° à°ªà±à°°à°¸à°¾à°° à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤ (ICT)
+7
+APPSC
+Group 1
+General Aptitude
+Science and Technology
+Technology in Space and Defence
+à°…à°‚à°¤à°°à°¿à°•à±à°· à°®à°°à°¿à°¯à± à°°à°•à±à°·à°£ à°°à°‚à°—à°‚à°²à±‹ à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤
+8
+APPSC
+Group 1
+General Aptitude
+Science and Technology
+Energy Requirement and Efficiency
+à°¶à°•à±à°¤à°¿ à°…à°µà°¸à°°à°¾à°²à± à°®à°°à°¿à°¯à± à°¶à°•à±à°¤à°¿ à°¸à°¾à°®à°°à±à°¥à±à°¯à°‚
+9
+APPSC
+Group 1
+General Aptitude
+Science and Technology
+Environmental Science, Biotechnology and Nanotechnology
+à°ªà°°à±à°¯à°¾à°µà°°à°£ à°¶à°¾à°¸à±à°¤à±à°°à°‚, à°œà±€à°µà°¸à°¾à°‚à°•à±‡à°¤à°¿à°• à°¶à°¾à°¸à±à°¤à±à°°à°‚ à°®à°°à°¿à°¯à± à°¨à°¾à°¨à±‹à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤
+10
+APPSC
+Group 1
+General Aptitude
+Current Events of Regional, National and International Importance
+Current Events of Regional, National and International Importance
+à°ªà±à°°à°¾à°‚à°¤à±€à°¯, à°œà°¾à°¤à±€à°¯ à°®à°°à°¿à°¯à± à°…à°‚à°¤à°°à±à°œà°¾à°¤à±€à°¯ à°ªà±à°°à°¾à°§à°¾à°¨à±à°¯à°¤ à°•à°²à°¿à°—à°¿à°¨ à°¸à°®à°•à°¾à°²à±€à°¨ à°¸à°‚à°˜à°Ÿà°¨à°²à±
+
+
+
+S.No
+Exam Type
+Exam Name
+Paper Name
+Subject Name
+Topic Name (English)
+Topic Name (Telugu)
+1
+APPSC
+Group 2
+General Studies and Mental Ability
+Indian History
+Ancient History (Indus Valley Civilization, Vedic Age, Emergence of Buddhism, Emergence of Jainism)
+à°ªà±à°°à°¾à°šà±€à°¨ à°­à°¾à°°à°¤ à°šà°°à°¿à°¤à±à°° (à°¸à°¿à°‚à°§à± à°²à±‹à°¯ à°¨à°¾à°—à°°à°¿à°•à°¤, à°µà±‡à°¦ à°¯à±à°—à°‚, à°¬à±Œà°¦à±à°§ à°®à°¤ à°†à°µà°¿à°°à±à°­à°¾à°µà°‚, à°œà±ˆà°¨ à°®à°¤ à°†à°µà°¿à°°à±à°­à°¾à°µà°‚)
+2
+APPSC
+Group 2
+General Studies and Mental Ability
+Indian History
+Ancient History (Mauryan Empire, Gupta Empire, Harshavardhana)
+à°ªà±à°°à°¾à°šà±€à°¨ à°­à°¾à°°à°¤ à°šà°°à°¿à°¤à±à°° (à°®à±Œà°°à±à°¯ à°¸à°¾à°®à±à°°à°¾à°œà±à°¯à°‚, à°—à±à°ªà±à°¤ à°¸à°¾à°®à±à°°à°¾à°œà±à°¯à°‚, à°¹à°°à±à°·à°µà°°à±à°§à°¨à±à°¡à±)
+3
+APPSC
+Group 2
+General Studies and Mental Ability
+Indian History
+Indian History â€“ Medieval History (Chola Administrative System, Delhi Sultanate)
+à°­à°¾à°°à°¤ à°šà°°à°¿à°¤à±à°° â€“ à°®à°§à±à°¯à°¯à±à°— à°šà°°à°¿à°¤à±à°° (à°šà±‹à°³à±à°² à°ªà°°à°¿à°ªà°¾à°²à°¨à°¾ à°µà±à°¯à°µà°¸à±à°¥, à°¢à°¿à°²à±à°²à±€ à°¸à±à°²à±à°¤à°¾à°¨à±‡à°Ÿà±)
+4
+APPSC
+Group 2
+General Studies and Mental Ability
+Indian History
+Medieval History (Mughal Empire, Bhakti Movement, Sufi Movement, Shivaji and Rise of Maratha Empire)
+à°®à°§à±à°¯à°¯à±à°— à°­à°¾à°°à°¤ à°šà°°à°¿à°¤à±à°° (à°®à±Šà°˜à°²à± à°¸à°¾à°®à±à°°à°¾à°œà±à°¯à°‚, à°­à°•à±à°¤à°¿ à°‰à°¦à±à°¯à°®à°‚, à°¸à±‚à°«à±€ à°‰à°¦à±à°¯à°®à°‚, à°¶à°¿à°µà°¾à°œà±€ à°®à°°à°¿à°¯à± à°®à°°à°¾à° à°¾ à°¸à°¾à°®à±à°°à°¾à°œà±à°¯ à°‰à°¦à°¯à°‚)
+5
+APPSC
+Group 2
+General Studies and Mental Ability
+Indian History
+Modern History (Advent of Europeans, European Trading Companies, Struggle for Supremacy, Bengal, Bombay, Madras, Mysore, Andhra, Nizam, Governor-Generals and Viceroys)
+à°†à°§à±à°¨à°¿à°• à°­à°¾à°°à°¤ à°šà°°à°¿à°¤à±à°° (à°¯à±‚à°°à±‹à°ªà°¿à°¯à°¨à±à°² à°°à°¾à°•, à°¯à±‚à°°à±‹à°ªà°¿à°¯à°¨à± à°µà°¾à°£à°¿à°œà±à°¯ à°¸à°‚à°¸à±à°¥à°²à±, à°†à°§à°¿à°ªà°¤à±à°¯ à°ªà±‹à°°à°¾à°Ÿà°‚, à°¬à±†à°‚à°—à°¾à°²à±, à°¬à±Šà°‚à°¬à°¾à°¯à°¿, à°®à°¦à±à°°à°¾à°¸à±, à°®à±ˆà°¸à±‚à°°à±, à°†à°‚à°§à±à°°, à°¨à°¿à°œà°¾à°‚, à°—à°µà°°à±à°¨à°°à± à°œà°¨à°°à°²à±à°¸à± à°®à°°à°¿à°¯à± à°µà±ˆà°¸à±à°°à°¾à°¯à±à°²à±)
+6
+APPSC
+Group 2
+General Studies and Mental Ability
+Indian History
+Modern History (1857 Revolt, Rise and Consolidation of British Power in India, Changes in Administration, Social and Cultural Spheres)
+à°†à°§à±à°¨à°¿à°• à°­à°¾à°°à°¤ à°šà°°à°¿à°¤à±à°° (1857 à°¤à°¿à°°à±à°—à±à°¬à°¾à°Ÿà±, à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚à°²à±‹ à°¬à±à°°à°¿à°Ÿà°¿à°·à± à°…à°§à°¿à°•à°¾à°° à°¸à±à°¥à°¾à°ªà°¨ à°®à°°à°¿à°¯à± à°¬à°²à±‹à°ªà±‡à°¤à°‚, à°ªà°°à°¿à°ªà°¾à°²à°¨à°²à±‹ à°®à°¾à°°à±à°ªà±à°²à±, à°¸à°¾à°®à°¾à°œà°¿à°• à°®à°°à°¿à°¯à± à°¸à°¾à°‚à°¸à±à°•à±ƒà°¤à°¿à°• à°°à°‚à°—à°¾à°²à±)
+7
+APPSC
+Group 2
+General Studies and Mental Ability
+Indian History
+Modern History (Social and Religious Reform Movements, Indian National Movement, Post-Independence Consolidation and Reorganization)
+à°†à°§à±à°¨à°¿à°• à°­à°¾à°°à°¤ à°šà°°à°¿à°¤à±à°° (à°¸à°¾à°®à°¾à°œà°¿à°• à°®à°°à°¿à°¯à± à°®à°¤ à°¸à°‚à°¸à±à°•à°°à°£ à°‰à°¦à±à°¯à°®à°¾à°²à±, à°­à°¾à°°à°¤ à°œà°¾à°¤à±€à°¯ à°‰à°¦à±à°¯à°®à°‚, à°¸à±à°µà°¾à°¤à°‚à°¤à±à°°à±à°¯à°¾à°¨à°‚à°¤à°° à°à°•à±€à°•à°°à°£ à°®à°°à°¿à°¯à± à°ªà±à°¨à°°à±à°µà±à°¯à°µà°¸à±à°¥à±€à°•à°°à°£)
+8
+APPSC
+Group 2
+General Studies and Mental Ability
+Geography
+General & Physical Geography (Earth in Solar System, Interior of Earth, Major Landforms, Atmosphere, Climate, Ocean Water)
+à°¸à°¾à°§à°¾à°°à°£ à°®à°°à°¿à°¯à± à°­à±Œà°¤à°¿à°• à°­à±‚à°—à±‹à°³ à°¶à°¾à°¸à±à°¤à±à°°à°‚ (à°¸à±Œà°° à°•à±à°Ÿà±à°‚à°¬à°‚à°²à±‹ à°­à±‚à°®à°¿, à°­à±‚à°®à°¿ à°…à°‚à°¤à°°à±à°­à°¾à°—à°‚, à°ªà±à°°à°§à°¾à°¨ à°­à±‚à°¸à±à°µà°°à±‚à°ªà°¾à°²à±, à°µà°¾à°¤à°¾à°µà°°à°£à°‚, à°¶à±€à°¤à±‹à°·à±à°£ à°¸à±à°¥à°¿à°¤à°¿, à°¸à°®à±à°¦à±à°° à°œà°²à°¾à°²à±)
+9
+APPSC
+Group 2
+General Studies and Mental Ability
+Geography
+Geography of India and Andhra Pradesh (Major Physiographic Features, Climate, Drainage System, Soils, Vegetation)
+à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚ à°®à°°à°¿à°¯à± à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°­à±‚à°—à±‹à°³ à°¶à°¾à°¸à±à°¤à±à°°à°‚ (à°ªà±à°°à°§à°¾à°¨ à°­à±Œà°—à±‹à°³à°¿à°• à°¸à±à°µà°°à±‚à°ªà°¾à°²à±, à°¶à±€à°¤à±‹à°·à±à°£ à°¸à±à°¥à°¿à°¤à°¿, à°¨à°¦à±€ à°ªà°¾à°°à±à°¦à°² à°µà±à°¯à°µà°¸à±à°¥, à°¨à±‡à°²à°²à±, à°µà±ƒà°•à±à°·à°¸à°‚à°ªà°¦)
+10
+APPSC
+Group 2
+General Studies and Mental Ability
+Geography
+Economic Geography of India and Andhra Pradesh (Natural Resources, Agriculture, Agro-Based Activities, Industries, Industrial Regions, Transport, Communication, Tourism, Trade)
+à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚ à°®à°°à°¿à°¯à± à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°†à°°à±à°¥à°¿à°• à°­à±‚à°—à±‹à°³ à°¶à°¾à°¸à±à°¤à±à°°à°‚ (à°¸à°¹à°œ à°µà°¨à°°à±à°²à±, à°µà±à°¯à°µà°¸à°¾à°¯à°‚, à°µà±à°¯à°µà°¸à°¾à°¯ à°†à°§à°¾à°°à°¿à°¤ à°•à°¾à°°à±à°¯à°•à°²à°¾à°ªà°¾à°²à±, à°ªà°°à°¿à°¶à±à°°à°®à°²à±, à°ªà°¾à°°à°¿à°¶à±à°°à°¾à°®à°¿à°• à°ªà±à°°à°¾à°‚à°¤à°¾à°²à±, à°°à°µà°¾à°£à°¾, à°¸à°®à°¾à°šà°¾à°° à°ªà±à°°à°¸à°¾à°°à°‚, à°ªà°°à±à°¯à°¾à°Ÿà°•à°‚, à°µà°¾à°£à°¿à°œà±à°¯à°‚)
+11
+APPSC
+Group 2
+General Studies and Mental Ability
+Geography
+Human Geography of India and Andhra Pradesh (Human Development, Demographics, Urbanization, Migration, Racial, Tribal, Religious and Linguistic Groups)
+à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚ à°®à°°à°¿à°¯à± à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°®à°¾à°¨à°µ à°­à±‚à°—à±‹à°³ à°¶à°¾à°¸à±à°¤à±à°°à°‚ (à°®à°¾à°¨à°µ à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿, à°œà°¨à°¾à°­à°¾ à°—à°£à°¾à°‚à°•à°¾à°²à±, à°ªà°Ÿà±à°Ÿà°£à±€à°•à°°à°£, à°µà°²à°¸à°²à±, à°œà°¾à°¤à°¿, à°—à°¿à°°à°¿à°œà°¨, à°®à°¤ à°®à°°à°¿à°¯à± à°­à°¾à°·à°¾ à°¸à°®à±‚à°¹à°¾à°²à±)
+12
+APPSC
+Group 2
+General Studies and Mental Ability
+Indian Society
+Structure of Indian Society (Family, Marriage, Kinship, Caste, Tribe, Ethnicity, Religion, Women)
+à°­à°¾à°°à°¤à±€à°¯ à°¸à°®à°¾à°œ à°¨à°¿à°°à±à°®à°¾à°£à°‚ (à°•à±à°Ÿà±à°‚à°¬à°‚, à°µà°¿à°µà°¾à°¹à°‚, à°¬à°‚à°§à±à°¤à±à°µà°‚, à°•à±à°²à°‚, à°¤à±†à°—, à°œà°¾à°¤à°¿, à°®à°¤à°‚, à°®à°¹à°¿à°³à°²à±)
+13
+APPSC
+Group 2
+General Studies and Mental Ability
+Indian Society
+Social Issues (Casteism, Communalism, Regionalism, Crime Against Women, Child Abuse, Child Labour, Youth Unrest and Agitations)
+à°¸à°¾à°®à°¾à°œà°¿à°• à°¸à°®à°¸à±à°¯à°²à± (à°•à±à°²à°µà°¾à°¦à°‚, à°®à°¤à°¤à°¤à±à°µà°‚, à°ªà±à°°à°¾à°‚à°¤à±€à°¯à°¤, à°®à°¹à°¿à°³à°²à°ªà±ˆ à°¨à±‡à°°à°¾à°²à±, à°¬à°¾à°²à°²à°ªà±ˆ à°¦à±à°°à±à°µà°¿à°¨à°¿à°¯à±‹à°—à°‚, à°¬à°¾à°² à°•à°¾à°°à±à°®à°¿à°•à±à°²à±, à°¯à±à°µà°¤ à°…à°¸à°‚à°¤à±ƒà°ªà±à°¤à°¿ à°®à°°à°¿à°¯à± à°‰à°¦à±à°¯à°®à°¾à°²à±)
+14
+APPSC
+Group 2
+General Studies and Mental Ability
+Indian Society
+Welfare Mechanism (Public Policies, Welfare Programmes, Constitutional and Statutory Provisions for SCs, STs, Minorities, BCs, Women, Disabled Persons and Children)
+à°¸à°‚à°•à±à°·à±‡à°® à°µà±à°¯à°µà°¸à±à°¥ (à°ªà±à°°à°œà°¾ à°µà°¿à°§à°¾à°¨à°¾à°²à±, à°¸à°‚à°•à±à°·à±‡à°® à°•à°¾à°°à±à°¯à°•à±à°°à°®à°¾à°²à±, à°Žà°¸à±à°¸à±€à°²à±, à°Žà°¸à±à°Ÿà±€à°²à±, à°®à±ˆà°¨à°¾à°°à°¿à°Ÿà±€à°²à±, à°¬à±€à°¸à±€à°²à±, à°®à°¹à°¿à°³à°²à±, à°¦à°¿à°µà±à°¯à°¾à°‚à°—à±à°²à± à°®à°°à°¿à°¯à± à°ªà°¿à°²à±à°²à°² à°•à±‹à°¸à°‚ à°°à°¾à°œà±à°¯à°¾à°‚à°— à°®à°°à°¿à°¯à± à°šà°Ÿà±à°Ÿà°¬à°¦à±à°§ à°¨à°¿à°¬à°‚à°§à°¨à°²à±)
+15
+APPSC
+Group 2
+General Studies and Mental Ability
+Current Affairs
+International Current Events and Issues
+à°…à°‚à°¤à°°à±à°œà°¾à°¤à±€à°¯ à°¸à°®à°•à°¾à°²à±€à°¨ à°¸à°‚à°˜à°Ÿà°¨à°²à± à°®à°°à°¿à°¯à± à°…à°‚à°¶à°¾à°²à±
+16
+APPSC
+Group 2
+General Studies and Mental Ability
+Current Affairs
+National Current Events and Issues (India)
+à°œà°¾à°¤à±€à°¯ à°¸à°®à°•à°¾à°²à±€à°¨ à°¸à°‚à°˜à°Ÿà°¨à°²à± à°®à°°à°¿à°¯à± à°…à°‚à°¶à°¾à°²à± (à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚)
+17
+APPSC
+Group 2
+General Studies and Mental Ability
+Current Affairs
+Andhra Pradesh Current Events and Issues
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°¸à°®à°•à°¾à°²à±€à°¨ à°¸à°‚à°˜à°Ÿà°¨à°²à± à°®à°°à°¿à°¯à± à°…à°‚à°¶à°¾à°²à±
+18
+APPSC
+Group 2
+General Studies and Mental Ability
+Mental Ability
+Logical Reasoning (Statement & Assumptions, Statement & Argument, Statement & Conclusion, Statement & Courses of Action)
+à°¤à°¾à°°à±à°•à°¿à°• à°¤à°°à±à°•à°‚ (à°ªà±à°°à°•à°Ÿà°¨ à°®à°°à°¿à°¯à± à°Šà°¹à°²à±, à°ªà±à°°à°•à°Ÿà°¨ à°®à°°à°¿à°¯à± à°µà°¾à°¦à°¨, à°ªà±à°°à°•à°Ÿà°¨ à°®à°°à°¿à°¯à± à°¨à°¿à°°à±à°§à°¾à°°à°£, à°ªà±à°°à°•à°Ÿà°¨ à°®à°°à°¿à°¯à± à°šà°°à±à°¯à°² à°®à°¾à°°à±à°—à°¾à°²à±)
+19
+APPSC
+Group 2
+General Studies and Mental Ability
+Mental Ability
+Number Series, Coding-Decoding, Relations & Analytical Reasoning
+à°¸à°‚à°–à±à°¯à°¾ à°¶à±à°°à±‡à°£à±à°²à±, à°•à±‹à°¡à°¿à°‚à°—à±-à°¡à±€à°•à±‹à°¡à°¿à°‚à°—à±, à°¸à°‚à°¬à°‚à°§à°¾à°²à± à°®à°°à°¿à°¯à± à°µà°¿à°¶à±à°²à±‡à°·à°£à°¾à°¤à±à°®à°• à°¤à°°à±à°•à°‚
+20
+APPSC
+Group 2
+General Studies and Mental Ability
+Mental Ability
+Number Series, Letter Series, Odd Man Out
+à°¸à°‚à°–à±à°¯à°¾ à°¶à±à°°à±‡à°£à±à°²à±, à°…à°•à±à°·à°° à°¶à±à°°à±‡à°£à±à°²à±, à°­à°¿à°¨à±à°¨à°®à±ˆà°¨ à°…à°‚à°¶à°¾à°¨à±à°¨à°¿ à°—à±à°°à±à°¤à°¿à°‚à°šà°¡à°‚
+21
+APPSC
+Group 2
+General Studies and Mental Ability
+Mental Ability
+Coding-Decoding, Blood Relations, Direction Sense, Ranking & Ordering
+à°•à±‹à°¡à°¿à°‚à°—à±-à°¡à±€à°•à±‹à°¡à°¿à°‚à°—à±, à°°à°•à±à°¤ à°¸à°‚à°¬à°‚à°§à°¾à°²à±, à°¦à°¿à°¶à°¾ à°œà±à°žà°¾à°¨à°‚, à°°à±à°¯à°¾à°‚à°•à°¿à°‚à°—à± à°®à°°à°¿à°¯à± à°•à±à°°à°®à°¬à°¦à±à°§à±€à°•à°°à°£
+22
+APPSC
+Group 2
+General Studies and Mental Ability
+Mental Ability
+Data Sufficiency, Decision Making, Problem Solving & Analytical Ability
+à°¡à±‡à°Ÿà°¾ à°¸à°®à±ƒà°¦à±à°§à°¿, à°¨à°¿à°°à±à°£à°¯ à°¸à°¾à°®à°°à±à°¥à±à°¯à°‚, à°¸à°®à°¸à±à°¯ à°ªà°°à°¿à°·à±à°•à°¾à°°à°‚ à°®à°°à°¿à°¯à± à°µà°¿à°¶à±à°²à±‡à°·à°£à°¾à°¤à±à°®à°• à°¸à°¾à°®à°°à±à°¥à±à°¯à°‚
+23
+APPSC
+Group 2
+General Studies and Mental Ability
+Mental Ability
+Quantitative Aptitude (Percentages, Ratio & Proportion, Average, Profit & Loss, Simple & Compound Interest)
+à°ªà°°à°¿à°®à°¾à°£à°¾à°¤à±à°®à°• à°¸à°¾à°®à°°à±à°¥à±à°¯à°‚ (à°¶à°¾à°¤à°¾à°²à±, à°¨à°¿à°·à±à°ªà°¤à±à°¤à°¿ à°®à°°à°¿à°¯à± à°…à°¨à±à°ªà°¾à°¤à°‚, à°¸à°—à°Ÿà±, à°²à°¾à°­à°‚ à°®à°°à°¿à°¯à± à°¨à°·à±à°Ÿà°‚, à°¸à°¾à°§à°¾à°°à°£ à°®à°°à°¿à°¯à± à°šà°•à±à°°à°µà°¡à±à°¡à±€)
+24
+APPSC
+Group 2
+General Studies and Mental Ability
+Mental Ability
+Time & Work, Pipes & Cisterns, Time-Speed-Distance, Boats & Streams, Mensuration
+à°¸à°®à°¯à°‚ à°®à°°à°¿à°¯à± à°ªà°¨à°¿, à°ªà±ˆà°ªà±à°²à± à°®à°°à°¿à°¯à± à°¤à±Šà°Ÿà±à°Ÿà±†à°²à±, à°¸à°®à°¯à°‚-à°µà±‡à°—à°‚-à°¦à±‚à°°à°‚, à°ªà°¡à°µà°²à± à°®à°°à°¿à°¯à± à°ªà±à°°à°µà°¾à°¹à°¾à°²à±, à°•à±à°·à±‡à°¤à±à°°à°®à°¿à°¤à°¿
+25
+APPSC
+Group 2
+General Studies and Mental Ability
+Mental Ability
+Data Interpretation (Tables, Charts, Graphs, Caselets)
+à°¡à±‡à°Ÿà°¾ à°µà°¿à°¶à±à°²à±‡à°·à°£ (à°ªà°Ÿà±à°Ÿà°¿à°•à°²à±, à°šà°¾à°°à±à°Ÿà±à°²à±, à°—à±à°°à°¾à°«à±à°²à±, à°•à±‡à°¸à±à°²à±†à°Ÿà±à°²à±)
+
+
+
+S.No
+Exam Type
+Exam Name
+Paper Name
+Subject Name
+Topic Name (English)
+Topic Name (Telugu)
+1
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Social and Cultural History of Andhra Pradesh
+Sources, Prehistoric Cultures and Megalithic Culture in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°®à±‚à°²à°¾à°²à±, à°šà°°à°¿à°¤à±à°°à°ªà±‚à°°à±à°µ à°¸à°‚à°¸à±à°•à±ƒà°¤à±à°²à± à°®à°°à°¿à°¯à± à°®à±†à°—à°¾à°²à°¿à°¥à°¿à°•à± à°¸à°‚à°¸à±à°•à±ƒà°¤à°¿
+2
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Social and Cultural History of Andhra Pradesh
+Satavahanas, Ikshvakus, Pallavas, Vishnukundins and Early Historical Developments in Andhra
+à°¶à°¾à°¤à°µà°¾à°¹à°¨à±à°²à±, à°‡à°•à±à°·à±à°µà°¾à°•à±à°²à±, à°ªà°²à±à°²à°µà±à°²à±, à°µà°¿à°·à±à°£à±à°•à±à°‚à°¡à°¿à°¨à±à°²à± à°®à°°à°¿à°¯à± à°†à°‚à°§à±à°°à°²à±‹ à°ªà±à°°à°¾à°°à°‚à°­ à°šà°¾à°°à°¿à°¤à±à°°à°• à°ªà°°à°¿à°£à°¾à°®à°¾à°²à±
+3
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Social and Cultural History of Andhra Pradesh
+Eastern Chalukyas, Cholas in Andhra, Kakatiyas and Their Contribution to Andhra Society and Culture
+à°¤à±‚à°°à±à°ªà± à°šà°¾à°³à±à°•à±à°¯à±à°²à±, à°†à°‚à°§à±à°°à°²à±‹ à°šà±‹à°³à±à°²à±, à°•à°¾à°•à°¤à±€à°¯à±à°²à± à°®à°°à°¿à°¯à± à°†à°‚à°§à±à°° à°¸à°®à°¾à°œà°‚, à°¸à°‚à°¸à±à°•à±ƒà°¤à°¿à°•à°¿ à°µà°¾à°°à°¿ à°¸à±‡à°µà°²à±
+4
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Social and Cultural History of Andhra Pradesh
+Vijayanagara Empire, Bahmani Kingdom, Qutb Shahis and Socio-Cultural Developments in Andhra
+à°µà°¿à°œà°¯à°¨à°—à°° à°¸à°¾à°®à±à°°à°¾à°œà±à°¯à°‚, à°¬à°¹à°®à°¨à±€ à°°à°¾à°œà±à°¯à°‚, à°•à±à°¤à±à°¬à± à°·à°¾à°¹à±€à°²à± à°®à°°à°¿à°¯à± à°†à°‚à°§à±à°°à°²à±‹ à°¸à°¾à°®à°¾à°œà°¿à°•-à°¸à°¾à°‚à°¸à±à°•à±ƒà°¤à°¿à°• à°ªà°°à°¿à°£à°¾à°®à°¾à°²à±
+5
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Social and Cultural History of Andhra Pradesh
+Advent of Europeans, Colonial Rule, Social and Religious Reform Movements in Andhra
+à°¯à±‚à°°à±‹à°ªà°¿à°¯à°¨à±à°² à°°à°¾à°•, à°µà°²à°¸ à°ªà°¾à°²à°¨, à°†à°‚à°§à±à°°à°²à±‹ à°¸à°¾à°®à°¾à°œà°¿à°• à°®à°°à°¿à°¯à± à°®à°¤ à°¸à°‚à°¸à±à°•à°°à°£ à°‰à°¦à±à°¯à°®à°¾à°²à±
+6
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Social and Cultural History of Andhra Pradesh
+Andhra Awakening, Freedom Movement in Andhra and Formation of Andhra State & Andhra Pradesh
+à°†à°‚à°§à±à°° à°šà±ˆà°¤à°¨à±à°¯à°‚, à°†à°‚à°§à±à°°à°²à±‹ à°¸à±à°µà°¾à°¤à°‚à°¤à±à°°à±à°¯ à°‰à°¦à±à°¯à°®à°‚ à°®à°°à°¿à°¯à± à°†à°‚à°§à±à°° à°°à°¾à°·à±à°Ÿà±à°°à°‚ & à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°à°°à±à°ªà°¾à°Ÿà±
+7
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Social and Cultural History of Andhra Pradesh
+Andhra Society, Literature, Language, Art, Architecture, Music, Dance and Cultural Heritage
+à°†à°‚à°§à±à°° à°¸à°®à°¾à°œà°‚, à°¸à°¾à°¹à°¿à°¤à±à°¯à°‚, à°­à°¾à°·, à°•à°³, à°µà°¾à°¸à±à°¤à±à°¶à°¿à°²à±à°ªà°‚, à°¸à°‚à°—à±€à°¤à°‚, à°¨à±ƒà°¤à±à°¯à°‚ à°®à°°à°¿à°¯à± à°¸à°¾à°‚à°¸à±à°•à±ƒà°¤à°¿à°• à°µà°¾à°°à°¸à°¤à±à°µà°‚
+8
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Indian Constitution
+Constitutional Evolution, Constituent Assembly, Salient Features, Preamble, Fundamental Rights, Directive Principles and Fundamental Duties
+à°°à°¾à°œà±à°¯à°¾à°‚à°— à°ªà°°à°¿à°£à°¾à°®à°‚, à°°à°¾à°œà±à°¯à°¾à°‚à°— à°¸à°­, à°®à±à°–à±à°¯ à°²à°•à±à°·à°£à°¾à°²à±, à°ªà±€à° à°¿à°•, à°ªà±à°°à°¾à°¥à°®à°¿à°• à°¹à°•à±à°•à±à°²à±, à°°à°¾à°·à±à°Ÿà±à°° à°µà°¿à°§à°¾à°¨ à°®à°¾à°°à±à°—à°¦à°°à±à°¶à°• à°¸à±‚à°¤à±à°°à°¾à°²à± à°®à°°à°¿à°¯à± à°ªà±à°°à°¾à°¥à°®à°¿à°• à°µà°¿à°§à±à°²à±
+9
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Indian Constitution
+Union Government (President, Vice President, Prime Minister, Council of Ministers, Parliament, Attorney General)
+à°•à±‡à°‚à°¦à±à°° à°ªà±à°°à°­à±à°¤à±à°µà°‚ (à°°à°¾à°·à±à°Ÿà±à°°à°ªà°¤à°¿, à°‰à°ªà°°à°¾à°·à±à°Ÿà±à°°à°ªà°¤à°¿, à°ªà±à°°à°§à°¾à°¨ à°®à°‚à°¤à±à°°à°¿, à°®à°‚à°¤à±à°°à°¿à°µà°°à±à°—à°‚, à°ªà°¾à°°à±à°²à°®à±†à°‚à°Ÿà±, à°…à°Ÿà°¾à°°à±à°¨à±€ à°œà°¨à°°à°²à±)
+10
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Indian Constitution
+Judiciary, Judicial Review, Judicial Activism, Supreme Court, High Courts and Subordinate Courts
+à°¨à±à°¯à°¾à°¯à°µà±à°¯à°µà°¸à±à°¥, à°¨à±à°¯à°¾à°¯ à°¸à°®à±€à°•à±à°·, à°¨à±à°¯à°¾à°¯ à°šà±ˆà°¤à°¨à±à°¯à°‚, à°¸à±à°ªà±à°°à±€à°‚à°•à±‹à°°à±à°Ÿà±, à°¹à±ˆà°•à±‹à°°à±à°Ÿà±à°²à± à°®à°°à°¿à°¯à± à°¦à°¿à°—à±à°µ à°¨à±à°¯à°¾à°¯à°¸à±à°¥à°¾à°¨à°¾à°²à±
+11
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Indian Constitution
+Federal System, Centreâ€“State Relations, Emergency Provisions and Constitutional Bodies
+à°¸à°®à°¾à°–à±à°¯ à°µà±à°¯à°µà°¸à±à°¥, à°•à±‡à°‚à°¦à±à°°â€“à°°à°¾à°·à±à°Ÿà±à°° à°¸à°‚à°¬à°‚à°§à°¾à°²à±, à°…à°¤à±à°¯à°µà°¸à°° à°¨à°¿à°¬à°‚à°§à°¨à°²à± à°®à°°à°¿à°¯à± à°°à°¾à°œà±à°¯à°¾à°‚à°— à°¸à°‚à°¸à±à°¥à°²à±
+12
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Indian Constitution
+State Government, Governor, Chief Minister, Council of Ministers, State Legislature and Local Self Government
+à°°à°¾à°·à±à°Ÿà±à°° à°ªà±à°°à°­à±à°¤à±à°µà°‚, à°—à°µà°°à±à°¨à°°à±, à°®à±à°–à±à°¯à°®à°‚à°¤à±à°°à°¿, à°®à°‚à°¤à±à°°à°¿à°µà°°à±à°—à°‚, à°°à°¾à°·à±à°Ÿà±à°° à°¶à°¾à°¸à°¨à°¸à°­ à°®à°°à°¿à°¯à± à°¸à±à°¥à°¾à°¨à°¿à°• à°¸à±à°µà°ªà°°à°¿à°ªà°¾à°²à°¨
+13
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Indian Constitution
+Constitutional Amendments, Schedules, Elections, Political Parties, Pressure Groups and Constitutional & Non-Constitutional Bodies
+à°°à°¾à°œà±à°¯à°¾à°‚à°— à°¸à°µà°°à°£à°²à±, à°·à±†à°¡à±à°¯à±‚à°³à±à°²à±, à°Žà°¨à±à°¨à°¿à°•à°²à±, à°°à°¾à°œà°•à±€à°¯ à°ªà°¾à°°à±à°Ÿà±€à°²à±, à°’à°¤à±à°¤à°¿à°¡à°¿ à°¸à°®à±‚à°¹à°¾à°²à± à°®à°°à°¿à°¯à± à°°à°¾à°œà±à°¯à°¾à°‚à°—à°¬à°¦à±à°§ & à°°à°¾à°œà±à°¯à°¾à°‚à°—à±‡à°¤à°° à°¸à°‚à°¸à±à°¥à°²à±
+14
+APPSC
+Group 2
+Social History of AP and Indian Constitution
+Indian Constitution
+Public Policy, Rights Issues, Governance, Transparency, Accountability and Contemporary Constitutional Developments
+à°ªà±à°°à°œà°¾ à°µà°¿à°§à°¾à°¨à°¾à°²à±, à°¹à°•à±à°•à±à°² à°…à°‚à°¶à°¾à°²à±, à°ªà°°à°¿à°ªà°¾à°²à°¨, à°ªà°¾à°°à°¦à°°à±à°¶à°•à°¤, à°œà°µà°¾à°¬à±à°¦à°¾à°°à±€à°¤à°¨à°‚ à°®à°°à°¿à°¯à± à°¸à°®à°•à°¾à°²à±€à°¨ à°°à°¾à°œà±à°¯à°¾à°‚à°— à°ªà°°à°¿à°£à°¾à°®à°¾à°²à±
+
+
+
+S.No
+Exam Type
+Exam Name
+Paper Name
+Subject Name
+Topic Name (English)
+Topic Name (Telugu)
+1
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Indian and AP Economy
+Basic Concepts of Economics, Economic Systems, National Income and Economic Development
+à°†à°°à±à°¥à°¿à°• à°¶à°¾à°¸à±à°¤à±à°°à°‚ à°¯à±Šà°•à±à°• à°ªà±à°°à°¾à°¥à°®à°¿à°• à°­à°¾à°µà°¨à°²à±, à°†à°°à±à°¥à°¿à°• à°µà±à°¯à°µà°¸à±à°¥à°²à±, à°œà°¾à°¤à±€à°¯ à°†à°¦à°¾à°¯à°‚ à°®à°°à°¿à°¯à± à°†à°°à±à°¥à°¿à°• à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿
+2
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Indian and AP Economy
+Planning in India, NITI Aayog, Economic Reforms, Liberalization, Privatization and Globalization
+à°­à°¾à°°à°¤à°¦à±‡à°¶à°‚à°²à±‹ à°ªà±à°°à°£à°¾à°³à°¿à°•, à°¨à±€à°¤à°¿ à°†à°¯à±‹à°—à±, à°†à°°à±à°¥à°¿à°• à°¸à°‚à°¸à±à°•à°°à°£à°²à±, à°¸à°°à°³à±€à°•à°°à°£, à°ªà±à°°à±ˆà°µà±‡à°Ÿà±€à°•à°°à°£ à°®à°°à°¿à°¯à± à°ªà±à°°à°ªà°‚à°šà±€à°•à°°à°£
+3
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Indian and AP Economy
+Agriculture, Land Reforms, Irrigation, Rural Development and Allied Sectors
+à°µà±à°¯à°µà°¸à°¾à°¯à°‚, à°­à±‚ à°¸à°‚à°¸à±à°•à°°à°£à°²à±, à°¨à±€à°Ÿà°¿à°ªà°¾à°°à±à°¦à°², à°—à±à°°à°¾à°®à±€à°£ à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿ à°®à°°à°¿à°¯à± à°…à°¨à±à°¬à°‚à°§ à°°à°‚à°—à°¾à°²à±
+4
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Indian and AP Economy
+Industry, Industrial Policy, MSMEs, Infrastructure and Service Sector
+à°ªà°°à°¿à°¶à±à°°à°®à°²à±, à°ªà°¾à°°à°¿à°¶à±à°°à°¾à°®à°¿à°• à°µà°¿à°§à°¾à°¨à°‚, à°¸à±‚à°•à±à°·à±à°®, à°šà°¿à°¨à±à°¨ à°®à°°à°¿à°¯à± à°®à°§à±à°¯à°¤à°°à°¹à°¾ à°ªà°°à°¿à°¶à±à°°à°®à°²à± (MSMEs), à°®à±Œà°²à°¿à°• à°¸à°¦à±à°ªà°¾à°¯à°¾à°²à± à°®à°°à°¿à°¯à± à°¸à±‡à°µà°¾à°°à°‚à°—à°‚
+5
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Indian and AP Economy
+Banking, Financial System, Money Market, Capital Market, Public Finance and Budget
+à°¬à±à°¯à°¾à°‚à°•à°¿à°‚à°—à±, à°†à°°à±à°¥à°¿à°• à°µà±à°¯à°µà°¸à±à°¥, à°¦à±à°°à°µà±à°¯ à°®à°¾à°°à±à°•à±†à°Ÿà±, à°®à±‚à°²à°§à°¨ à°®à°¾à°°à±à°•à±†à°Ÿà±, à°ªà±à°°à°­à±à°¤à±à°µ à°†à°°à±à°¥à°¿à°• à°µà±à°¯à°µà°¹à°¾à°°à°¾à°²à± à°®à°°à°¿à°¯à± à°¬à°¡à±à°œà±†à°Ÿà±
+6
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Indian and AP Economy
+Poverty, Unemployment, Population, Human Development, Inclusive Growth and Welfare Programmes
+à°ªà±‡à°¦à°°à°¿à°•à°‚, à°¨à°¿à°°à±à°¦à±à°¯à±‹à°—à°‚, à°œà°¨à°¾à°­à°¾, à°®à°¾à°¨à°µ à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿, à°¸à°®à±à°®à°¿à°³à°¿à°¤ à°µà±ƒà°¦à±à°§à°¿ à°®à°°à°¿à°¯à± à°¸à°‚à°•à±à°·à±‡à°® à°•à°¾à°°à±à°¯à°•à±à°°à°®à°¾à°²à±
+7
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Indian and AP Economy
+External Sector, International Trade, WTO, Global Economic Institutions and Andhra Pradesh Economy
+à°¬à°¾à°¹à±à°¯ à°°à°‚à°—à°‚, à°…à°‚à°¤à°°à±à°œà°¾à°¤à±€à°¯ à°µà°¾à°£à°¿à°œà±à°¯à°‚, WTO, à°ªà±à°°à°ªà°‚à°š à°†à°°à±à°¥à°¿à°• à°¸à°‚à°¸à±à°¥à°²à± à°®à°°à°¿à°¯à± à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°†à°°à±à°¥à°¿à°• à°µà±à°¯à°µà°¸à±à°¥
+8
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Science and Technology
+Basics of Science, Scientific Methods, Scientific Institutions and Contributions of Indian Scientists
+à°µà°¿à°œà±à°žà°¾à°¨ à°¶à°¾à°¸à±à°¤à±à°°à°ªà± à°ªà±à°°à°¾à°¥à°®à°¿à°• à°…à°‚à°¶à°¾à°²à±, à°¶à°¾à°¸à±à°¤à±à°°à±€à°¯ à°ªà°¦à±à°§à°¤à±à°²à±, à°¶à°¾à°¸à±à°¤à±à°°à±€à°¯ à°¸à°‚à°¸à±à°¥à°²à± à°®à°°à°¿à°¯à± à°­à°¾à°°à°¤à±€à°¯ à°¶à°¾à°¸à±à°¤à±à°°à°µà±‡à°¤à±à°¤à°² à°•à±ƒà°·à°¿
+9
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Science and Technology
+Space Technology, ISRO, Satellites, Space Missions and Space Applications
+à°…à°‚à°¤à°°à°¿à°•à±à°· à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤, à°‡à°¸à±à°°à±‹, à°‰à°ªà°—à±à°°à°¹à°¾à°²à±, à°…à°‚à°¤à°°à°¿à°•à±à°· à°®à°¿à°·à°¨à±à°²à± à°®à°°à°¿à°¯à± à°…à°‚à°¤à°°à°¿à°•à±à°· à°…à°¨à±à°µà°°à±à°¤à°¨à°¾à°²à±
+10
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Science and Technology
+Information Technology, Computers, Artificial Intelligence, Cyber Security and Digital India
+à°¸à°®à°¾à°šà°¾à°° à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤, à°•à°‚à°ªà±à°¯à±‚à°Ÿà°°à±à°²à±, à°•à±ƒà°¤à±à°°à°¿à°® à°®à±‡à°§à°¸à±à°¸à±, à°¸à±ˆà°¬à°°à± à°­à°¦à±à°°à°¤ à°®à°°à°¿à°¯à± à°¡à°¿à°œà°¿à°Ÿà°²à± à°‡à°‚à°¡à°¿à°¯à°¾
+11
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Science and Technology
+Biotechnology, Genetic Engineering, Nanotechnology and Emerging Scientific Innovations
+à°œà±€à°µà°¸à°¾à°‚à°•à±‡à°¤à°¿à°• à°¶à°¾à°¸à±à°¤à±à°°à°‚, à°œà°¨à±à°¯à± à°‡à°‚à°œà°¨à±€à°°à°¿à°‚à°—à±, à°¨à°¾à°¨à±‹à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤ à°®à°°à°¿à°¯à± à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿ à°šà±†à°‚à°¦à±à°¤à±à°¨à±à°¨ à°¶à°¾à°¸à±à°¤à±à°°à±€à°¯ à°†à°µà°¿à°·à±à°•à°°à°£à°²à±
+12
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Science and Technology
+Health, Diseases, Vaccines, Public Health, Nutrition and Medical Technologies
+à°†à°°à±‹à°—à±à°¯à°‚, à°µà±à°¯à°¾à°§à±à°²à±, à°Ÿà±€à°•à°¾à°²à±, à°ªà±à°°à°œà°¾à°°à±‹à°—à±à°¯à°‚, à°ªà±‹à°·à°•à°¾à°¹à°¾à°°à°‚ à°®à°°à°¿à°¯à± à°µà±ˆà°¦à±à°¯ à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤à°²à±
+13
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Science and Technology
+Environment, Ecology, Biodiversity, Climate Change, Energy and Sustainable Development
+à°ªà°°à±à°¯à°¾à°µà°°à°£à°‚, à°œà±€à°µà°¾à°µà°°à°£ à°¶à°¾à°¸à±à°¤à±à°°à°‚, à°œà±€à°µ à°µà±ˆà°µà°¿à°§à±à°¯à°‚, à°µà°¾à°¤à°¾à°µà°°à°£ à°®à°¾à°°à±à°ªà±, à°¶à°•à±à°¤à°¿ à°®à°°à°¿à°¯à± à°¸à±à°¸à±à°¥à°¿à°° à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿
+14
+APPSC
+Group 2
+Indian and AP Economy and Science and Technology
+Science and Technology
+Defence Technology, Nuclear Technology, Robotics, Advanced Materials and Emerging Technologies
+à°°à°•à±à°·à°£ à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤, à°…à°£à± à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤, à°°à±‹à°¬à±‹à°Ÿà°¿à°•à±à°¸à±, à°…à°§à±à°¨à°¾à°¤à°¨ à°ªà°¦à°¾à°°à±à°¥à°¾à°²à± à°®à°°à°¿à°¯à± à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿ à°šà±†à°‚à°¦à±à°¤à±à°¨à±à°¨ à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤à°²à±
+
+
+S.No
+Exam Type
+Exam Name
+Paper Name
+Subject Name
+Topic Name (English)
+Topic Name (Telugu)
+1
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Current Affairs of National Importance
+National Governance, Politics, Parliament, Judiciary and Important Government Initiatives
+à°œà°¾à°¤à±€à°¯ à°ªà°°à°¿à°ªà°¾à°²à°¨, à°°à°¾à°œà°•à±€à°¯à°¾à°²à±, à°ªà°¾à°°à±à°²à°®à±†à°‚à°Ÿà±, à°¨à±à°¯à°¾à°¯à°µà±à°¯à°µà°¸à±à°¥ à°®à°°à°¿à°¯à± à°®à±à°–à±à°¯ à°ªà±à°°à°­à±à°¤à±à°µ à°•à°¾à°°à±à°¯à°•à±à°°à°®à°¾à°²à±
+2
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Current Affairs of National Importance
+Economy, Budget, Banking, Finance, Welfare Schemes and Development Programmes
+à°†à°°à±à°¥à°¿à°• à°µà±à°¯à°µà°¸à±à°¥, à°¬à°¡à±à°œà±†à°Ÿà±, à°¬à±à°¯à°¾à°‚à°•à°¿à°‚à°—à±, à°†à°°à±à°¥à°¿à°• à°µà±à°¯à°µà°¹à°¾à°°à°¾à°²à±, à°¸à°‚à°•à±à°·à±‡à°® à°ªà°¥à°•à°¾à°²à± à°®à°°à°¿à°¯à± à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿ à°•à°¾à°°à±à°¯à°•à±à°°à°®à°¾à°²à±
+3
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Current Affairs of National Importance
+Science, Technology, Space, Environment, Climate Change and Energy
+à°µà°¿à°œà±à°žà°¾à°¨à°‚, à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤, à°…à°‚à°¤à°°à°¿à°•à±à°·à°‚, à°ªà°°à±à°¯à°¾à°µà°°à°£à°‚, à°µà°¾à°¤à°¾à°µà°°à°£ à°®à°¾à°°à±à°ªà± à°®à°°à°¿à°¯à± à°¶à°•à±à°¤à°¿
+4
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Current Affairs of National Importance
+International Relations, Global Organizations, Defence, Internal Security and India's Foreign Policy
+à°…à°‚à°¤à°°à±à°œà°¾à°¤à±€à°¯ à°¸à°‚à°¬à°‚à°§à°¾à°²à±, à°ªà±à°°à°ªà°‚à°š à°¸à°‚à°¸à±à°¥à°²à±, à°°à°•à±à°·à°£, à°…à°‚à°¤à°°à±à°—à°¤ à°­à°¦à±à°°à°¤ à°®à°°à°¿à°¯à± à°­à°¾à°°à°¤ à°µà°¿à°¦à±‡à°¶à°¾à°‚à°— à°µà°¿à°§à°¾à°¨à°‚
+5
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Current Affairs of National Importance
+Awards, Sports, Reports, Indices, Books, Important Days and Persons in News
+à°…à°µà°¾à°°à±à°¡à±à°²à±, à°•à±à°°à±€à°¡à°²à±, à°¨à°¿à°µà±‡à°¦à°¿à°•à°²à±, à°¸à±‚à°šà°¿à°•à°²à±, à°ªà±à°¸à±à°¤à°•à°¾à°²à±, à°®à±à°–à±à°¯à°®à±ˆà°¨ à°¦à°¿à°¨à°¾à°²à± à°®à°°à°¿à°¯à± à°µà°¾à°°à±à°¤à°²à±à°²à±‹à°¨à°¿ à°ªà±à°°à°®à±à°– à°µà±à°¯à°•à±à°¤à±à°²à±
+6
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+History and Geography of Andhra Pradesh
+Ancient Andhra History (Prehistoric Period to Satavahanas)
+à°ªà±à°°à°¾à°šà±€à°¨ à°†à°‚à°§à±à°° à°šà°°à°¿à°¤à±à°° (à°šà°°à°¿à°¤à±à°°à°ªà±‚à°°à±à°µ à°¯à±à°—à°‚ à°¨à±à°‚à°¡à°¿ à°¶à°¾à°¤à°µà°¾à°¹à°¨à±à°² à°µà°°à°•à±)
+7
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+History and Geography of Andhra Pradesh
+Medieval Andhra History (Ikshvakus to Kakatiyas)
+à°®à°§à±à°¯à°¯à±à°— à°†à°‚à°§à±à°° à°šà°°à°¿à°¤à±à°° (à°‡à°•à±à°·à±à°µà°¾à°•à±à°² à°¨à±à°‚à°¡à°¿ à°•à°¾à°•à°¤à±€à°¯à±à°² à°µà°°à°•à±)
+8
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+History and Geography of Andhra Pradesh
+Modern Andhra History (Vijayanagara Empire, Qutb Shahis, Colonial Rule and Socio-Cultural Developments)
+à°†à°§à±à°¨à°¿à°• à°†à°‚à°§à±à°° à°šà°°à°¿à°¤à±à°° (à°µà°¿à°œà°¯à°¨à°—à°° à°¸à°¾à°®à±à°°à°¾à°œà±à°¯à°‚, à°•à±à°¤à±à°¬à± à°·à°¾à°¹à±€à°²à±, à°µà°²à°¸ à°ªà°¾à°²à°¨ à°®à°°à°¿à°¯à± à°¸à°¾à°®à°¾à°œà°¿à°•-à°¸à°¾à°‚à°¸à±à°•à±ƒà°¤à°¿à°• à°ªà°°à°¿à°£à°¾à°®à°¾à°²à±)
+9
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+History and Geography of Andhra Pradesh
+Andhra Movement, Formation of Andhra State, Formation of Andhra Pradesh and Reorganisation of the State
+à°†à°‚à°§à±à°° à°‰à°¦à±à°¯à°®à°‚, à°†à°‚à°§à±à°° à°°à°¾à°·à±à°Ÿà±à°° à°à°°à±à°ªà°¾à°Ÿà±, à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°à°°à±à°ªà°¾à°Ÿà± à°®à°°à°¿à°¯à± à°°à°¾à°·à±à°Ÿà±à°° à°ªà±à°¨à°°à±à°µà±à°¯à°µà°¸à±à°¥à±€à°•à°°à°£
+10
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+History and Geography of Andhra Pradesh
+Physical Geography of Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°­à±Œà°¤à°¿à°• à°­à±‚à°—à±‹à°³ à°¶à°¾à°¸à±à°¤à±à°°à°‚
+11
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+History and Geography of Andhra Pradesh
+Economic Geography of Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°†à°°à±à°¥à°¿à°• à°­à±‚à°—à±‹à°³ à°¶à°¾à°¸à±à°¤à±à°°à°‚
+12
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+History and Geography of Andhra Pradesh
+Resources, Agriculture, Irrigation, Industries, Tourism and Sustainable Development of Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°µà°¨à°°à±à°²à±, à°µà±à°¯à°µà°¸à°¾à°¯à°‚, à°¨à±€à°Ÿà°¿à°ªà°¾à°°à±à°¦à°², à°ªà°°à°¿à°¶à±à°°à°®à°²à±, à°ªà°°à±à°¯à°¾à°Ÿà°•à°‚ à°®à°°à°¿à°¯à± à°¸à±à°¸à±à°¥à°¿à°° à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿
+13
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Mental Ability
+Logical Reasoning, Number Series, Coding-Decoding and Relations
+à°¤à°¾à°°à±à°•à°¿à°• à°¤à°°à±à°•à°‚, à°¸à°‚à°–à±à°¯à°¾ à°¶à±à°°à±‡à°£à±à°²à±, à°•à±‹à°¡à°¿à°‚à°—à±-à°¡à±€à°•à±‹à°¡à°¿à°‚à°—à± à°®à°°à°¿à°¯à± à°¸à°‚à°¬à°‚à°§à°¾à°²à±
+14
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Mental Ability
+Analogy, Classification, Odd One Out and Logical Grouping
+à°¸à°¾à°¦à±ƒà°¶à±à°¯à°‚, à°µà°°à±à°—à±€à°•à°°à°£, à°­à°¿à°¨à±à°¨à°®à±ˆà°¨ à°…à°‚à°¶à°¾à°¨à±à°¨à°¿ à°—à±à°°à±à°¤à°¿à°‚à°šà°¡à°‚ à°®à°°à°¿à°¯à± à°¤à°¾à°°à±à°•à°¿à°• à°¸à°®à±‚à°¹à±€à°•à°°à°£
+15
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Mental Ability
+Direction Sense, Ranking, Order and Sequence Problems
+à°¦à°¿à°¶à°¾ à°œà±à°žà°¾à°¨à°‚, à°°à±à°¯à°¾à°‚à°•à°¿à°‚à°—à±, à°•à±à°°à°®à°‚ à°®à°°à°¿à°¯à± à°¶à±à°°à±‡à°£à°¿ à°¸à°®à°¸à±à°¯à°²à±
+16
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Mental Ability
+Seating Arrangement, Puzzle Test and Logical Arrangements
+à°•à±‚à°°à±à°šà±à°¨à±‡ à°…à°®à°°à°¿à°•à°²à±, à°ªà°œà°¿à°²à± à°ªà°°à±€à°•à±à°· à°®à°°à°¿à°¯à± à°¤à°¾à°°à±à°•à°¿à°• à°…à°®à°°à°¿à°•à°²à±
+17
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Mental Ability
+Data Interpretation, Data Analysis and Data Sufficiency
+à°¡à±‡à°Ÿà°¾ à°µà°¿à°¶à±à°²à±‡à°·à°£, à°¡à±‡à°Ÿà°¾ à°µà°¿à°¶à±à°²à±‡à°·à°£à°¾à°¤à±à°®à°• à°ªà°°à°¿à°¶à±€à°²à°¨ à°®à°°à°¿à°¯à± à°¡à±‡à°Ÿà°¾ à°¸à°®à±ƒà°¦à±à°§à°¿
+18
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Mental Ability
+Clocks, Calendars, Cubes, Dice and Non-Verbal Reasoning
+à°—à°¡à°¿à°¯à°¾à°°à°¾à°²à±, à°•à±à°¯à°¾à°²à±†à°‚à°¡à°°à±à°²à±, à°˜à°¨à°¾à°²à±, à°ªà°¾à°šà°¿à°•à°²à± à°®à°°à°¿à°¯à± à°®à±Œà°–à°¿à°•à±‡à°¤à°° à°¤à°¾à°°à±à°•à°¿à°•à°¤
+19
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Mental Ability
+Quantitative Aptitude, Arithmetic Reasoning and Numerical Ability
+à°ªà°°à°¿à°®à°¾à°£à°¾à°¤à±à°®à°• à°¸à°¾à°®à°°à±à°¥à±à°¯à°‚, à°…à°‚à°•à°—à°£à°¿à°¤ à°¤à°¾à°°à±à°•à°¿à°•à°¤ à°®à°°à°¿à°¯à± à°¸à°‚à°–à±à°¯à°¾ à°¸à°¾à°®à°°à±à°¥à±à°¯à°‚
+20
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Language Ability
+Vocabulary, Synonyms, Antonyms and One-Word Substitutions
+-
+21
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Language Ability
+Grammar, Parts of Speech and Error Detection
+-
+22
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Language Ability
+Tenses, Voice, Narration and Sentence Improvement
+-
+23
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Language Ability
+Idioms, Phrases, Fill in the Blanks, Usage and Sentence Completion
+-
+24
+APPSC
+Group 3
+General Studies, Mental Ability and Language Ability
+Language Ability
+Reading Comprehension, Para Jumbles and Passage-Based Reasoning
+-
+
+
+S.No
+Exam Type
+Exam Name
+Paper Name
+Subject Name
+Topic Name (English)
+Topic Name (Telugu)
+1
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Rural Health and Sanitation
+Rural Health Infrastructure, Public Health and Healthcare Delivery in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°—à±à°°à°¾à°®à±€à°£ à°†à°°à±‹à°—à±à°¯ à°®à±Œà°²à°¿à°• à°¸à°¦à±à°ªà°¾à°¯à°¾à°²à±, à°ªà±à°°à°œà°¾à°°à±‹à°—à±à°¯à°‚ à°®à°°à°¿à°¯à± à°†à°°à±‹à°—à±à°¯ à°¸à±‡à°µà°² à°…à°‚à°¦à°œà±‡à°¤
+2
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Rural Health and Sanitation
+Rural Sanitation, Drinking Water, Hygiene and Public Health Awareness in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°—à±à°°à°¾à°®à±€à°£ à°ªà°¾à°°à°¿à°¶à±à°¦à±à°§à±à°¯à°‚, à°¤à°¾à°—à±à°¨à±€à°°à±, à°ªà°°à°¿à°¶à±à°­à±à°°à°¤ à°®à°°à°¿à°¯à± à°ªà±à°°à°œà°¾à°°à±‹à°—à±à°¯ à°…à°µà°—à°¾à°¹à°¨
+3
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Rural Health and Sanitation
+Village Development, Rural Infrastructure and Rural Livelihoods in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°—à±à°°à°¾à°®à°¾à°­à°¿à°µà±ƒà°¦à±à°§à°¿, à°—à±à°°à°¾à°®à±€à°£ à°®à±Œà°²à°¿à°• à°¸à°¦à±à°ªà°¾à°¯à°¾à°²à± à°®à°°à°¿à°¯à± à°—à±à°°à°¾à°®à±€à°£ à°œà±€à°µà°¨à±‹à°ªà°¾à°§à±à°²à±
+4
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Rural Health and Sanitation
+Women, Children, Nutrition, Social Welfare and Human Development in Rural Andhra Pradesh
+à°—à±à°°à°¾à°®à±€à°£ à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°®à°¹à°¿à°³à°²à±, à°ªà°¿à°²à±à°²à°²à±, à°ªà±‹à°·à°•à°¾à°¹à°¾à°°à°‚, à°¸à°¾à°®à°¾à°œà°¿à°• à°¸à°‚à°•à±à°·à±‡à°®à°‚ à°®à°°à°¿à°¯à± à°®à°¾à°¨à°µ à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿
+5
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Social Tensions and Contemporary Problems
+Social Tensions, Social Conflicts and Social Change in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°¸à°¾à°®à°¾à°œà°¿à°• à°‰à°¦à±à°°à°¿à°•à±à°¤à°¤à°²à±, à°¸à°¾à°®à°¾à°œà°¿à°• à°¸à°‚à°˜à°°à±à°·à°£à°²à± à°®à°°à°¿à°¯à± à°¸à°¾à°®à°¾à°œà°¿à°• à°®à°¾à°°à±à°ªà±
+6
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Social Tensions and Contemporary Problems
+Problems of Deprived Groups, Social Justice and Inclusive Development in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°µà±†à°¨à±à°•à°¬à°¡à°¿à°¨ à°µà°°à±à°—à°¾à°² à°¸à°®à°¸à±à°¯à°²à±, à°¸à°¾à°®à°¾à°œà°¿à°• à°¨à±à°¯à°¾à°¯à°‚ à°®à°°à°¿à°¯à± à°¸à°®à°—à±à°° à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿
+7
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Social Tensions and Contemporary Problems
+Multi-Lingual Society, Cultural Diversity, Migration and Social Integration in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°¬à°¹à±à°­à°¾à°·à°¾ à°¸à°®à°¾à°œà°‚, à°¸à°¾à°‚à°¸à±à°•à±ƒà°¤à°¿à°• à°µà±ˆà°µà°¿à°§à±à°¯à°‚, à°µà°²à°¸à°²à± à°®à°°à°¿à°¯à± à°¸à°¾à°®à°¾à°œà°¿à°• à°¸à°®à±ˆà°•à±à°¯à°¤
+8
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Social Tensions and Contemporary Problems
+Unemployment, Youth Issues, Student Unrest and Human Resource Development in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°¨à°¿à°°à±à°¦à±à°¯à±‹à°—à°‚, à°¯à±à°µà°¤ à°¸à°®à°¸à±à°¯à°²à±, à°µà°¿à°¦à±à°¯à°¾à°°à±à°¥à±à°² à°…à°¸à°‚à°¤à±ƒà°ªà±à°¤à°¿ à°®à°°à°¿à°¯à± à°®à°¾à°¨à°µ à°µà°¨à°°à±à°² à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿
+9
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Social Tensions and Contemporary Problems
+Environment, Development, Globalization, Technology and Contemporary Challenges in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°ªà°°à±à°¯à°¾à°µà°°à°£à°‚, à°…à°­à°¿à°µà±ƒà°¦à±à°§à°¿, à°ªà±à°°à°ªà°‚à°šà±€à°•à°°à°£, à°¸à°¾à°‚à°•à±‡à°¤à°¿à°•à°¤ à°®à°°à°¿à°¯à± à°¸à°®à°•à°¾à°²à±€à°¨ à°¸à°µà°¾à°³à±à°²à±
+10
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Indian Democracy and Democratic Institutions
+Indian Constitution, Democratic Values and Constitutional Foundations
+à°­à°¾à°°à°¤ à°°à°¾à°œà±à°¯à°¾à°‚à°—à°‚, à°ªà±à°°à°œà°¾à°¸à±à°µà°¾à°®à±à°¯ à°µà°¿à°²à±à°µà°²à± à°®à°°à°¿à°¯à± à°°à°¾à°œà±à°¯à°¾à°‚à°— à°ªà±à°¨à°¾à°¦à±à°²à±
+11
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Indian Democracy and Democratic Institutions
+Union Government, Parliament, Executive and Judiciary
+à°•à±‡à°‚à°¦à±à°° à°ªà±à°°à°­à±à°¤à±à°µà°‚, à°ªà°¾à°°à±à°²à°®à±†à°‚à°Ÿà±, à°•à°¾à°°à±à°¯à°¨à°¿à°°à±à°µà°¾à°¹à°• à°µà±à°¯à°µà°¸à±à°¥ à°®à°°à°¿à°¯à± à°¨à±à°¯à°¾à°¯à°µà±à°¯à°µà°¸à±à°¥
+12
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Indian Democracy and Democratic Institutions
+State Government, Andhra Pradesh Governance and Democratic Administration
+à°°à°¾à°·à±à°Ÿà±à°° à°ªà±à°°à°­à±à°¤à±à°µà°‚, à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à± à°ªà°°à°¿à°ªà°¾à°²à°¨ à°®à°°à°¿à°¯à± à°ªà±à°°à°œà°¾à°¸à±à°µà°¾à°®à±à°¯ à°ªà°¾à°²à°¨
+13
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Indian Democracy and Democratic Institutions
+Local Self Government, Panchayati Raj and Decentralized Governance in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°¸à±à°¥à°¾à°¨à°¿à°• à°¸à±à°µà°ªà°°à°¿à°ªà°¾à°²à°¨, à°ªà°‚à°šà°¾à°¯à°¤à±€ à°°à°¾à°œà± à°®à°°à°¿à°¯à± à°µà°¿à°•à±‡à°‚à°¦à±à°°à±€à°•à±ƒà°¤ à°ªà°¾à°²à°¨
+14
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+Indian Democracy and Democratic Institutions
+Elections, Political Parties, Electoral Reforms, Rights-Based Governance and Citizen Participation
+à°Žà°¨à±à°¨à°¿à°•à°²à±, à°°à°¾à°œà°•à±€à°¯ à°ªà°¾à°°à±à°Ÿà±€à°²à±, à°Žà°¨à±à°¨à°¿à°•à°² à°¸à°‚à°¸à±à°•à°°à°£à°²à±, à°¹à°•à±à°•à±à°² à°†à°§à°¾à°°à°¿à°¤ à°ªà°¾à°²à°¨ à°®à°°à°¿à°¯à± à°ªà±Œà°°à±à°² à°­à°¾à°—à°¸à±à°µà°¾à°®à±à°¯à°‚
+15
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+General Science and Panchayati Raj
+General Science and Everyday Science with Special Reference to Rural Andhra Pradesh
+à°—à±à°°à°¾à°®à±€à°£ à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°•à± à°ªà±à°°à°¤à±à°¯à±‡à°• à°¸à±‚à°šà°¨à°¤à±‹ à°¸à°¾à°§à°¾à°°à°£ à°µà°¿à°œà±à°žà°¾à°¨à°‚ à°®à°°à°¿à°¯à± à°¦à±ˆà°¨à°‚à°¦à°¿à°¨ à°µà°¿à°œà±à°žà°¾à°¨à°‚
+16
+APPSC
+Group 3
+Contemporary Problems and Development of Rural Society
+General Science and Panchayati Raj
+Panchayati Raj System, Rural Local Governance and Decentralized Administration in Andhra Pradesh
+à°†à°‚à°§à±à°°à°ªà±à°°à°¦à±‡à°¶à±à°²à±‹ à°ªà°‚à°šà°¾à°¯à°¤à±€ à°°à°¾à°œà± à°µà±à°¯à°µà°¸à±à°¥, à°—à±à°°à°¾à°®à±€à°£ à°¸à±à°¥à°¾à°¨à°¿à°• à°ªà°¾à°²à°¨ à°®à°°à°¿à°¯à± 
+<truncated 5173 bytes>
+
+NOTE: The output was truncated because it was too long. Use a more targeted query or a smaller range to get the information you need.

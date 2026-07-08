@@ -1,0 +1,362 @@
+[
+  {
+    "sno": "1",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Current Affairs of National Importance",
+    "topicEn": "National Governance, Politics, Parliament, Judiciary and Important Government Initiatives",
+    "topicTe": "జాతీయ పరిపాలన, రాజకీయాలు, పార్లమెంట్, న్యాయవ్యవస్థ మరియు ముఖ్య ప్రభుత్వ కార్యక్రమాలు"
+  },
+  {
+    "sno": "2",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Current Affairs of National Importance",
+    "topicEn": "Economy, Budget, Banking, Finance, Welfare Schemes and Development Programmes",
+    "topicTe": "ఆర్థిక వ్యవస్థ, బడ్జెట్, బ్యాంకింగ్, ఆర్థిక వ్యవహారాలు, సంక్షేమ పథకాలు మరియు అభివృద్ధి కార్యక్రమాలు"
+  },
+  {
+    "sno": "3",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Current Affairs of National Importance",
+    "topicEn": "Science, Technology, Space, Environment, Climate Change and Energy",
+    "topicTe": "విజ్ఞానం, సాంకేతికత, అంతరిక్షం, పర్యావరణం, వాతావరణ మార్పు మరియు శక్తి"
+  },
+  {
+    "sno": "4",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Current Affairs of National Importance",
+    "topicEn": "International Relations, Global Organizations, Defence, Internal Security and India's Foreign Policy",
+    "topicTe": "అంతర్జాతీయ సంబంధాలు, ప్రపంచ సంస్థలు, రక్షణ, అంతర్గత భద్రత మరియు భారత విదేశాంగ విధానం"
+  },
+  {
+    "sno": "5",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Current Affairs of National Importance",
+    "topicEn": "Awards, Sports, Reports, Indices, Books, Important Days and Persons in News",
+    "topicTe": "అవార్డులు, క్రీడలు, నివేదికలు, సూచికలు, పుస్తకాలు, ముఖ్యమైన దినాలు మరియు వార్తల్లోని ప్రముఖ వ్యక్తులు"
+  },
+  {
+    "sno": "6",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "History and Geography of Andhra Pradesh",
+    "topicEn": "Ancient Andhra History (Prehistoric Period to Satavahanas)",
+    "topicTe": "ప్రాచీన ఆంధ్ర చరిత్ర (చరిత్రపూర్వ యుగం నుండి శాతవాహనుల వరకు)"
+  },
+  {
+    "sno": "7",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "History and Geography of Andhra Pradesh",
+    "topicEn": "Medieval Andhra History (Ikshvakus to Kakatiyas)",
+    "topicTe": "మధ్యయుగ ఆంధ్ర చరిత్ర (ఇక్ష్వాకుల నుండి కాకతీయుల వరకు)"
+  },
+  {
+    "sno": "8",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "History and Geography of Andhra Pradesh",
+    "topicEn": "Modern Andhra History (Vijayanagara Empire, Qutb Shahis, Colonial Rule and Socio-Cultural Developments)",
+    "topicTe": "ఆధునిక ఆంధ్ర చరిత్ర (విజయనగర సామ్రాజ్యం, కుతుబ్ షాహీలు, వలస పాలన మరియు సామాజిక-సాంస్కృతిక పరిణామాలు)"
+  },
+  {
+    "sno": "9",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "History and Geography of Andhra Pradesh",
+    "topicEn": "Andhra Movement, Formation of Andhra State, Formation of Andhra Pradesh and Reorganisation of the State",
+    "topicTe": "ఆంధ్ర ఉద్యమం, ఆంధ్ర రాష్ట్ర ఏర్పాటు, ఆంధ్రప్రదేశ్ ఏర్పాటు మరియు రాష్ట్ర పునర్వ్యవస్థీకరణ"
+  },
+  {
+    "sno": "10",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "History and Geography of Andhra Pradesh",
+    "topicEn": "Physical Geography of Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్ భౌతిక భూగోళ శాస్త్రం"
+  },
+  {
+    "sno": "11",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "History and Geography of Andhra Pradesh",
+    "topicEn": "Economic Geography of Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్ ఆర్థిక భూగోళ శాస్త్రం"
+  },
+  {
+    "sno": "12",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "History and Geography of Andhra Pradesh",
+    "topicEn": "Resources, Agriculture, Irrigation, Industries, Tourism and Sustainable Development of Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్ వనరులు, వ్యవసాయం, నీటిపారుదల, పరిశ్రమలు, పర్యాటకం మరియు సుస్థిర అభివృద్ధి"
+  },
+  {
+    "sno": "13",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Mental Ability",
+    "topicEn": "Logical Reasoning, Number Series, Coding-Decoding and Relations",
+    "topicTe": "తార్కిక తర్కం, సంఖ్యా శ్రేణులు, కోడింగ్-డీకోడింగ్ మరియు సంబంధాలు"
+  },
+  {
+    "sno": "14",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Mental Ability",
+    "topicEn": "Analogy, Classification, Odd One Out and Logical Grouping",
+    "topicTe": "సాదృశ్యం, వర్గీకరణ, భిన్నమైన అంశాన్ని గుర్తించడం మరియు తార్కిక సమూహీకరణ"
+  },
+  {
+    "sno": "15",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Mental Ability",
+    "topicEn": "Direction Sense, Ranking, Order and Sequence Problems",
+    "topicTe": "దిశా జ్ఞానం, ర్యాంకింగ్, క్రమం మరియు శ్రేణి సమస్యలు"
+  },
+  {
+    "sno": "16",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Mental Ability",
+    "topicEn": "Seating Arrangement, Puzzle Test and Logical Arrangements",
+    "topicTe": "కూర్చునే అమరికలు, పజిల్ పరీక్ష మరియు తార్కిక అమరికలు"
+  },
+  {
+    "sno": "17",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Mental Ability",
+    "topicEn": "Data Interpretation, Data Analysis and Data Sufficiency",
+    "topicTe": "డేటా విశ్లేషణ, డేటా విశ్లేషణాత్మక పరిశీలన మరియు డేటా సమృద్ధి"
+  },
+  {
+    "sno": "18",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Mental Ability",
+    "topicEn": "Clocks, Calendars, Cubes, Dice and Non-Verbal Reasoning",
+    "topicTe": "గడియారాలు, క్యాలెండర్లు, ఘనాలు, పాచికలు మరియు మౌఖికేతర తార్కికత"
+  },
+  {
+    "sno": "19",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Mental Ability",
+    "topicEn": "Quantitative Aptitude, Arithmetic Reasoning and Numerical Ability",
+    "topicTe": "పరిమాణాత్మక సామర్థ్యం, అంకగణిత తార్కికత మరియు సంఖ్యా సామర్థ్యం"
+  },
+  {
+    "sno": "20",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Language Ability",
+    "topicEn": "Vocabulary, Synonyms, Antonyms and One-Word Substitutions",
+    "topicTe": "-"
+  },
+  {
+    "sno": "21",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Language Ability",
+    "topicEn": "Grammar, Parts of Speech and Error Detection",
+    "topicTe": "-"
+  },
+  {
+    "sno": "22",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Language Ability",
+    "topicEn": "Tenses, Voice, Narration and Sentence Improvement",
+    "topicTe": "-"
+  },
+  {
+    "sno": "23",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Language Ability",
+    "topicEn": "Idioms, Phrases, Fill in the Blanks, Usage and Sentence Completion",
+    "topicTe": "-"
+  },
+  {
+    "sno": "24",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "General Studies, Mental Ability and Language Ability",
+    "subjectName": "Language Ability",
+    "topicEn": "Reading Comprehension, Para Jumbles and Passage-Based Reasoning",
+    "topicTe": "-"
+  },
+  {
+    "sno": "1",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Rural Health and Sanitation",
+    "topicEn": "Rural Health Infrastructure, Public Health and Healthcare Delivery in Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్లో గ్రామీణ ఆరోగ్య మౌలిక సదుపాయాలు, ప్రజారోగ్యం మరియు ఆరోగ్య సేవల అందజేత"
+  },
+  {
+    "sno": "2",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Rural Health and Sanitation",
+    "topicEn": "Rural Sanitation, Drinking Water, Hygiene and Public Health Awareness in Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్లో గ్రామీణ పారిశుద్ధ్యం, తాగునీరు, పరిశుభ్రత మరియు ప్రజారోగ్య అవగాహన"
+  },
+  {
+    "sno": "3",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Rural Health and Sanitation",
+    "topicEn": "Village Development, Rural Infrastructure and Rural Livelihoods in Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్లో గ్రామాభివృద్ధి, గ్రామీణ మౌలిక సదుపాయాలు మరియు గ్రామీణ జీవనోపాధులు"
+  },
+  {
+    "sno": "4",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Rural Health and Sanitation",
+    "topicEn": "Women, Children, Nutrition, Social Welfare and Human Development in Rural Andhra Pradesh",
+    "topicTe": "గ్రామీణ ఆంధ్రప్రదేశ్లో మహిళలు, పిల్లలు, పోషకాహారం, సామాజిక సంక్షేమం మరియు మానవ అభివృద్ధి"
+  },
+  {
+    "sno": "5",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Social Tensions and Contemporary Problems",
+    "topicEn": "Social Tensions, Social Conflicts and Social Change in Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్లో సామాజిక ఉద్రిక్తతలు, సామాజిక సంఘర్షణలు మరియు సామాజిక మార్పు"
+  },
+  {
+    "sno": "6",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Social Tensions and Contemporary Problems",
+    "topicEn": "Problems of Deprived Groups, Social Justice and Inclusive Development in Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్లో వెనుకబడిన వర్గాల సమస్యలు, సామాజిక న్యాయం మరియు సమగ్ర అభివృద్ధి"
+  },
+  {
+    "sno": "7",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Social Tensions and Contemporary Problems",
+    "topicEn": "Multi-Lingual Society, Cultural Diversity, Migration and Social Integration in Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్లో బహుభాషా సమాజం, సాంస్కృతిక వైవిధ్యం, వలసలు మరియు సామాజిక సమైక్యత"
+  },
+  {
+    "sno": "8",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Social Tensions and Contemporary Problems",
+    "topicEn": "Unemployment, Youth Issues, Student Unrest and Human Resource Development in Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్లో నిరుద్యోగం, యువత సమస్యలు, విద్యార్థుల అసంతృప్తి మరియు మానవ వనరుల అభివృద్ధి"
+  },
+  {
+    "sno": "9",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Social Tensions and Contemporary Problems",
+    "topicEn": "Environment, Development, Globalization, Technology and Contemporary Challenges in Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్లో పర్యావరణం, అభివృద్ధి, ప్రపంచీకరణ, సాంకేతికత మరియు సమకాలీన సవాళ్లు"
+  },
+  {
+    "sno": "10",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Indian Democracy and Democratic Institutions",
+    "topicEn": "Indian Constitution, Democratic Values and Constitutional Foundations",
+    "topicTe": "భారత రాజ్యాంగం, ప్రజాస్వామ్య విలువలు మరియు రాజ్యాంగ పునాదులు"
+  },
+  {
+    "sno": "11",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Indian Democracy and Democratic Institutions",
+    "topicEn": "Union Government, Parliament, Executive and Judiciary",
+    "topicTe": "కేంద్ర ప్రభుత్వం, పార్లమెంట్, కార్యనిర్వాహక వ్యవస్థ మరియు న్యాయవ్యవస్థ"
+  },
+  {
+    "sno": "12",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Indian Democracy and Democratic Institutions",
+    "topicEn": "State Government, Andhra Pradesh Governance and Democratic Administration",
+    "topicTe": "రాష్ట్ర ప్రభుత్వం, ఆంధ్రప్రదేశ్ పరిపాలన మరియు ప్రజాస్వామ్య పాలన"
+  },
+  {
+    "sno": "13",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Indian Democracy and Democratic Institutions",
+    "topicEn": "Local Self Government, Panchayati Raj and Decentralized Governance in Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్లో స్థానిక స్వపరిపాలన, పంచాయతీ రాజ్ మరియు వికేంద్రీకృత పాలన"
+  },
+  {
+    "sno": "14",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "Indian Democracy and Democratic Institutions",
+    "topicEn": "Elections, Political Parties, Electoral Reforms, Rights-Based Governance and Citizen Participation",
+    "topicTe": "ఎన్నికలు, రాజకీయ పార్టీలు, ఎన్నికల సంస్కరణలు, హక్కుల ఆధారిత పాలన మరియు పౌరుల భాగస్వామ్యం"
+  },
+  {
+    "sno": "15",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "General Science and Panchayati Raj",
+    "topicEn": "General Science and Everyday Science with Special Reference to Rural Andhra Pradesh",
+    "topicTe": "గ్రామీణ ఆంధ్రప్రదేశ్కు ప్రత్యేక సూచనతో సాధారణ విజ్ఞానం మరియు దైనందిన విజ్ఞానం"
+  },
+  {
+    "sno": "16",
+    "examType": "APPSC",
+    "examName": "Group 3",
+    "paperName": "Contemporary Problems and Development of Rural Society",
+    "subjectName": "General Science and Panchayati Raj",
+    "topicEn": "Panchayati Raj System, Rural Local Governance and Decentralized Administration in Andhra Pradesh",
+    "topicTe": "ఆంధ్రప్రదేశ్లో పంచాయతీ రాజ్ వ్యవస్థ, గ్రామీణ స్థానిక పాలన మరియు"
+  }
+]

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  network_security_config.xml
+  ───────────────────────────
+  Placed at:
+    android/app/src/main/res/xml/network_security_config.xml
+
+  Referenced in AndroidManifest.xml via:
+    android:networkSecurityConfig="@xml/network_security_config"
+
+  Policy summary
+  ──────────────
+  1. Cleartext (HTTP) traffic is BLOCKED globally.
+  2. The sole exception is localhost — required by the Capacitor JS bridge
+     during development (npx cap run android). In production builds this
+     domain is unreachable from outside the device so the exception is safe.
+  3. Only System CA trust anchors are accepted — no user-installed or
+     custom CAs. This prevents SSL inspection proxies (Burp, Charles)
+     from MitM-ing the app's Supabase traffic on end-user devices.
+  4. No certificate pinning is applied here. Supabase rotates its TLS
+     certs on a standard CA-managed schedule; hard-pinning would cause
+     the app to break silently on cert renewal. If you add a dedicated
+     API backend with a stable cert, add a <pin-set> block for that domain.
+-->
+<network-security-config>
+
+  <!--
+    BASE CONFIG (applies to all domains not matched below)
+    ───────────────────────────────────────────────────────
+    • cleartextTrafficPermitted="false" — HTTP requests throw a cleartext
+      exception at the OS level before the byte ever leaves the device.
+    • trust-anchors → system only — rejects user-added CA certificates.
+  -->
+  <base-config cleartextTrafficPermitted="false">
+    <trust-anchors>
+      <certificates src="system"/>
+    </trust-anchors>
+  </base-config>
+
+  <!--
+    DOMAIN: localhost
+    ─────────────────
+    Capacitor's local asset server runs on https://localhost (port 443 via
+    the WebView's internal bridge). The includeSubdomains="true" covers any
+    sub-path the bridge might use.
+
+    cleartextTrafficPermitted="true" here only affects connections TO
+    localhost — not to the internet. Since localhost is always on-device,
+    this cannot be exploited by a remote attacker.
+  -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">localhost</domain>
+    <trust-anchors>
+      <certificates src="system"/>
+    </trust-anchors>
+  </domain-config>
+
+  <!--
+    DOMAIN: Supabase project
+    ────────────────────────
+    Explicitly listed to make the security policy auditable.
+    cleartext=false (inherited from base-config, stated explicitly for clarity).
+    System CAs only — Supabase uses Let's Encrypt / DigiCert, both in the
+    Android system store from API 24+.
+
+    Replace xbjhlfwqmcyatblsrhxn with your actual Supabase project ref
+    if you ever migrate projects.
+  -->
+  <domain-config cleartextTrafficPermitted="false">
+    <domain includeSubdomains="true">xbjhlfwqmcyatblsrhxn.supabase.co</domain>
+    <trust-anchors>
+      <certificates src="system"/>
+    </trust-anchors>
+  </domain-config>
+
+  <!--
+    DOMAIN: Cloudflare Turnstile
+    ─────────────────────────────
+    The Turnstile CAPTCHA widget loads an iframe from challenges.cloudflare.com.
+    Supabase CAPTCHA verification also calls back to Cloudflare.
+    Cleartext is blocked; system CAs only.
+  -->
+  <domain-config cleartextTrafficPermitted="false">
+    <domain includeSubdomains="true">challenges.cloudflare.com</domain>
+    <trust-anchors>
+      <certificates src="system"/>
+    </trust-anchors>
+  </domain-config>
+
+  <!--
+    DOMAIN: Google Fonts
+    ─────────────────────
+    Your index.html preconnects to fonts.googleapis.com and fonts.gstatic.com
+    for the UI typography. Both are served over HTTPS only.
+  -->
+  <domain-config cleartextTrafficPermitted="false">
+    <domain includeSubdomains="true">fonts.googleapis.com</domain>
+    <domain includeSubdomains="true">fonts.gstatic.com</domain>
+    <trust-anchors>
+      <certificates src="system"/>
+    </trust-anchors>
+  </domain-config>
+
+</network-security-config>

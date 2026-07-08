@@ -1,0 +1,1194 @@
+@import url('https://fonts.googleapis.com/css2?family=Vend+Sans:ital,wght@0,300..700;1,300..700&display=swap');
+@import "tailwindcss";
+
+/* ─── Global Responsive Safety Layer ────────────────────────────────────────
+   Prevent ALL horizontal overflow at the root. Real fixes live at component
+   level — this is strictly a last-resort safety net.
+───────────────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Brave */
+}
+
+/* Also hide for all elements but keep scrollability */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+::selection {
+  background-color: var(--selection-bg, #2D5A27);
+  color: var(--selection-text, #ffffff);
+}
+
+@theme {
+  /* Brand System */
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-info: var(--primary);
+
+  /* App Background System */
+  --color-app-bg: var(--app-bg);
+  --color-card-bg: var(--card-bg);
+  --color-elevated-bg: var(--elevated-bg);
+  --color-hover-bg: var(--hover-bg);
+
+  /* Text System */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-disabled: var(--text-disabled);
+  --color-text-muted: var(--text-disabled);
+
+  /* UI Palette */
+  --color-border-subtle: var(--border-color);
+  --color-input-border: var(--input-border);
+  --color-input-focus: var(--primary);
+
+  /* Exam State Colors */
+  --color-correct: var(--success);
+  --color-wrong: var(--danger);
+  --color-disabled-btn: var(--text-disabled);
+
+  /* Radii */
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+  --radius-4xl: 28px;
+}
+
+:root {
+  /* ─── Typography Token System (IBM Carbon / Tailwind Hybrid) ─── */
+  
+  /* Weights */
+  --fw-bold: 700;
+  --fw-medium: 600;
+  --fw-semibold: 500;
+  --fw-regular: 400;
+
+  /* Default Tokens (XS: <480px) */
+  --text-h1: 1.75rem; --lh-h1: 1.15; --fw-h1: 700;
+  --text-h2: 1.375rem; --lh-h2: 1.2; --fw-h2: 700;
+  --text-h3: 1.125rem; --lh-h3: 1.3; --fw-h3: 600;
+  --text-h4: 1.0rem; --lh-h4: 1.35; --fw-h4: 600;
+  --text-h5: 0.875rem; --lh-h5: 1.4; --fw-h5: 600;
+  --text-h6: 0.75rem; --lh-h6: 1.5; --fw-h6: 600;
+  
+  --text-sub-1: 1.0rem; --lh-sub-1: 1.5; --fw-sub-1: 400;
+  --text-sub-2: 0.875rem; --lh-sub-2: 1.5; --fw-sub-2: 400;
+  
+  --text-body-1: 0.875rem; --lh-body-1: 1.7; --fw-body-1: 400;
+  --text-body-2: 0.8125rem; --lh-body-2: 1.65; --fw-body-2: 400;
+  
+  --text-caption: 0.6875rem; --lh-caption: 1.4; --fw-caption: 400;
+  --text-overline: 0.6875rem; --lh-overline: 1.4; --fw-overline: 500; /* 11px floor */
+  --text-button: 0.8125rem; --lh-button: 1.0; --fw-button: 500;
+  --text-label: 0.75rem; --lh-label: 1.4; --fw-label: 500;
+
+  /* Theme Palette (Dark Default) */
+  --app-bg: #111827;
+  --card-bg: #1F2937;
+  --elevated-bg: #374151;
+  --hover-bg: #1F2937;
+  --text-primary: #F9FAFB;
+  --text-secondary: #D1D5DB;
+  --text-disabled: #9CA3AF;
+  --border-color: #374151;
+  --border-subtle: #374151;
+  --input-border: #4B5563;
+
+  /* Shorthand aliases */
+  --primary: #3B82F6;
+  --primary-hover: #60A5FA;
+  --primary-subtle: rgba(59, 130, 246, 0.1);
+  --primary-rgb: 59, 130, 246;
+  --secondary: #10B981;
+  --success: #22C55E;
+  --danger: #F87171;
+  --warning: #FBBF24;
+
+  /* Ancient theme defaults (dark mode — semantic tokens handle these) */
+  --ancient-gold: var(--primary);
+  --ancient-brown-deep: var(--text-primary);
+  --ancient-brown: var(--text-secondary);
+  --ancient-cream: var(--card-bg);
+  --ancient-danger: var(--danger);
+  --ancient-danger-hover: transparent;
+  --ancient-badge-bg: transparent;
+  --ancient-badge-border: transparent;
+  --ancient-forest: var(--primary);
+  --ancient-gold-bright: var(--primary);
+  --ancient-amber: var(--warning);
+  --ancient-cream-light: var(--card-bg);
+
+  background-color: var(--app-bg);
+  color: var(--text-primary);
+  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+@media (max-width: 360px) {
+  :root {
+    --text-h1: 1.45rem;
+    --text-h2: 1.2rem;
+    --text-body-1: 0.8125rem;
+  }
+}
+
+/* Force font inheritance for all input/button elements */
+input, button, select, textarea, optgroup {
+  font-family: inherit;
+}
+
+
+
+/* ─── Light Mode Overrides ─── */
+.light {
+  --app-bg: #E8D5B0;
+  --card-bg: #F4E5C4;
+  --elevated-bg: #FDF5E2;
+  --hover-bg: #EEDEB5;
+  --text-primary: #0A0503; /* Significantly darkened for absolute maximum visibility */
+  --text-secondary: #23120B; /* Darkened for sharp secondary copy */
+  --text-disabled: #4A3525; /* Darkened for highly readable disabled texts & labels */
+  --border-color: #8B5A10;
+  --border-subtle: rgba(139, 90, 16, 0.45);
+  --input-border: #59320C; /* Darker border around inputs for structural clarity */
+  --primary: #0E3326; /* Deep dark forest green to ensure buttons and primary green text stand out perfectly */
+  --primary-hover: #164635;
+  --secondary: #8B5A10; /* Darker Gold for text readability */
+  --secondary-light: #C8960C; /* Original Gold for borders/icons */
+  --success: #0E3326;
+  --danger: #7A0C0C; /* High contrast dark red */
+  --warning: #733206; /* High contrast dark amber */
+  --selection-bg: #12291C;
+  --selection-text: #E8D5B0;
+  color-scheme: light;
+  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+
+  /* Ancient theme color tokens — centralized for DRY usage across components */
+  --ancient-gold: #A87828;
+  --ancient-brown-deep: #3D1F08;
+  --ancient-brown: #8B5A10;
+  --ancient-cream: #F4E5C4;
+  --ancient-danger: #D32F2F;
+  --ancient-danger-hover: #FFEBEE;
+  --ancient-badge-bg: #FFF8E1;
+  --ancient-badge-border: #FFE082;
+  --ancient-forest: #1C3D28;
+  --ancient-gold-bright: #C8960C;
+  --ancient-amber: #B45309;
+  --ancient-cream-light: #E8D5B0;
+}
+
+/* Ensure headings, page titles, stat values, and decorative text use the unified high-legibility font styles */
+.light h1, .light h2, .light h3,
+.light h4, .light h5, .light h6,
+.light .font-cinzel,
+.light .font-garamond,
+.light .ancient-stat-card .stat-value,
+.light .ancient-stat-card .stat-unit,
+.light .ancient-stat-card .stat-label,
+.light .ancient-divider-text,
+.light .font-ancient {
+  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+}
+
+/* Ensure inputs, select lists, and textareas have crisp legibility */
+.light input,
+.light textarea,
+.light select {
+  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  color: #0A0503 !important;
+  background-color: var(--elevated-bg) !important;
+  border: 1.5px solid var(--input-border) !important;
+}
+
+/* Stand out placeholder text with higher opacity and weight */
+.light input::placeholder,
+.light textarea::placeholder {
+  color: #4A3525 !important;
+  opacity: 0.8 !important;
+  font-weight: 600 !important;
+}
+
+/* Stand out read-only and disabled fields */
+.light input:disabled,
+.light textarea:disabled,
+.light select:disabled {
+  color: #23120B !important;
+  -webkit-text-fill-color: #23120B !important;
+  opacity: 0.9 !important;
+  background-color: rgba(139, 90, 16, 0.08) !important;
+}
+
+/* Boost readability of small uppercase labels */
+.light span.text-\[10px\],
+.light label {
+  color: var(--text-secondary) !important;
+  letter-spacing: 0.12em !important;
+}
+
+/* Adjust all low-contrast Tailwind opacity helper classes on text in light mode */
+.light .opacity-70 { opacity: 0.95 !important; }
+.light .opacity-60 { opacity: 0.90 !important; }
+.light .opacity-50 { opacity: 0.85 !important; }
+.light .opacity-40 { opacity: 0.75 !important; }
+.light .opacity-30 { opacity: 0.65 !important; }
+.light .opacity-20 { opacity: 0.55 !important; }
+.light .opacity-10 { opacity: 0.35 !important; }
+
+/* ─── 3D Lift Effect Utility ────────────────────────────────────────────────── */
+.ancient-3d-lift {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  cursor: pointer;
+  position: relative !important;
+}
+
+/* Pseudo-element for light reflection on hover */
+.ancient-3d-lift::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 40%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Desktop-only hover lift (no sticky hover on touch devices) */
+@media (hover: hover) {
+  .ancient-3d-lift:hover {
+    transform: translateY(-2px) !important;
+    z-index: 50 !important;
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .ancient-3d-lift:hover::after {
+    opacity: 1;
+  }
+
+  .light .ancient-3d-lift:hover {
+    box-shadow: 0 8px 16px -4px rgba(168, 120, 40, 0.25) !important;
+  }
+}
+
+/* For table rows specifically */
+tr.ancient-3d-lift {
+  display: table-row !important;
+}
+
+/* Prevent translation and box-shadow on table rows to ensure layout stability */
+tr.ancient-3d-lift:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+tr.ancient-3d-lift:hover td {
+  background-color: var(--elevated-bg) !important;
+}
+
+.light tr.ancient-3d-lift:hover td {
+  background-color: #F8ECD0 !important;
+}
+
+.light tr.ancient-3d-lift td:first-child {
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+.light tr.ancient-3d-lift td:last-child {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+/* Ancient headings font */
+.light h1, .light h2, .light h3,
+.light h4, .light h5, .light h6 {
+  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  font-weight: 700;
+}
+
+/* Font helpers */
+.font-cinzel { font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important; font-weight: 700; }
+.font-garamond { font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important; }
+
+/* ─── Global Component Fixes ─── */
+select {
+  color-scheme: light dark;
+}
+
+select option {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
+/* Ensure selected option in dark mode is readable */
+.dark select option:checked,
+.dark select option:hover {
+  background-color: var(--primary) !important;
+  color: #FFFFFF !important;
+}
+
+/* 🔷 SM Breakpoint (480px) */
+@media (min-width: 480px) {
+  :root {
+    --text-h1: 2.0rem; --text-h2: 1.625rem; --text-h3: 1.25rem; --text-h4: 1.0625rem;
+    --text-h5: 0.9375rem; --text-h6: 0.8125rem; --text-sub-1: 1.0625rem; --text-sub-2: 0.9375rem;
+    --text-body-1: 0.9375rem; --text-body-2: 0.8125rem; --text-button: 0.875rem; --text-label: 0.8125rem;
+  }
+}
+
+/* 🔷 MD Breakpoint (768px) */
+@media (min-width: 768px) {
+  :root {
+    --text-h1: 2.25rem; --text-h2: 1.75rem; --text-h3: 1.375rem; --text-h4: 1.125rem;
+    --text-h5: 1.0rem; --text-h6: 0.8125rem; --text-sub-1: 1.125rem; --text-sub-2: 0.9375rem;
+    --text-body-1: 1.0rem; --text-body-2: 0.875rem; --text-caption: 0.75rem; --text-overline: 0.6875rem;
+  }
+}
+
+/* 🔷 LG Breakpoint (1024px) */
+@media (min-width: 1024px) {
+  :root {
+    --text-h1: 2.5rem; --text-h2: 2.0rem; --text-h3: 1.5rem; --text-h4: 1.25rem;
+    --text-h5: 1.0625rem; --text-h6: 0.875rem; --text-sub-1: 1.25rem; --text-sub-2: 1.0rem;
+    --text-body-1: 1.0rem; --text-body-2: 0.875rem; --text-button: 0.9375rem; --text-label: 0.875rem;
+    --text-overline: 0.75rem;
+  }
+}
+
+/* 🔷 XL Breakpoint (1440px) */
+@media (min-width: 1440px) {
+  :root {
+    --text-h1: 3.0rem; --text-h2: 2.25rem; --text-h3: 1.75rem; --text-h4: 1.375rem;
+    --text-h5: 1.125rem; --text-h6: 0.9375rem; --text-sub-1: 1.375rem; --text-sub-2: 1.125rem;
+    --text-body-1: 1.125rem; --text-body-2: 1.0rem; --text-caption: 0.8125rem; --text-overline: 0.75rem;
+    --text-button: 1.0rem; --text-label: 0.875rem;
+  }
+}
+
+/* Base Styles */
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--app-bg);
+  min-height: 100vh;
+  /* Use 100% instead of 100vw to avoid phantom horizontal scrollbar width */
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  font-size: 1rem; /* 16px Mobile Base */
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+h1 { font-size: var(--text-h1); line-height: var(--lh-h1); font-weight: var(--fw-h1); }
+h2 { font-size: var(--text-h2); line-height: var(--lh-h2); font-weight: var(--fw-h2); }
+h3 { font-size: var(--text-h3); line-height: var(--lh-h3); font-weight: var(--fw-h3); }
+h4 { font-size: var(--text-h4); line-height: var(--lh-h4); font-weight: var(--fw-h4); }
+h5 { font-size: var(--text-h5); line-height: var(--lh-h5); font-weight: var(--fw-h5); }
+h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw-h6); }
+
+/* Hide scrollbar but keep scrollability (mobile strips, etc.) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Skeleton Base (Static) */
+.skeleton-static {
+  background: var(--border-color);
+  opacity: 0.5;
+}
+
+/* ─── Scrollbar Styling (Premium Thin) ─── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--input-border);
+}
+
+/* Reusable thin scrollbar (replaces per-component inline <style> tags) */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* Scrollbar-hide (Tailwind plugin equivalent) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Theme-aware Utilities (auto dark/light) ─── */
+.premium-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 28px;
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+    0 4px 6px -4px rgba(0, 0, 0, 0.08),
+    0 20px 40px -10px rgba(0, 0, 0, 0.15);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(59, 130, 246, 0.15);
+  border-color: var(--input-border);
+}
+
+/* ─── Common Animation Helpers ─── */
+.animate-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* ─── Selection UI ─── */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: #fff;
+}
+
+/* ─── Hide default focus rings, use custom ones ─── */
+:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+.light .bg-app-bg {
+  background: transparent !important;
+}
+
+/* ── LIGHT MODE — premium ancient sandstone/parchment background (Global) ── */
+.light, .light body, .light #root {
+  /* A noticeably richer, aged parchment gradient so it doesn't look white */
+  background-color: #E2CFA6;
+  background-image: radial-gradient(circle at 50% 0%, #EFE1C6 0%, #E2CFA6 60%, #D2BA8E 100%);
+  background-attachment: fixed;
+}
+
+
+/* Light: sidebars across all panels — dark forest green, visible against bg image */
+.light aside {
+  background: rgba(12, 32, 20, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.45) !important;
+  border-right: 1px solid rgba(200,150,12,0.35) !important;
+}
+/* Navigation links & SVG icons inside light-mode sidebars */
+.light aside nav a {
+  color: rgba(223, 192, 150, 0.7) !important;
+}
+.light aside nav a svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+.light aside nav a.active, 
+.light aside nav a[aria-current="page"],
+.light aside .ancient-nav-item-active {
+  background: rgba(200, 150, 12, 0.2) !important;
+  color: rgba(255, 223, 160, 1) !important;
+  box-shadow: inset 3px 0 0px #C8960C !important;
+  border: 1px solid rgba(200, 150, 12, 0.3) !important;
+}
+.light aside nav a:hover:not(.active):not([aria-current="page"]) {
+  background: rgba(200, 150, 12, 0.1) !important;
+  color: rgba(255, 223, 160, 1) !important;
+}
+/* Bottom actions & user profile inside light-mode sidebars */
+.light aside .text-text-primary {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+.light aside .text-text-secondary {
+  color: rgba(223, 192, 150, 0.7) !important;
+}
+.light aside .text-danger {
+  color: #FCA5A5 !important;
+}
+.light aside div.bg-primary {
+  background-color: #C8960C !important;
+  color: #0C2014 !important;
+}
+.light aside .bg-primary\/10 {
+  background-color: rgba(200, 150, 12, 0.15) !important;
+  border: 1px solid rgba(200, 150, 12, 0.3) !important;
+}
+.light aside .hover\:bg-primary\/20:hover {
+  background-color: rgba(200, 150, 12, 0.3) !important;
+}
+.light aside .text-primary {
+  color: rgba(220, 185, 120, 1) !important;
+}
+.light aside button.text-primary svg {
+  color: inherit !important;
+}
+.light aside .bg-danger\/10 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+.light aside .hover\:bg-danger\/20:hover {
+  background-color: rgba(239, 68, 68, 0.3) !important;
+}
+.light aside button.text-danger svg {
+  color: inherit !important;
+}
+.light aside button.absolute {
+  background: rgba(12, 32, 20, 0.95) !important;
+  border: 1.5px solid rgba(200, 150, 12, 0.4) !important;
+  color: rgba(220, 185, 120, 0.9) !important;
+}
+.light aside button.absolute:hover {
+  color: #FFFFFF !important;
+  border-color: rgba(200, 150, 12, 0.8) !important;
+  background: #1C3D28 !important;
+}
+
+
+
+
+/* ── LIGHT MODE HEADER — dark forest green 3D card ── */
+.light .ancient-header {
+  /* Same bg as the light-mode sidebar — rgba(12, 32, 20, 0.93) */
+  background: rgba(12, 32, 20, 0.93) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1.8px solid rgba(200, 150, 12, 0.35) !important;
+  position: relative !important;
+
+  /* 3D embossed shadow: top gold shimmer + bottom depth + hard 5px offset */
+  box-shadow:
+    inset 0 2px 4px rgba(200, 150, 12, 0.18),
+    inset 2px 0 3px rgba(200, 150, 12, 0.08),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.55),
+    inset -1px 0 2px rgba(0, 0, 0, 0.30),
+    5px 6px 0px rgba(4, 12, 7, 0.90),
+    0 14px 32px rgba(0, 0, 0, 0.40) !important;
+}
+
+/* Thin gold top-edge shimmer line */
+.light .ancient-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 14px; right: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200,150,12,0.6), transparent);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+/* H1 — same weight/tracking as sidebar nav labels */
+.light .ancient-header h1, .light .ancient-header span.text-lg {
+  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: rgba(220, 185, 120, 0.92) !important;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 0 12px rgba(200, 150, 12, 0.25) !important;
+  /* Ensure font-size comes from parent clamp, not from base h1 rules */
+  font-size: clamp(13px, 1.2vw, 16px);
+  /* Safe overflow handling */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+/* All text inside header */
+.light .ancient-header span,
+.light .ancient-header p {
+  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+}
+
+/* System Ready badge in light mode */
+.light .ancient-header .text-success\/80 {
+  color: rgba(80, 200, 130, 0.85) !important;
+}
+.light .ancient-header .bg-success\/5 {
+  background: rgba(45, 106, 79, 0.15) !important;
+  border-color: rgba(80, 180, 120, 0.3) !important;
+}
+.light .ancient-header .border-success\/10 {
+  border-color: rgba(80, 180, 120, 0.3) !important;
+}
+
+/* Notification bell button in light mode */
+.light .ancient-header button.bg-hover-bg\/50 {
+  background: rgba(200, 150, 12, 0.10) !important;
+  border-color: rgba(168, 120, 22, 0.40) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(200, 150, 12, 0.12),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.4),
+    2px 3px 0px rgba(4, 12, 7, 0.8) !important;
+}
+.light .ancient-header .text-text-secondary {
+  color: rgba(220, 185, 120, 0.70) !important;
+}
+
+/* Mobile menu hamburger button in light mode */
+.light .ancient-header button.bg-hover-bg {
+  background: rgba(200, 150, 12, 0.08) !important;
+  color: rgba(220, 185, 120, 0.80) !important;
+  border: 1px solid rgba(168, 120, 22, 0.25) !important;
+}
+
+/* Avatar initials button in light mode */
+.light .ancient-header button.bg-gradient-to-br, .light .ancient-header .bg-primary {
+  border: 1.5px solid rgba(168, 120, 22, 0.5) !important;
+  box-shadow: 2px 3px 0px rgba(4, 12, 7, 0.7), 0 6px 16px rgba(0,0,0,0.35) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ANCIENT PREMIUM COMPONENT SYSTEM — light mode only
+   Pixel-matched to reference: deep amber parchment, heavy 3D
+   hard-offset shadows, beveled inset edges, dark forest green.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── PARCHMENT CARD — raised stone-tablet 3D effect ── */
+.ancient-card {
+  /* Deep warm amber parchment — matches reference exactly */
+  background:
+    linear-gradient(
+      170deg,
+      rgba(255, 240, 195, 0.35) 0%,    /* top-left light catch */
+      rgba(195, 145, 70, 0.08) 45%,
+      rgba(155, 100, 35, 0.12) 100%
+    ),
+    #C9A070;                             /* base amber-parchment */
+
+  border-radius: 18px;
+
+  /* Amber-gold border — thick enough to be visible */
+  border: 1.8px solid #A87828;
+
+  box-shadow:
+    /* TOP inset highlight — raised surface catching light */
+    inset 0 2px 5px rgba(255, 235, 165, 0.65),
+    /* LEFT inset highlight */
+    inset 2px 0 4px rgba(255, 235, 165, 0.25),
+    /* BOTTOM inset shadow — beveled depth illusion */
+    inset 0 -2px 5px rgba(100, 58, 12, 0.45),
+    /* RIGHT inset shadow */
+    inset -1px 0 3px rgba(100, 58, 12, 0.2),
+    /* HARD OFFSET SHADOW — physical 3D thickness (key effect) */
+    5px 6px 0px rgba(105, 62, 15, 0.70),
+    /* Soft ambient drop */
+    0 12px 28px rgba(60, 28, 5, 0.22);
+
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+
+  padding: 24px;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 767px) {
+  .ancient-card {
+    padding: 16px;
+  }
+}
+
+.ancient-card:hover {
+  transform: translateY(-2px) translateX(-1px);
+  box-shadow:
+    inset 0 2px 5px rgba(255, 235, 165, 0.65),
+    inset 2px 0 4px rgba(255, 235, 165, 0.25),
+    inset 0 -2px 5px rgba(100, 58, 12, 0.45),
+    inset -1px 0 3px rgba(100, 58, 12, 0.2),
+    6px 8px 0px rgba(105, 62, 15, 0.65),
+    0 16px 34px rgba(60, 28, 5, 0.28);
+}
+
+/* ── STAT CARD — pure CSS parchment card (no image) ── */
+.ancient-stat-card {
+  /* Layered parchment gradient — same palette as .ancient-card */
+  background:
+    linear-gradient(
+      170deg,
+      rgba(255, 248, 210, 0.55) 0%,    /* top-left highlight catch */
+      rgba(220, 170, 90, 0.15) 40%,
+      rgba(175, 118, 45, 0.18) 100%
+    ),
+    linear-gradient(135deg, #D4A55A 0%, #C9943C 50%, #BF8A30 100%);
+
+  border-radius: 18px;
+  border: 1.8px solid #A87828;
+
+  box-shadow:
+    /* TOP inset highlight — raised surface */
+    inset 0 2px 6px rgba(255, 240, 170, 0.70),
+    /* LEFT inset bevel */
+    inset 2px 0 4px rgba(255, 235, 165, 0.30),
+    /* BOTTOM inset shadow — carved depth */
+    inset 0 -3px 6px rgba(100, 55, 10, 0.50),
+    /* RIGHT inset shadow */
+    inset -1px 0 3px rgba(100, 58, 12, 0.22),
+    /* HARD OFFSET — physical tablet thickness */
+    5px 6px 0px rgba(105, 62, 15, 0.72),
+    /* Ambient drop shadow */
+    0 12px 28px rgba(60, 28, 5, 0.22);
+
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 18px 18px 16px;
+  gap: 10px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  cursor: default;
+}
+
+/* Subtle parchment grain overlay */
+.ancient-stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(100, 55, 10, 0.025) 3px,
+      rgba(100, 55, 10, 0.025) 4px
+    );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Add an inner etched border for a premium ancient look */
+.ancient-stat-card::after {
+  content: '';
+  position: absolute;
+  top: 6px; left: 6px; right: 6px; bottom: 6px;
+  border: 1px solid rgba(168, 120, 22, 0.25);
+  border-radius: 9px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Stat card sub-elements ── */
+.ancient-stat-card .stat-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.ancient-stat-card .stat-label {
+  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  font-size: clamp(9px, 1.2vw, 11px);
+  letter-spacing: 0.25em;
+  color: #A87828;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin: 0;
+  padding-top: 4px;
+}
+
+.ancient-stat-card .stat-icon-wrap {
+  background: linear-gradient(150deg, #1C3D28 0%, #081510 100%);
+  border: 1.8px solid rgba(168, 120, 22, 0.85);
+  border-radius: 11px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow:
+    inset 0 1px 3px rgba(200, 150, 12, 0.22),
+    inset 1px 0 2px rgba(200, 150, 12, 0.10),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.55),
+    3px 4px 0px rgba(4, 12, 7, 0.90);
+}
+
+.ancient-stat-card .stat-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.ancient-stat-card .stat-value {
+  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  font-size: clamp(28px, 5vw, 38px);
+  font-weight: 900;
+  color: #3D1F08;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.4); /* Embossed effect */
+}
+
+.ancient-stat-card .stat-unit {
+  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  font-size: clamp(13px, 2vw, 16px);
+  color: #8B5A10;
+  font-weight: 600;
+  font-style: italic;
+  margin: 0;
+  line-height: 1.3;
+}
+/* END of ancient-stat-card styles */
+
+/* Responsive adjustments for ancient-stat-card on smaller viewports */
+@media (max-width: 640px) {
+  .ancient-stat-card {
+    padding: 12px 12px 10px;
+    gap: 6px;
+    border-radius: 12px;
+    box-shadow:
+      inset 0 1.5px 4px rgba(255, 240, 170, 0.70),
+      inset 1.5px 0 3px rgba(255, 235, 165, 0.30),
+      inset 0 -2px 4px rgba(100, 55, 10, 0.50),
+      inset -1px 0 2px rgba(100, 58, 12, 0.22),
+      3px 4px 0px rgba(105, 62, 15, 0.72),
+      0 8px 20px rgba(60, 28, 5, 0.18);
+  }
+  .ancient-stat-card::after {
+    top: 4px; left: 4px; right: 4px; bottom: 4px;
+    border-radius: 6px;
+  }
+  .ancient-stat-card .stat-header {
+    margin-bottom: 4px;
+  }
+  .ancient-stat-card .stat-icon-wrap {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    box-shadow:
+      inset 0 1px 2px rgba(200, 150, 12, 0.22),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.55),
+      1.5px 2px 0px rgba(4, 12, 7, 0.90);
+  }
+  .ancient-stat-card .stat-icon-wrap svg {
+    width: 14px;
+    height: 14px;
+  }
+  .ancient-stat-card .stat-label {
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    padding-top: 2px;
+  }
+  .ancient-stat-card .stat-value {
+    font-size: 20px;
+  }
+  .ancient-stat-card .stat-unit {
+    font-size: 11px;
+  }
+}
+
+/* ── DARK FOREST GREEN CARD — embossed stone block ── */
+.ancient-card-dark {
+  background: linear-gradient(150deg, #162B1C 0%, #0A1A10 100%);
+  border-radius: 13px;
+  border: 1.8px solid rgba(176, 122, 20, 0.9);
+
+  box-shadow:
+    /* Top inner gold shimmer */
+    inset 0 2px 4px rgba(200, 150, 12, 0.18),
+    /* Bottom inner depth */
+    inset 0 -2px 4px rgba(0, 0, 0, 0.6),
+    /* Hard 3D offset */
+    5px 6px 0px rgba(4, 12, 7, 0.95),
+    0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* ── TAB TRACK — inset dark stone ── */
+.ancient-tab-track {
+  background: linear-gradient(150deg, #162B1C 0%, #0A1A10 100%);
+  border-radius: 16px;
+  border: 1.5px solid rgba(176, 122, 20, 0.6);
+  box-shadow: 
+    inset 0 4px 12px rgba(0, 0, 0, 0.8),
+    0 12px 24px rgba(0, 0, 0, 0.15);
+  
+  /* Standardized text colors for dark backgrounds in light mode */
+  --tab-text-active: #2A1506;
+  --tab-text-inactive: #DFC096; /* Brighter solid gold for high contrast */
+}
+
+/* ── TAB PILL — specifically for framer-motion layout elements (no css transition) ── */
+.ancient-tab-pill {
+  background: linear-gradient(135deg, #E6D2A5 0%, #D8C390 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    inset 0 2px 4px rgba(255,255,255,0.7),
+    inset 0 -2px 5px rgba(139, 90, 16, 0.2),
+    4px 5px 0px rgba(100, 60, 10, 0.15),
+    0 8px 16px rgba(0,0,0,0.08);
+}
+
+/* ── ICON BADGE — carved dark medallion ── */
+.ancient-icon-badge {
+  background: linear-gradient(150deg, #1C3D28 0%, #081510 100%);
+  border: 1.8px solid rgba(168, 120, 22, 0.85);
+  border-radius: 11px;
+
+  box-shadow:
+    /* Top inner gold catch */
+    inset 0 1px 3px rgba(200, 150, 12, 0.22),
+    /* Left inner light */
+    inset 1px 0 2px rgba(200, 150, 12, 0.1),
+    /* Bottom inner dark */
+    inset 0 -1px 3px rgba(0, 0, 0, 0.55),
+    /* Hard carved shadow */
+    3px 4px 0px rgba(4, 12, 7, 0.9);
+
+  color: #C8960C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── ARROW CIRCLE BUTTON ── */
+.ancient-arrow-btn {
+  background: linear-gradient(150deg, #1C3D28 0%, #081510 100%);
+  border: 1.8px solid rgba(168, 120, 22, 0.85);
+  border-radius: 50%;
+
+  box-shadow:
+    inset 0 1px 3px rgba(200, 150, 12, 0.2),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
+    3px 4px 0px rgba(4, 12, 7, 0.9),
+    0 5px 14px rgba(0, 0, 0, 0.3);
+
+  color: #C8960C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+.ancient-arrow-btn:hover { transform: scale(1.08); }
+
+/* ── PROGRESS BAR ── */
+.ancient-progress-track {
+  height: 5px;
+  background: rgba(100, 60, 15, 0.22);
+  border-radius: 999px;
+  border: 1px solid rgba(168, 120, 22, 0.3);
+  overflow: hidden;
+}
+.ancient-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0A1A10, #1A4030);
+  border-radius: 999px;
+}
+
+/* ── PRIMARY CTA BUTTON ── */
+.ancient-btn-primary {
+  background: linear-gradient(150deg, #1C3D28 0%, #081510 100%);
+  border: 1.8px solid rgba(176, 122, 20, 0.9);
+  box-shadow:
+    inset 0 1px 4px rgba(200, 150, 12, 0.2),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
+    5px 6px 0px rgba(4, 12, 7, 0.9),
+    0 10px 28px rgba(0, 0, 0, 0.35);
+  color: #DFC096;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ancient-btn-primary:hover {
+  box-shadow:
+    inset 0 1px 4px rgba(200, 150, 12, 0.2),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
+    6px 8px 0px rgba(4, 12, 7, 0.85),
+    0 14px 32px rgba(0, 0, 0, 0.4);
+}
+.ancient-btn-primary:active {
+  transform: translateY(2px) translateX(2px);
+  box-shadow:
+    inset 0 1px 4px rgba(200, 150, 12, 0.2),
+    2px 3px 0px rgba(4, 12, 7, 0.9);
+}
+
+.ancient-btn-secondary {
+  background: #E8D5B0;
+  border: 1.8px solid #7B5C3A;
+  box-shadow:
+    inset 0 1px 4px rgba(255, 255, 255, 0.5),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.1),
+    4px 5px 0px rgba(123, 92, 58, 0.25);
+  color: #3D1F08;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ancient-btn-secondary:hover {
+  background: #F0DFB8;
+  border-color: #5E4B3C;
+  box-shadow: 5px 6px 0px rgba(123, 92, 58, 0.3);
+}
+.ancient-btn-secondary:active {
+  transform: translateY(1px) translateX(1px);
+  box-shadow: 2px 2px 0px rgba(123, 92, 58, 0.25);
+}
+
+.ancient-btn-danger {
+  background: linear-gradient(150deg, #420D09 0%, #2D0805 100%);
+  border: 1.8px solid #8B0000;
+  box-shadow:
+    inset 0 1px 4px rgba(255, 0, 0, 0.1),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
+    4px 5px 0px rgba(45, 8, 5, 0.9);
+  color: #FFD700;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ancient-btn-danger:hover {
+  box-shadow: 6px 8px 0px rgba(45, 8, 5, 0.85);
+}
+.ancient-btn-danger:active {
+  transform: translateY(2px) translateX(2px);
+  box-shadow: 2px 3px 0px rgba(45, 8, 5, 0.9);
+}
+
+.ancient-btn-success {
+  background: linear-gradient(150deg, #064E3B 0%, #064030 100%);
+  border: 1.8px solid #059669;
+  box-shadow:
+    inset 0 1px 4px rgba(0, 255, 0, 0.1),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
+    4px 5px 0px rgba(6, 64, 48, 0.9);
+  color: #10B981;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ancient-btn-success:hover {
+  box-shadow: 6px 8px 0px rgba(6, 64, 48, 0.85);
+}
+.ancient-btn-success:active {
+  transform: translateY(2px) translateX(2px);
+  box-shadow: 2px 3px 0px rgba(6, 64, 48, 0.9);
+}
+
+
+
+/* ── ANCIENT LAYOUT ── */
+.ancient-sidebar {
+  background: #F1E5D1; /* Slightly darker parchment */
+  border-right: 2px solid rgba(123, 92, 58, 0.3);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
+}
+
+.ancient-nav-item-active {
+  background: #E8D5B0 !important;
+  border: 1.5px solid #7B5C3A !important;
+  box-shadow: 
+    inset 2px 2px 5px rgba(0,0,0,0.1), 
+    inset -1px -1px 2px rgba(255,255,255,0.5),
+    0 4px 12px rgba(0,0,0,0.08) !important;
+  color: #3D1F08 !important;
+}
+
+.ancient-header {
+  background: rgba(252, 248, 240, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 2px solid rgba(123, 92, 58, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Light mode sidebar footer container override */
+.light .sidebar-footer-container {
+  background-color: rgba(6, 17, 11, 0.98) !important;
+  border-top: 1px solid rgba(200, 150, 12, 0.3) !important;
+}
+

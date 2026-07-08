@@ -1,0 +1,1178 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   THEME ARCHITECTURE — Design Token System v1.0
+   Status: FROZEN — Do NOT modify without Architecture Review Board approval
+   Source: THEME_ARCHITECTURE_SPEC_v1.md
+   
+   Dependency Direction (ABSOLUTE — ONE WAY ONLY):
+     Layer 1 (Primitives) → Layer 2 (Semantic) → Layer 3 (Component)
+     
+   Layer 1: NEVER referenced by UI directly
+   Layer 2: Referenced by all components and utilities
+   Layer 3: Referenced ONLY by the owning component
+   
+   Violations: Any CSS selector in this file beyond `:root`, `.light`, 
+   or `.high-contrast` is a violation. This file defines tokens only.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYER 1 — PRIMITIVE TOKENS
+   
+   Raw color, radius, shadow, font, and spacing values.
+   NEVER referenced directly by any component CSS or UI code.
+   Only Layer 2 (Semantic) tokens may reference Layer 1.
+   
+   Naming: --{category}-{value}
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ─── Gray Scale ─────────────────────────────────────────────────────── */
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
+  --gray-950: #030712;
+
+  /* ─── Slate Scale ────────────────────────────────────────────────────── */
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --slate-950: #020617;
+
+  /* ─── Blue Scale ─────────────────────────────────────────────────────── */
+  --blue-50: #EFF6FF;
+  --blue-100: #DBEAFE;
+  --blue-200: #BFDBFE;
+  --blue-300: #93C5FD;
+  --blue-400: #60A5FA;
+  --blue-500: #3B82F6;
+  --blue-600: #2563EB;
+  --blue-700: #1D4ED8;
+  --blue-800: #1E40AF;
+  --blue-900: #1E3A5F;
+  --blue-950: #172554;
+
+  /* ─── Green Scale ────────────────────────────────────────────────────── */
+  --green-50: #F0FDF4;
+  --green-100: #DCFCE7;
+  --green-200: #BBF7D0;
+  --green-300: #86EFAC;
+  --green-400: #4ADE80;
+  --green-500: #22C55E;
+  --green-600: #16A34A;
+  --green-700: #15803D;
+  --green-800: #166534;
+  --green-900: #14532D;
+  --green-950: #052E16;
+
+  /* ─── Red Scale ──────────────────────────────────────────────────────── */
+  --red-50: #FEF2F2;
+  --red-100: #FEE2E2;
+  --red-200: #FECACA;
+  --red-300: #FCA5A5;
+  --red-400: #F87171;
+  --red-500: #EF4444;
+  --red-600: #DC2626;
+  --red-700: #B91C1C;
+  --red-800: #991B1B;
+  --red-900: #7F1D1D;
+  --red-950: #450A0A;
+
+  /* ─── Amber Scale ────────────────────────────────────────────────────── */
+  --amber-50: #FFFBEB;
+  --amber-100: #FEF3C7;
+  --amber-200: #FDE68A;
+  --amber-300: #FCD34D;
+  --amber-400: #FBBF24;
+  --amber-500: #F59E0B;
+  --amber-600: #D97706;
+  --amber-700: #B45309;
+  --amber-800: #92400E;
+  --amber-900: #78350F;
+  --amber-950: #451A03;
+
+  /* ─── Purple Scale ───────────────────────────────────────────────────── */
+  --purple-50: #FAF5FF;
+  --purple-100: #F3E8FF;
+  --purple-200: #E9D5FF;
+  --purple-300: #D8B4FE;
+  --purple-400: #C084FC;
+  --purple-500: #A855F7;
+  --purple-600: #9333EA;
+  --purple-700: #7C3AED;
+  --purple-800: #6B21A8;
+  --purple-900: #581C87;
+  --purple-950: #3B0764;
+
+  /* ─── Emerald Scale ──────────────────────────────────────────────────── */
+  --emerald-50: #ECFDF5;
+  --emerald-100: #D1FAE5;
+  --emerald-200: #A7F3D0;
+  --emerald-300: #6EE7B7;
+  --emerald-400: #34D399;
+  --emerald-500: #10B981;
+  --emerald-600: #059669;
+  --emerald-700: #047857;
+  --emerald-800: #065F46;
+  --emerald-900: #064E3B;
+  --emerald-950: #022C22;
+
+  /* ─── Teal Scale ─────────────────────────────────────────────────────── */
+  --teal-50: #F0FDFA;
+  --teal-100: #CCFBF1;
+  --teal-200: #99F6E4;
+  --teal-300: #5EEAD4;
+  --teal-400: #2DD4BF;
+  --teal-500: #14B8A6;
+  --teal-600: #0D9488;
+  --teal-700: #0F766E;
+  --teal-800: #115E59;
+  --teal-900: #134E4A;
+  --teal-950: #042F2E;
+
+  /* ─── Cyan Scale ─────────────────────────────────────────────────────── */
+  --cyan-50: #ECFEFF;
+  --cyan-100: #CFFAFE;
+  --cyan-200: #A5F3FC;
+  --cyan-300: #67E8F9;
+  --cyan-400: #22D3EE;
+  --cyan-500: #06B6D4;
+  --cyan-600: #0891B2;
+  --cyan-700: #0E7490;
+  --cyan-800: #155E75;
+  --cyan-900: #164E63;
+  --cyan-950: #083344;
+
+  /* ─── Rose Scale ─────────────────────────────────────────────────────── */
+  --rose-50: #FFF1F2;
+  --rose-100: #FFE4E6;
+  --rose-200: #FECDD3;
+  --rose-300: #FDA4AF;
+  --rose-400: #FB7185;
+  --rose-500: #F43F5E;
+  --rose-600: #E11D48;
+  --rose-700: #BE123C;
+  --rose-800: #9F1239;
+  --rose-900: #881337;
+  --rose-950: #4C0519;
+
+  /* ─── Pink Scale (minimal — for Admin Upload route) ──────────────────── */
+  --pink-600: #DB2777;
+
+  /* ─── Orange Scale ───────────────────────────────────────────────────── */
+  --orange-50: #FFF7ED;
+  --orange-100: #FFEDD5;
+  --orange-200: #FED7AA;
+  --orange-300: #FDBA74;
+  --orange-400: #FB923C;
+  --orange-500: #F97316;
+  --orange-600: #EA580C;
+  --orange-700: #C2410C;
+  --orange-800: #9A3412;
+  --orange-900: #7C2D12;
+  --orange-950: #431407;
+
+  /* ─── Indigo Scale ───────────────────────────────────────────────────── */
+  --indigo-50: #EEF2FF;
+  --indigo-100: #E0E7FF;
+  --indigo-200: #C7D2FE;
+  --indigo-300: #A5B4FC;
+  --indigo-400: #818CF8;
+  --indigo-500: #6366F1;
+  --indigo-600: #4F46E5;
+  --indigo-700: #4338CA;
+  --indigo-800: #3730A3;
+  --indigo-900: #312E81;
+  --indigo-950: #1E1B4B;
+
+  /* ─── Brown Scale (Ancient / Parchment) ──────────────────────────────── */
+  --brown-50: #FFFDF9;
+  --brown-100: #FFF8E7;
+  --brown-150: #FFFAF2;
+  --brown-200: #FDF5E2;
+  --brown-250: #FFFAF0;
+  --brown-300: #F5EAD4;
+  --brown-350: #FFFAF0;
+  --brown-400: #F4E5C4;
+  --brown-450: #EEDEB5;
+  --brown-500: #E8D5B0;
+  --brown-550: #DFC096;
+  --brown-600: #C4A882;
+  --brown-650: #C9A070;
+  --brown-700: #A87828;
+  --brown-750: #8B5A10;
+  --brown-800: #7B5C3A;
+  --brown-850: #6B4A00;
+  --brown-900: #3D1F08;
+  --brown-950: #2D1505;
+
+  /* ─── Forest Green Scale (Light Theme Primary) ───────────────────────── */
+  --forest-50: #F0F5F2;
+  --forest-100: #DCE8E0;
+  --forest-200: #B8D1C0;
+  --forest-300: #8FBAA0;
+  --forest-400: #5A9A7A;
+  --forest-500: #1C3D28;
+  --forest-600: #164635;
+  --forest-700: #0E3326;
+  --forest-800: #1B4D3E;
+  --forest-900: #0A1E12;
+  --forest-950: #030F08;
+
+  /* ─── Gold Scale (Light Theme Accents) ───────────────────────────────── */
+  --gold-50: #FFD700;
+  --gold-100: #FFE082;
+  --gold-200: #C8960C;
+  --gold-300: #B8860B;
+  --gold-400: #B07A14;
+
+  /* ─── Dark Base Scale ────────────────────────────────────────────────── */
+  --dark-50: #080810;
+  --dark-100: #11111D;
+  --dark-200: #1A1A2E;
+
+  /* ─── Custom Canvas Colors ──────────────────────────────────────────── */
+  --canvas-cream: #FCFAF2;
+  --canvas-eggshell: #FFF9F0;
+  --canvas-floral: #FFFAF0;
+  --canvas-almond: #FFFAF2;
+  --canvas-paper: #F5EAD4;
+  --canvas-parchment: #E2CFA6;
+  --canvas-splash-bg: #110e08;
+  --canvas-splash-dark: #030201;
+
+  /* ─── Premium Colors ─────────────────────────────────────────────────── */
+  --premium-green: #2c4c3b;
+  --premium-cream: #f4ebd8;
+  --premium-gold: #d4af37;
+
+  /* ─── AI Tool Colors ─────────────────────────────────────────────────── */
+  --ai-terracotta: #D97757;
+  --ai-green: #10a37f;
+
+  /* ─── Chart Colors ───────────────────────────────────────────────────── */
+  --chart-navy: #264653;
+  --chart-teal: #2a9d8f;
+  --chart-yellow: #e9c46a;
+  --chart-orange: #f4a261;
+  --chart-coral: #e76f51;
+  --chart-indigo: #6366f1;
+  --chart-rose: #f43f5e;
+  --chart-emerald: #10b981;
+  --chart-amber: #f59e0b;
+  --chart-purple: #8b5cf6;
+  --chart-cyan: #06b6d4;
+  --chart-pink: #ec4899;
+
+  /* ─── Admin Chart Colors ─────────────────────────────────────────────── */
+  --pie-forest: #12291C;
+  --pie-gold: #C8960C;
+  --pie-brown: #4E342E;
+  --pie-amber: #A87828;
+  --pie-green: #1A3316;
+  --pie-bronze: #8B5A10;
+
+  /* ─── Baseline Colors ────────────────────────────────────────────────── */
+  --white: #FFFFFF;
+  --black: #000000;
+  --transparent: transparent;
+
+  /* ─── Radius Primitives ──────────────────────────────────────────────── */
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-4xl: 32px;
+  --radius-full: 9999px;
+
+  /* ─── Shadow Primitives ──────────────────────────────────────────────── */
+  --shadow-offset-none: 0 0 0 0;
+  --shadow-offset-xs: 0 1px 2px 0;
+  --shadow-offset-sm: 0 1px 3px 0;
+  --shadow-offset-md: 0 4px 6px -1px;
+  --shadow-offset-lg: 0 10px 15px -3px;
+  --shadow-offset-xl: 0 20px 25px -5px;
+  --shadow-offset-2xl: 0 25px 50px -12px;
+
+  /* ─── Font Primitives ────────────────────────────────────────────────── */
+  --font-sans: 'Vend Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* ─── Font Weight Primitives ─────────────────────────────────────────── */
+  --weight-thin: 100;
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 900;
+
+  /* ─── Typography Size Primitives ─────────────────────────────────────── */
+  --text-3xs: 0.625rem;    /* 10px */
+  --text-2xs: 0.6875rem;   /* 11px */
+  --text-xs: 0.75rem;      /* 12px */
+  --text-sm: 0.8125rem;    /* 13px */
+  --text-base: 0.875rem;   /* 14px */
+  --text-md: 0.9375rem;    /* 15px */
+  --text-lg: 1.0rem;       /* 16px */
+  --text-xl: 1.0625rem;    /* 17px */
+  --text-2xl: 1.125rem;    /* 18px */
+  --text-3xl: 1.25rem;     /* 20px */
+  --text-4xl: 1.375rem;    /* 22px */
+  --text-5xl: 1.625rem;    /* 26px */
+  --text-6xl: 1.75rem;     /* 28px */
+  --text-7xl: 2.0rem;      /* 32px */
+  --text-8xl: 2.25rem;     /* 36px */
+  --text-9xl: 2.5rem;      /* 40px */
+  --text-10xl: 3.0rem;     /* 48px */
+
+  /* ─── Line Height Primitives ─────────────────────────────────────────── */
+  --lh-none: 1.0;
+  --lh-tight: 1.15;
+  --lh-snug: 1.3;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.7;
+  --lh-loose: 2.0;
+
+  /* ─── Letter Spacing Primitives ───────────────────────────────────────── */
+  --ls-tighter: -0.05em;
+  --ls-tight: -0.025em;
+  --ls-normal: 0em;
+  --ls-wide: 0.025em;
+  --ls-wider: 0.05em;
+  --ls-widest: 0.1em;
+  --ls-ultra: 0.25em;
+
+  /* ─── Opacity Primitives ─────────────────────────────────────────────── */
+  --opacity-0: 0;
+  --opacity-5: 0.05;
+  --opacity-10: 0.1;
+  --opacity-15: 0.15;
+  --opacity-20: 0.2;
+  --opacity-25: 0.25;
+  --opacity-30: 0.3;
+  --opacity-35: 0.35;
+  --opacity-40: 0.4;
+  --opacity-45: 0.45;
+  --opacity-50: 0.5;
+  --opacity-55: 0.55;
+  --opacity-60: 0.6;
+  --opacity-65: 0.65;
+  --opacity-70: 0.7;
+  --opacity-75: 0.75;
+  --opacity-80: 0.8;
+  --opacity-85: 0.85;
+  --opacity-90: 0.9;
+  --opacity-95: 0.95;
+  --opacity-100: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYER 2 — SEMANTIC TOKENS (DARK THEME = DEFAULT)
+   
+   Purpose-bound tokens describing WHAT a color is used for.
+   Referenced by all component CSS, utility classes, and page layouts.
+   Components MUST reference Layer 2, NEVER Layer 1.
+   
+   Naming: --{domain}-{property}-{modifier?}
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ─── Background Tokens ──────────────────────────────────────────────── */
+  --bg-app: #111827;
+  --bg-surface: #1F2937;
+  --bg-elevated: #374151;
+  --bg-hover: #1F2937;
+  --bg-active: #374151;
+  --bg-disabled: #374151;
+  --bg-input: #1F2937;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-success-subtle: rgba(34, 197, 94, 0.1);
+  --bg-warning-subtle: rgba(251, 191, 36, 0.1);
+  --bg-danger-subtle: rgba(248, 113, 113, 0.1);
+  --bg-accent-subtle: rgba(59, 130, 246, 0.1);
+
+  /* ─── Text Tokens ────────────────────────────────────────────────────── */
+  --text-primary: #F9FAFB;
+  --text-secondary: #D1D5DB;
+  --text-disabled: #9CA3AF;
+  --text-on-accent: #FFFFFF;
+  --text-on-danger: #FFFFFF;
+  --text-link: #3B82F6;
+
+  /* ─── Border Tokens ──────────────────────────────────────────────────── */
+  --border-default: #374151;
+  --border-input: #4B5563;
+  --border-focus: #3B82F6;
+  --border-hover: #60A5FA;
+  --border-disabled: #4B5563;
+  --border-subtle: #374151;
+
+  /* ─── Accent / Brand Tokens ──────────────────────────────────────────── */
+  --color-accent: #3B82F6;
+  --color-accent-hover: #60A5FA;
+  --color-accent-subtle: rgba(59, 130, 246, 0.1);
+  --color-accent-rgb: 59, 130, 246;
+  --color-secondary: #10B981;
+  --color-secondary-light: #34D399;
+
+  /* ─── State Tokens ───────────────────────────────────────────────────── */
+  --color-success: #22C55E;
+  --color-success-hover: #16A34A;
+  --color-success-subtle: rgba(34, 197, 94, 0.15);
+  --color-warning: #FBBF24;
+  --color-warning-hover: #F59E0B;
+  --color-warning-subtle: rgba(251, 191, 36, 0.15);
+  --color-danger: #F87171;
+  --color-danger-hover: #EF4444;
+  --color-danger-subtle: rgba(248, 113, 113, 0.15);
+  --color-info: #3B82F6;
+  --color-info-subtle: rgba(59, 130, 246, 0.1);
+
+  /* ─── Shadow Tokens ──────────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.4);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.4);
+
+  /* ─── Icon Tokens ────────────────────────────────────────────────────── */
+  --icon-default: #D1D5DB;
+  --icon-accent: #3B82F6;
+  --icon-disabled: #9CA3AF;
+  --icon-success: #22C55E;
+  --icon-danger: #F87171;
+  --icon-warning: #FBBF24;
+  --icon-info: #3B82F6;
+
+  /* ─── Selection Tokens ───────────────────────────────────────────────── */
+  --selection-bg: #2D5A27;
+  --selection-text: #FFFFFF;
+
+  /* ─── Focus Ring Tokens ──────────────────────────────────────────────── */
+  --focus-ring-color: rgba(59, 130, 246, 0.5);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* ─── Scrollbar Tokens ───────────────────────────────────────────────── */
+  --scrollbar-thumb: #374151;
+  --scrollbar-thumb-hover: #4B5563;
+  --scrollbar-track: transparent;
+  --scrollbar-width: 8px;
+
+  /* ─── Placeholder Tokens ─────────────────────────────────────────────── */
+  --placeholder-color: #9CA3AF;
+  --placeholder-opacity: 0.8;
+  --placeholder-weight: var(--weight-regular);
+
+  /* ─── Gradient Tokens ────────────────────────────────────────────────── */
+  --gradient-primary: linear-gradient(90deg, #3B82F6, #60A5FA);
+  --gradient-success: linear-gradient(90deg, #22C55E, #34D399);
+  --gradient-danger: linear-gradient(90deg, #F87171, #EF4444);
+  --gradient-warning: linear-gradient(90deg, #FBBF24, #F59E0B);
+  --gradient-app: none;
+  --gradient-surface: none;
+  --gradient-header: none;
+  --gradient-sidebar: none;
+
+  /* ─── Decorative Tokens ──────────────────────────────────────────────── */
+  --divider-color: #374151;
+  --divider-width: 1px;
+
+  /* ─── Semantic Radius Tokens ──────────────────────── */
+  --radius-card: var(--radius-3xl);
+  --radius-container: var(--radius-2xl);
+  --radius-card-inner: var(--radius-xl);
+  --radius-surface: var(--radius-lg);
+  --radius-control: var(--radius-md);
+  --radius-tooltip: var(--radius-sm);
+  --radius-pill: var(--radius-full);
+
+  /* ─── Semantic Typography Tokens ──────────────────── */
+  --font-size-caption: var(--text-xs);
+  --font-weight-caption: var(--weight-medium);
+
+  /* ─── Navigation Semantic Tokens ──────────────────── */
+  --bg-nav: var(--bg-surface);
+  --text-nav: var(--text-primary);
+  --border-nav: var(--border-default);
+  --text-nav-secondary: var(--text-secondary);
+  --text-nav-hover: var(--text-primary);
+  --bg-nav-hover: var(--bg-hover);
+  --bg-nav-active: var(--bg-accent-subtle);
+  --text-nav-active: var(--color-accent);
+  --border-nav-indicator: var(--color-accent);
+  --bg-nav-footer: var(--bg-app);
+  --border-nav-footer: var(--divider-color);
+  --icon-nav: var(--icon-default);
+  --icon-nav-active: var(--icon-accent);
+
+  /* ─── Header Semantic Tokens ──────────────────────── */
+  --text-header: var(--text-primary);
+
+  /* ─── Miscellaneous Semantic Tokens ───────────────── */
+  --bg-accent-surface: var(--bg-surface);
+  --text-emphasis: var(--text-primary);
+  --border-accent: var(--color-accent);
+  --glow-warning: rgba(251, 191, 36, 0.2);
+  --glow-danger: rgba(244, 63, 94, 0.2);
+  --opacity-disabled: var(--opacity-60);
+
+  /* ─── Ancient Backward Compatibility (removed Phase 7) ─ */
+  --ancient-gold: var(--color-accent);
+  --ancient-brown-deep: var(--text-primary);
+  --ancient-brown: var(--text-secondary);
+  --ancient-cream: var(--bg-surface);
+  --ancient-danger: var(--color-danger);
+  --ancient-danger-hover: transparent;
+  --ancient-badge-bg: transparent;
+  --ancient-badge-border: transparent;
+  --ancient-forest: var(--color-accent);
+  --ancient-gold-bright: var(--color-accent);
+  --ancient-amber: var(--color-warning);
+  --ancient-cream-light: var(--bg-surface);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYER 2 — SEMANTIC TOKENS (LIGHT THEME OVERRIDES)
+   
+   Only tokens that differ from the dark default are overridden here.
+   Tokens NOT listed here keep their dark-theme default values.
+   
+   ⚠ WARNING: After Phase 7 (full migration), the ancient theme tokens
+   below will be REMOVED. They exist now only as compatibility aliases.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.light {
+  /* ─── Background Tokens ──────────────────────────────────────────────── */
+  --bg-app: #E8D5B0;
+  --bg-surface: #F4E5C4;
+  --bg-elevated: #FDF5E2;
+  --bg-hover: #EEDEB5;
+  --bg-active: #EEDEB5;
+  --bg-disabled: rgba(139, 90, 16, 0.08);
+  --bg-input: #FDF5E2;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --bg-success-subtle: rgba(14, 51, 38, 0.1);
+  --bg-warning-subtle: rgba(115, 50, 6, 0.1);
+  --bg-danger-subtle: rgba(122, 12, 12, 0.1);
+  --bg-accent-subtle: rgba(14, 51, 38, 0.1);
+
+  /* ─── Text Tokens ────────────────────────────────────────────────────── */
+  --text-primary: #0A0503;
+  --text-secondary: #23120B;
+  --text-disabled: #4A3525;
+  --text-on-accent: #E8D5B0;
+  --text-on-danger: #FFFFFF;
+  --text-link: #0E3326;
+
+  /* ─── Border Tokens ──────────────────────────────────────────────────── */
+  --border-default: #8B5A10;
+  --border-input: #59320C;
+  --border-focus: #0E3326;
+  --border-hover: #A87828;
+  --border-disabled: rgba(139, 90, 16, 0.3);
+  --border-subtle: rgba(139, 90, 16, 0.45);
+
+  /* ─── Accent / Brand Tokens ──────────────────────────────────────────── */
+  --color-accent: #0E3326;
+  --color-accent-hover: #164635;
+  --color-accent-subtle: rgba(14, 51, 38, 0.1);
+  --color-accent-rgb: 14, 51, 38;
+  --color-secondary: #8B5A10;
+  --color-secondary-light: #C8960C;
+
+  /* ─── State Tokens ───────────────────────────────────────────────────── */
+  --color-success: #0E3326;
+  --color-success-hover: #164635;
+  --color-success-subtle: rgba(14, 51, 38, 0.12);
+  --color-warning: #733206;
+  --color-warning-hover: #8B4210;
+  --color-warning-subtle: rgba(115, 50, 6, 0.12);
+  --color-danger: #7A0C0C;
+  --color-danger-hover: #9A1010;
+  --color-danger-subtle: rgba(122, 12, 12, 0.12);
+  --color-info: #0E3326;
+  --color-info-subtle: rgba(14, 51, 38, 0.1);
+
+  /* ─── Shadow Tokens ──────────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(139, 90, 16, 0.12);
+  --shadow-sm: 0 1px 3px rgba(139, 90, 16, 0.12);
+  --shadow-md: 0 4px 6px rgba(139, 90, 16, 0.15);
+  --shadow-lg: 0 10px 15px rgba(139, 90, 16, 0.2);
+  --shadow-xl: 0 20px 25px rgba(139, 90, 16, 0.25);
+  --shadow-2xl: 0 25px 50px rgba(139, 90, 16, 0.25);
+
+  /* ─── Icon Tokens ────────────────────────────────────────────────────── */
+  --icon-default: #23120B;
+  --icon-accent: #0E3326;
+  --icon-disabled: #4A3525;
+  --icon-success: #0E3326;
+  --icon-danger: #7A0C0C;
+  --icon-warning: #733206;
+  --icon-info: #0E3326;
+
+  /* ─── Selection Tokens ───────────────────────────────────────────────── */
+  --selection-bg: #12291C;
+  --selection-text: #E8D5B0;
+
+  /* ─── Focus Ring Tokens ──────────────────────────────────────────────── */
+  --focus-ring-color: rgba(14, 51, 38, 0.5);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* ─── Scrollbar Tokens ───────────────────────────────────────────────── */
+  --scrollbar-thumb: #8B5A10;
+  --scrollbar-thumb-hover: #A87828;
+  --scrollbar-track: transparent;
+  --scrollbar-width: 8px;
+
+  /* ─── Placeholder Tokens ─────────────────────────────────────────────── */
+  --placeholder-color: #4A3525;
+  --placeholder-opacity: 0.8;
+  --placeholder-weight: var(--weight-semibold);
+
+  /* ─── Gradient Tokens ────────────────────────────────────────────────── */
+  --gradient-primary: linear-gradient(90deg, #0E3326, #164635);
+  --gradient-success: linear-gradient(90deg, #0E3326, #164635);
+  --gradient-danger: linear-gradient(90deg, #7A0C0C, #9A1010);
+  --gradient-warning: linear-gradient(90deg, #733206, #8B4210);
+  --gradient-app: radial-gradient(circle at 50% 0%, #EFE1C6 0%, #E2CFA6 60%, #D2BA8E 100%);
+  --gradient-surface: linear-gradient(170deg, rgba(255, 240, 195, 0.35) 0%, rgba(195, 145, 70, 0.08) 45%, rgba(155, 100, 35, 0.12) 100%);
+  --gradient-header: linear-gradient(150deg, #162B1C 0%, #0A1A10 100%);
+  --gradient-sidebar: rgba(12, 32, 20, 0.95);
+
+  /* ─── Decorative Tokens ──────────────────────────────────────────────── */
+  --divider-color: rgba(139, 90, 16, 0.3);
+  --divider-width: 1px;
+
+  /* ─── Navigation Semantic Tokens ──────────────────── */
+  --bg-nav: rgba(12, 32, 20, 0.95);
+  --text-nav: rgba(255, 255, 255, 0.95);
+  --border-nav: rgba(200, 150, 12, 0.35);
+  --text-nav-secondary: rgba(223, 192, 150, 0.7);
+  --text-nav-hover: rgba(255, 223, 160, 1);
+  --bg-nav-hover: rgba(200, 150, 12, 0.1);
+  --bg-nav-active: rgba(200, 150, 12, 0.2);
+  --text-nav-active: rgba(255, 223, 160, 1);
+  --border-nav-indicator: #C8960C;
+  --bg-nav-footer: rgba(6, 17, 11, 0.98);
+  --border-nav-footer: rgba(200, 150, 12, 0.3);
+  --icon-nav: rgba(223, 192, 150, 0.7);
+  --icon-nav-active: rgba(255, 223, 160, 1);
+
+  /* ─── Header Semantic Tokens ──────────────────────── */
+  --text-header: rgba(220, 185, 120, 0.92);
+
+  /* ─── Miscellaneous Semantic Tokens ───────────────── */
+  --bg-accent-surface: #C9A070;
+  --text-emphasis: #3D1F08;
+  --border-accent: #A87828;
+  --glow-warning: rgba(251, 191, 36, 0.2);
+  --glow-danger: rgba(244, 63, 94, 0.2);
+  --opacity-disabled: var(--opacity-60);
+
+  /* ─── Ancient Backward Compatibility (removed Phase 7) ── */
+  --ancient-gold: #A87828;
+  --ancient-brown-deep: #3D1F08;
+  --ancient-brown: #8B5A10;
+  --ancient-cream: #F4E5C4;
+  --ancient-danger: #D32F2F;
+  --ancient-danger-hover: #FFEBEE;
+  --ancient-badge-bg: #FFF8E1;
+  --ancient-badge-border: #FFE082;
+  --ancient-forest: #1C3D28;
+  --ancient-gold-bright: #C8960C;
+  --ancient-amber: #B45309;
+  --ancient-cream-light: #E8D5B0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYER 3 — COMPONENT TOKENS (DARK THEME = DEFAULT)
+   
+   Component-scoped tokens. Each group prefixed by the component name.
+   These MUST reference only Layer 2 (semantic) tokens, NEVER Layer 1.
+   Defined globally here for the migration period; will move to component
+   CSS files during Phases 4-8.
+   
+   Naming: --{component}-{property}
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ─── Button Component Tokens ────────────────────────────────────────── */
+  --btn-primary-bg: var(--color-accent);
+  --btn-primary-text: var(--text-on-accent);
+  --btn-primary-border: transparent;
+  --btn-primary-shadow: var(--shadow-sm);
+  --btn-primary-hover-bg: var(--color-accent-hover);
+  --btn-primary-hover-shadow: var(--shadow-md);
+  --btn-primary-active-shadow: var(--shadow-xs);
+  --btn-primary-disabled-bg: var(--bg-disabled);
+  --btn-primary-disabled-text: var(--text-disabled);
+
+  --btn-secondary-bg: transparent;
+  --btn-secondary-text: var(--color-accent);
+  --btn-secondary-border: var(--border-default);
+  --btn-secondary-shadow: none;
+  --btn-secondary-hover-bg: var(--bg-hover);
+  --btn-secondary-hover-border: var(--border-hover);
+  --btn-secondary-active-bg: var(--bg-active);
+
+  --btn-danger-bg: var(--color-danger);
+  --btn-danger-text: var(--text-on-danger);
+  --btn-danger-border: transparent;
+  --btn-danger-shadow: var(--shadow-sm);
+  --btn-danger-hover-bg: var(--color-danger-hover);
+  --btn-danger-hover-shadow: var(--shadow-md);
+
+  --btn-success-bg: var(--color-success);
+  --btn-success-text: var(--text-on-accent);
+  --btn-success-border: transparent;
+  --btn-success-shadow: var(--shadow-sm);
+  --btn-success-hover-bg: var(--color-success-hover);
+  --btn-success-hover-shadow: var(--shadow-md);
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-text: var(--text-primary);
+  --btn-ghost-border: transparent;
+  --btn-ghost-hover-bg: var(--bg-hover);
+  --btn-ghost-active-bg: var(--bg-active);
+
+  --btn-outline-bg: transparent;
+  --btn-outline-text: var(--color-accent);
+  --btn-outline-border: var(--color-accent);
+  --btn-outline-hover-bg: var(--bg-accent-subtle);
+  --btn-outline-hover-border: var(--color-accent-hover);
+
+  /* ─── Card Component Tokens ──────────────────────────────────────────── */
+  --card-bg: var(--bg-surface);
+  --card-text: var(--text-primary);
+  --card-border: var(--border-default);
+  --card-shadow: var(--shadow-sm);
+  --card-radius: var(--radius-card);
+  --card-hover-shadow: var(--shadow-md);
+  --card-hover-border: var(--border-hover);
+  --card-header-text: var(--text-primary);
+  --card-body-text: var(--text-secondary);
+  --card-padding: 24px;
+  --card-padding-sm: 16px;
+
+  /* ─── Input Component Tokens ─────────────────────────────────────────── */
+  --input-bg: var(--bg-input);
+  --input-text: var(--text-primary);
+  --input-border: var(--border-input);
+  --input-radius: var(--radius-control);
+  --input-shadow: none;
+  --input-focus-border: var(--border-focus);
+  --input-focus-shadow: 0 0 0 3px var(--focus-ring-color);
+  --input-disabled-bg: var(--bg-disabled);
+  --input-disabled-text: var(--text-disabled);
+  --input-disabled-border: var(--border-disabled);
+  --input-placeholder: var(--placeholder-color);
+  --input-padding-x: 16px;
+  --input-padding-y: 12px;
+
+  /* ─── Textarea Component Tokens ──────────────────────────────────────── */
+  --textarea-bg: var(--input-bg);
+  --textarea-text: var(--input-text);
+  --textarea-border: var(--input-border);
+  --textarea-radius: var(--input-radius);
+  --textarea-focus-border: var(--input-focus-border);
+  --textarea-focus-shadow: var(--input-focus-shadow);
+  --textarea-placeholder: var(--placeholder-color);
+  --textarea-padding: var(--input-padding-y);
+
+  /* ─── Select Component Tokens ────────────────────────────────────────── */
+  --select-bg: var(--input-bg);
+  --select-text: var(--input-text);
+  --select-border: var(--input-border);
+  --select-radius: var(--input-radius);
+  --select-focus-border: var(--input-focus-border);
+  --select-focus-shadow: var(--input-focus-shadow);
+  --select-option-bg: var(--bg-surface);
+  --select-option-text: var(--text-primary);
+  --select-option-selected-bg: var(--color-accent);
+  --select-option-selected-text: var(--text-on-accent);
+
+  /* ─── Modal / Dialog Component Tokens ────────────────────────────────── */
+  --modal-bg: var(--bg-elevated);
+  --modal-text: var(--text-primary);
+  --modal-border: var(--border-default);
+  --modal-shadow: var(--shadow-xl);
+  --modal-radius: var(--radius-container);
+  --modal-overlay: var(--bg-overlay);
+  --modal-header-text: var(--text-primary);
+  --modal-body-text: var(--text-secondary);
+  --modal-padding: 24px;
+  --modal-max-width: 480px;
+
+  /* ─── Dropdown Component Tokens ──────────────────────────────────────── */
+  --dropdown-bg: var(--bg-elevated);
+  --dropdown-text: var(--text-primary);
+  --dropdown-border: var(--border-default);
+  --dropdown-shadow: var(--shadow-lg);
+  --dropdown-radius: var(--radius-control);
+  --dropdown-item-hover-bg: var(--bg-hover);
+  --dropdown-item-hover-text: var(--text-primary);
+  --dropdown-item-active-bg: var(--bg-accent-subtle);
+  --dropdown-item-active-text: var(--color-accent);
+  --dropdown-item-padding-x: 16px;
+  --dropdown-item-padding-y: 10px;
+
+  /* ─── Tooltip Component Tokens ───────────────────────────────────────── */
+  --tooltip-bg: var(--bg-elevated);
+  --tooltip-text: var(--text-primary);
+  --tooltip-border: var(--border-default);
+  --tooltip-shadow: var(--shadow-md);
+  --tooltip-radius: var(--radius-tooltip);
+  --tooltip-padding-x: 12px;
+  --tooltip-padding-y: 8px;
+
+  /* ─── Badge Component Tokens ─────────────────────────────────────────── */
+  --badge-default-bg: var(--bg-elevated);
+  --badge-default-text: var(--text-secondary);
+  --badge-default-border: var(--border-default);
+  --badge-success-bg: var(--bg-success-subtle);
+  --badge-success-text: var(--color-success);
+  --badge-success-border: transparent;
+  --badge-warning-bg: var(--bg-warning-subtle);
+  --badge-warning-text: var(--color-warning);
+  --badge-warning-border: transparent;
+  --badge-danger-bg: var(--bg-danger-subtle);
+  --badge-danger-text: var(--color-danger);
+  --badge-danger-border: transparent;
+  --badge-accent-bg: var(--bg-accent-subtle);
+  --badge-accent-text: var(--color-accent);
+  --badge-accent-border: transparent;
+  --badge-radius: var(--radius-pill);
+  --badge-padding-x: 12px;
+  --badge-padding-y: 4px;
+  --badge-font-size: var(--font-size-caption);
+  --badge-font-weight: var(--font-weight-caption);
+
+  /* ─── Chip Component Tokens ──────────────────────────────────────────── */
+  --chip-bg: var(--bg-elevated);
+  --chip-text: var(--text-primary);
+  --chip-border: var(--border-default);
+  --chip-radius: var(--radius-pill);
+  --chip-hover-bg: var(--bg-hover);
+  --chip-selected-bg: var(--bg-accent-subtle);
+  --chip-selected-text: var(--color-accent);
+  --chip-selected-border: var(--color-accent);
+  --chip-padding-x: 12px;
+  --chip-padding-y: 6px;
+
+  /* ─── Navigation Component Tokens ────────────────────────────────────── */
+  --nav-text: var(--text-secondary);
+  --nav-text-hover: var(--text-primary);
+  --nav-text-active: var(--color-accent);
+  --nav-bg-hover: var(--bg-hover);
+  --nav-bg-active: var(--bg-accent-subtle);
+  --nav-indicator-active: var(--color-accent);
+  --nav-icon: var(--icon-default);
+  --nav-icon-active: var(--icon-accent);
+  --nav-divider: var(--divider-color);
+  --nav-radius: var(--radius-control);
+  --nav-padding-x: 16px;
+  --nav-padding-y: 12px;
+
+  /* ─── Sidebar Component Tokens ───────────────────────────────────────── */
+  --sidebar-bg: var(--bg-surface);
+  --sidebar-text: var(--text-primary);
+  --sidebar-border: var(--border-default);
+  --sidebar-width: 280px;
+  --sidebar-width-collapsed: 0px;
+  --sidebar-header-text: var(--text-primary);
+  --sidebar-nav-text: var(--text-secondary);
+  --sidebar-nav-text-hover: var(--text-primary);
+  --sidebar-nav-text-active: var(--color-accent);
+  --sidebar-nav-bg-hover: var(--bg-hover);
+  --sidebar-nav-bg-active: var(--bg-accent-subtle);
+  --sidebar-nav-indicator: var(--color-accent);
+  --sidebar-footer-bg: var(--bg-app);
+  --sidebar-footer-border: var(--divider-color);
+  --sidebar-icon: var(--icon-default);
+  --sidebar-icon-active: var(--icon-accent);
+
+  /* ─── Header Component Tokens ────────────────────────────────────────── */
+  --header-bg: var(--bg-surface);
+  --header-text: var(--text-primary);
+  --header-border: var(--border-default);
+  --header-shadow: var(--shadow-sm);
+  --header-height: 64px;
+  --header-z-index: 100;
+  --header-icon: var(--icon-default);
+  --header-icon-hover: var(--icon-accent);
+
+  /* ─── Footer Component Tokens ────────────────────────────────────────── */
+  --footer-bg: var(--bg-app);
+  --footer-text: var(--text-secondary);
+  --footer-border: var(--border-default);
+
+  /* ─── Tabs Component Tokens ──────────────────────────────────────────── */
+  --tab-track-bg: transparent;
+  --tab-track-border: var(--border-default);
+  --tab-track-radius: var(--radius-surface);
+  --tab-text: var(--text-secondary);
+  --tab-text-hover: var(--text-primary);
+  --tab-text-active: var(--color-accent);
+  --tab-bg-hover: var(--bg-hover);
+  --tab-bg-active: var(--bg-accent-subtle);
+  --tab-indicator: var(--color-accent);
+  --tab-pill-bg: var(--bg-elevated);
+  --tab-pill-text: var(--color-accent);
+  --tab-pill-radius: var(--radius-control);
+  --tab-padding-x: 16px;
+  --tab-padding-y: 10px;
+  --tab-gap: 4px;
+
+  /* ─── Accordion Component Tokens ─────────────────────────────────────── */
+  --accordion-bg: var(--bg-surface);
+  --accordion-text: var(--text-primary);
+  --accordion-border: var(--border-default);
+  --accordion-radius: var(--radius-control);
+  --accordion-header-bg: var(--bg-surface);
+  --accordion-header-text: var(--text-primary);
+  --accordion-header-hover-bg: var(--bg-hover);
+  --accordion-content-bg: var(--bg-surface);
+  --accordion-content-text: var(--text-secondary);
+
+  /* ─── Table Component Tokens ─────────────────────────────────────────── */
+  --table-bg: var(--bg-surface);
+  --table-text: var(--text-primary);
+  --table-border: var(--border-default);
+  --table-radius: var(--radius-surface);
+  --table-header-bg: var(--bg-elevated);
+  --table-header-text: var(--text-secondary);
+  --table-row-hover: var(--bg-hover);
+  --table-row-stripe: var(--bg-app);
+  --table-cell-padding-x: 16px;
+  --table-cell-padding-y: 12px;
+
+  /* ─── Statistics Card Component Tokens ───────────────────────────────── */
+  --stat-card-bg: var(--bg-surface);
+  --stat-card-text: var(--text-primary);
+  --stat-card-border: var(--border-default);
+  --stat-card-shadow: var(--shadow-sm);
+  --stat-card-radius: var(--radius-container);
+  --stat-value-text: var(--text-primary);
+  --stat-label-text: var(--text-secondary);
+  --stat-icon-bg: var(--bg-accent-subtle);
+  --stat-icon-color: var(--icon-accent);
+  --stat-icon-radius: var(--radius-control);
+
+  /* ─── Question Card Component Tokens ─────────────────────────────────── */
+  --qcard-bg: var(--bg-surface);
+  --qcard-text: var(--text-primary);
+  --qcard-border: var(--border-default);
+  --qcard-shadow: var(--shadow-sm);
+  --qcard-radius: var(--radius-card-inner);
+  --qcard-option-bg: var(--bg-surface);
+  --qcard-option-text: var(--text-primary);
+  --qcard-option-border: var(--border-default);
+  --qcard-option-radius: var(--radius-control);
+  --qcard-option-selected-bg: var(--bg-accent-subtle);
+  --qcard-option-selected-text: var(--color-accent);
+  --qcard-option-selected-border: var(--color-accent);
+  --qcard-option-correct-bg: var(--bg-success-subtle);
+  --qcard-option-correct-text: var(--color-success);
+  --qcard-option-correct-border: var(--color-success);
+  --qcard-option-wrong-bg: var(--bg-danger-subtle);
+  --qcard-option-wrong-text: var(--color-danger);
+  --qcard-option-wrong-border: var(--color-danger);
+  --qcard-option-disabled-opacity: var(--opacity-disabled);
+
+  /* ─── Question Palette Component Tokens ──────────────────────────────── */
+  --palette-item-size: 36px;
+  --palette-item-radius: var(--radius-tooltip);
+  --palette-item-unanswered-bg: transparent;
+  --palette-item-unanswered-text: var(--text-secondary);
+  --palette-item-unanswered-border: var(--border-default);
+  --palette-item-answered-bg: var(--color-accent);
+  --palette-item-answered-text: var(--text-on-accent);
+  --palette-item-answered-border: transparent;
+  --palette-item-marked-bg: var(--color-warning-subtle);
+  --palette-item-marked-text: var(--color-warning);
+  --palette-item-marked-border: var(--color-warning);
+  --palette-item-current-bg: var(--bg-accent-subtle);
+  --palette-item-current-text: var(--color-accent);
+  --palette-item-current-border: var(--color-accent);
+  --palette-item-correct-bg: var(--color-success);
+  --palette-item-correct-text: var(--text-on-accent);
+  --palette-item-correct-border: transparent;
+  --palette-item-wrong-bg: var(--color-danger);
+  --palette-item-wrong-text: var(--text-on-danger);
+  --palette-item-wrong-border: transparent;
+  --palette-gap: 6px;
+
+  /* ─── Status Board Component Tokens ──────────────────────────────────── */
+  --status-board-text: var(--text-primary);
+  --status-board-label: var(--text-secondary);
+  --status-board-value: var(--text-primary);
+  --status-board-divider: var(--divider-color);
+  --status-board-icon-correct: var(--icon-success);
+  --status-board-icon-wrong: var(--icon-danger);
+  --status-board-icon-marked: var(--icon-warning);
+  --status-board-icon-unanswered: var(--icon-default);
+
+  /* ─── Exam Header Component Tokens ───────────────────────────────────── */
+  --exam-header-bg: var(--bg-surface);
+  --exam-header-text: var(--text-primary);
+  --exam-header-border: var(--border-default);
+  --exam-header-shadow: var(--shadow-sm);
+  --exam-header-timer-text: var(--text-primary);
+  --exam-header-timer-warning: var(--color-warning);
+  --exam-header-timer-danger: var(--color-danger);
+
+  /* ─── Exam Timer Component Tokens ────────────────────────────────────── */
+  --exam-timer-bg: var(--bg-surface);
+  --exam-timer-text: var(--text-primary);
+  --exam-timer-border: var(--border-default);
+  --exam-timer-radius: var(--radius-control);
+  --exam-timer-normal-color: var(--color-success);
+  --exam-timer-warning-color: var(--color-warning);
+  --exam-timer-danger-color: var(--color-danger);
+  --exam-timer-warning-shadow: 0 0 15px var(--glow-warning);
+  --exam-timer-danger-shadow: 0 0 15px var(--glow-danger);
+
+  /* ─── Review Card Component Tokens ───────────────────────────────────── */
+  --review-card-bg: var(--bg-surface);
+  --review-card-text: var(--text-primary);
+  --review-card-border: var(--border-default);
+  --review-card-shadow: var(--shadow-sm);
+  --review-card-radius: var(--radius-card-inner);
+  --review-card-correct-indicator: var(--color-success);
+  --review-card-wrong-indicator: var(--color-danger);
+  --review-card-marked-indicator: var(--color-warning);
+
+  /* ─── Toast Component Tokens ─────────────────────────────────────────── */
+  --toast-bg: var(--bg-elevated);
+  --toast-text: var(--text-primary);
+  --toast-border: var(--border-default);
+  --toast-shadow: var(--shadow-xl);
+  --toast-radius: var(--radius-surface);
+  --toast-success-bg: var(--bg-success-subtle);
+  --toast-success-border: var(--color-success);
+  --toast-success-icon: var(--icon-success);
+  --toast-error-bg: var(--bg-danger-subtle);
+  --toast-error-border: var(--color-danger);
+  --toast-error-icon: var(--icon-danger);
+  --toast-warning-bg: var(--bg-warning-subtle);
+  --toast-warning-border: var(--color-warning);
+  --toast-warning-icon: var(--icon-warning);
+  --toast-info-bg: var(--bg-accent-subtle);
+  --toast-info-border: var(--color-accent);
+  --toast-info-icon: var(--icon-info);
+
+  /* ─── Alert Component Tokens ─────────────────────────────────────────── */
+  --alert-bg: var(--bg-elevated);
+  --alert-text: var(--text-primary);
+  --alert-border: var(--border-default);
+  --alert-radius: var(--radius-control);
+  --alert-success-bg: var(--bg-success-subtle);
+  --alert-success-text: var(--color-success);
+  --alert-success-border: var(--color-success);
+  --alert-error-bg: var(--bg-danger-subtle);
+  --alert-error-text: var(--color-danger);
+  --alert-error-border: var(--color-danger);
+  --alert-warning-bg: var(--bg-warning-subtle);
+  --alert-warning-text: var(--color-warning);
+  --alert-warning-border: var(--color-warning);
+  --alert-info-bg: var(--bg-accent-subtle);
+  --alert-info-text: var(--color-accent);
+  --alert-info-border: var(--color-accent);
+
+  /* ─── Progress Component Tokens ──────────────────────────────────────── */
+  --progress-track-bg: var(--border-default);
+  --progress-track-radius: var(--radius-pill);
+  --progress-track-height: 8px;
+  --progress-fill-bg: var(--color-accent);
+  --progress-fill-radius: var(--radius-pill);
+  --progress-fill-success: var(--color-success);
+  --progress-fill-warning: var(--color-warning);
+  --progress-fill-danger: var(--color-danger);
+
+  /* ─── Skeleton Component Tokens ──────────────────────────────────────── */
+  --skeleton-bg: var(--border-default);
+  --skeleton-radius: var(--radius-tooltip);
+  --skeleton-opacity: 0.5;
+
+  /* ─── Loader / Spinner Component Tokens ──────────────────────────────── */
+  --loader-color: var(--color-accent);
+  --loader-track: var(--border-default);
+  --loader-size: 32px;
+  --loader-speed: 0.8s;
+
+  /* ─── Premium Card Component Tokens ──────────────────────────────────── */
+  --premium-card-bg: var(--bg-surface);
+  --premium-card-border: var(--border-default);
+  --premium-card-shadow: var(--shadow-md);
+  --premium-card-radius: var(--radius-card);
+  --premium-card-hover-border: var(--border-hover);
+  --premium-card-hover-shadow: var(--shadow-lg);
+
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYER 3 — COMPONENT TOKENS (LIGHT THEME OVERRIDES)
+   
+   Only component tokens that differ in light theme.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.light {
+  /* ─── Sidebar Light Theme Overrides ──────────────────────────────────── */
+  --sidebar-header-text: var(--text-nav);
+  --sidebar-bg: var(--bg-nav);
+  --sidebar-text: var(--text-nav);
+  --sidebar-border: var(--border-nav);
+  --sidebar-nav-text: var(--text-nav-secondary);
+  --sidebar-nav-text-hover: var(--text-nav-hover);
+  --sidebar-nav-bg-hover: var(--bg-nav-hover);
+  --sidebar-nav-bg-active: var(--bg-nav-active);
+  --sidebar-nav-text-active: var(--text-nav-active);
+  --sidebar-nav-indicator: var(--border-nav-indicator);
+  --sidebar-footer-bg: var(--bg-nav-footer);
+  --sidebar-footer-border: var(--border-nav-footer);
+  --sidebar-icon: var(--icon-nav);
+  --sidebar-icon-active: var(--icon-nav-active);
+
+  /* ─── Header Light Theme Overrides ───────────────────────────────────── */
+  --header-bg: var(--bg-nav);
+  --header-text: var(--text-header);
+  --header-border: var(--border-nav);
+  --header-shadow: var(--shadow-sm);
+  --header-icon: var(--icon-nav);
+  --header-icon-hover: var(--icon-nav-active);
+
+  /* ─── Card and Surface Overrides ─────────────────────────────────────── */
+  --card-border: var(--border-accent);
+  --card-shadow: var(--shadow-sm);
+
+  /* ─── Stat Card Overrides ────────────────────────────────────────────── */
+  --stat-card-bg: var(--bg-accent-surface);
+  --stat-card-border: var(--border-accent);
+  --stat-card-shadow: var(--shadow-sm);
+  --stat-value-text: var(--text-emphasis);
+  --stat-label-text: var(--border-accent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   END OF TOKEN DEFINITIONS
+   
+   No CSS selectors, no component styles, no layout rules beyond this point.
+   ═══════════════════════════════════════════════════════════════════════════ */
