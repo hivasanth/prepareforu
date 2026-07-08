@@ -28,6 +28,8 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useToast } from '../../hooks/useToast'
+import { formatNumber, formatDurationShort } from '../../utils/timeUtils'
+import { computeSummaryStats, computeScoreDistribution } from '../../utils/scoreUtils'
 import { 
   PageContainer,
   Stack, 
@@ -106,13 +108,7 @@ interface EvalData {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const fmt = (n: number, dec = 1) => isNaN(n) ? '—' : n.toFixed(dec)
-const fmtTime = (secs: number | null) => {
-  if (!secs) return '—'
-  const m = Math.floor(secs / 60)
-  const s = secs % 60
-  return `${m}m ${s}s`
-}
+
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function SubAdminExams() {
@@ -345,38 +341,14 @@ export default function SubAdminExams() {
     else { setEvalData(null) }
   }
 
-  // ── Derived stats
   const summaryStats = useMemo(() => {
     if (!evalData?.attempts.length) return null
-    const atts = evalData.attempts
-    const scores = atts.map(a => Number(a.score))
-    const avg = scores.reduce((s, v) => s + v, 0) / scores.length
-    const hi = Math.max(...scores)
-    const lo = Math.min(...scores)
-    const avgTime = atts
-      .map(a => a.duration_seconds ?? 0)
-      .reduce((s, v) => s + v, 0) / atts.length
-    return { total: atts.length, avg, hi, lo, avgTime }
+    return computeSummaryStats(evalData.attempts)
   }, [evalData?.attempts])
 
-  // ── Score distribution
   const scoreDistribution = useMemo(() => {
     if (!evalData?.attempts.length || !selectedExam) return []
-    const ranges = [
-      { label: '0 – 20%', min: 0, max: 20 },
-      { label: '20 – 40%', min: 20, max: 40 },
-      { label: '40 – 60%', min: 40, max: 60 },
-      { label: '60 – 80%', min: 60, max: 80 },
-      { label: '80 – 100%', min: 80, max: 101 },
-    ]
-    const total = evalData.attempts.length
-    return ranges.map(r => {
-      const count = evalData.attempts.filter(a => {
-        const pct = (Number(a.score) / Number(selectedExam.total_marks)) * 100
-        return pct >= r.min && pct < r.max
-      }).length
-      return { ...r, count, pct: total > 0 ? (count / total) * 100 : 0 }
-    })
+    return computeScoreDistribution(evalData.attempts, Number(selectedExam.total_marks))
   }, [evalData?.attempts, selectedExam])
 
   // ── Top / Bottom 5
@@ -396,7 +368,7 @@ export default function SubAdminExams() {
   const copyLeaderboard = () => {
     if (!evalData?.attempts.length) return
     const text = evalData.attempts.map((a, i) => 
-      `${i + 1}. ${a.users?.full_name ?? 'Unknown'} - ${a.score}/${a.total_marks} (${fmt(Number(a.accuracy))}%)`
+      `${i + 1}. ${a.users?.full_name ?? 'Unknown'} - ${a.score}/${a.total_marks} (${formatNumber(Number(a.accuracy))}%)`
     ).join('\n')
     copyToClipboard(`Leaderboard: ${selectedExam?.title}\n\n${text}`, () => {
       setLeaderboardCopied(true)
@@ -410,10 +382,10 @@ export default function SubAdminExams() {
     const text = [
       `Exam: ${selectedExam.title}`,
       `Total Students: ${summaryStats.total}`,
-      `Average Score: ${fmt(summaryStats.avg)} / ${selectedExam.total_marks}`,
+      `Average Score: ${formatNumber(summaryStats.avg)} / ${selectedExam.total_marks}`,
       `Highest Score: ${summaryStats.hi} / ${selectedExam.total_marks}`,
       `Lowest Score: ${summaryStats.lo} / ${selectedExam.total_marks}`,
-      `Average Time: ${fmtTime(Math.round(summaryStats.avgTime))}`,
+      `Average Time: ${formatDurationShort(Math.round(summaryStats.avgTime))}`,
     ].join('\n')
     copyToClipboard(text, () => {
       setCopied(true)
@@ -431,11 +403,11 @@ export default function SubAdminExams() {
       a.users?.email ?? '—',
       a.score,
       a.total_marks,
-      fmt(Number(a.accuracy)),
+      formatNumber(Number(a.accuracy)),
       a.correct_count,
       a.wrong_count,
       a.skipped_count,
-      fmtTime(a.duration_seconds),
+      formatDurationShort(a.duration_seconds),
     ])
     const csv = [header, ...rows].map(r => r.join(',')).join('\n')
     downloadCSVFile(csv, `${selectedExam.title.replace(/\s+/g, '_')}_results.csv`)
@@ -655,10 +627,10 @@ export default function SubAdminExams() {
                   const tm = se?.total_marks ?? 0
                   const cards = [
                     { icon: <Users size={16} />,       label: 'Total Students',  value: ss?.total.toString() ?? '0',                              color: 'text-primary' },
-                    { icon: <BarChart3 size={16} />,   label: 'Average Score',   value: `${fmt(ss?.avg ?? 0)} / ${tm}`,                             color: 'text-blue-400' },
+                    { icon: <BarChart3 size={16} />,   label: 'Average Score',   value: `${formatNumber(ss?.avg ?? 0)} / ${tm}`,                             color: 'text-blue-400' },
                     { icon: <TrendingUp size={16} />,  label: 'Highest Score',   value: `${ss?.hi ?? 0} / ${tm}`,                                  color: 'text-green-500' },
                     { icon: <TrendingDown size={16} />,label: 'Lowest Score',    value: `${ss?.lo ?? 0} / ${tm}`,                                  color: 'text-red-400' },
-                    { icon: <Clock size={16} />,       label: 'Avg Time Taken',  value: fmtTime(Math.round(ss?.avgTime ?? 0)),                     color: 'text-amber-400' },
+                    { icon: <Clock size={16} />,       label: 'Avg Time Taken',  value: formatDurationShort(Math.round(ss?.avgTime ?? 0)),                     color: 'text-amber-400' },
                   ]
                   return cards.map((card, i) => (
                    <Card
@@ -771,7 +743,7 @@ export default function SubAdminExams() {
                             Correct
                           </span>
                           <span className="font-black text-green-500" style={{ fontSize: qStat }}>
-                            {fmt(qs.correctPct, 0)}%
+                            {formatNumber(qs.correctPct, 0)}%
                           </span>
                         </div>
                         <div className="h-1.5 w-full bg-border-subtle/15 rounded-full overflow-hidden">
@@ -788,7 +760,7 @@ export default function SubAdminExams() {
                             Wrong
                           </span>
                           <span className="font-black text-red-400" style={{ fontSize: qStat }}>
-                            {fmt(qs.incorrectPct, 0)}%
+                            {formatNumber(qs.incorrectPct, 0)}%
                           </span>
                         </div>
                         <div className="h-1.5 w-full bg-border-subtle/15 rounded-full overflow-hidden">
@@ -896,9 +868,9 @@ export default function SubAdminExams() {
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-text-secondary" style={{ fontSize: tblFont }}>
-                          <span>Acc: {fmt(Number(a.accuracy))}%</span>
+                          <span>Acc: {formatNumber(Number(a.accuracy))}%</span>
                           <Dot />
-                          <span>{fmtTime(a.duration_seconds)}</span>
+                          <span>{formatDurationShort(a.duration_seconds)}</span>
                         </div>
                       </div>
                     ))}
@@ -949,7 +921,7 @@ export default function SubAdminExams() {
                             <td className="px-4 font-bold text-red-400" style={{ fontSize: tblFont }}>{a.wrong_count}</td>
                             <td className="px-4 font-bold text-amber-400" style={{ fontSize: tblFont }}>{a.skipped_count}</td>
                             <td className="px-4 font-bold text-text-secondary" style={{ fontSize: tblFont }}>
-                              {fmtTime(a.duration_seconds)}
+                              {formatDurationShort(a.duration_seconds)}
                             </td>
                           </tr>
                         ))}

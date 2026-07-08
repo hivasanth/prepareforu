@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase'
 import { useSupabaseQuery } from '../../hooks/useSupabaseQuery'
 import { useAdminFilters } from '../../hooks/useAdminFilters'
 import { GuardLoader } from '../../guards/Guards'
-import { assignRanks, APPSC_GROUPS, type LeaderboardEntry } from '../../lib/leaderboardUtils'
+import { assignRanks, APPSC_GROUPS, type LeaderboardEntry } from '../../utils/rankUtils'
 
 // Components
 import { RefreshCw } from 'lucide-react'

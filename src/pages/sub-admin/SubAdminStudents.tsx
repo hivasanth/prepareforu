@@ -17,6 +17,7 @@ import { generateRequestId } from '../../utils/logger'
 import { GuardLoader } from '../../guards/Guards'
 import { useAuth } from '../../context/AuthContext'
 import { downloadCSV } from '../../utils/csvUtils'
+import { computeStudentStats } from '../../utils/scoreUtils'
 
 interface AttemptWithExam {
   id: string;
@@ -119,26 +120,10 @@ export default function SubAdminStudents() {
             submitted_at: a.submitted_at
           }))
 
-        const totalExams = studentAttempts.length
-        const avgScore = totalExams > 0 
-          ? Math.round(studentAttempts.reduce((acc, curr) => acc + curr.score, 0) / totalExams) 
-          : 0
-        const bestScore = totalExams > 0 
-          ? Math.max(...studentAttempts.map(a => a.score)) 
-          : 0
-        const lastActive = totalExams > 0 
-          ? [...studentAttempts].sort((a,b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime())[0].submitted_at 
-          : null
-
         return {
           ...u,
           attempts: studentAttempts,
-          stats: {
-            totalExams,
-            avgScore,
-            bestScore,
-            lastActive
-          }
+          stats: computeStudentStats(studentAttempts)
         }
       })
 

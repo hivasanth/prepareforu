@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns'
-import { formatDuration } from '../../../lib/leaderboardUtils'
+import { formatDuration } from '../../../utils/timeUtils'
 import { RankBadge } from './RankBadge'
 import type { LeaderboardEntry } from '../../../types/leaderboard.types'
 

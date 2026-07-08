@@ -1,7 +1,7 @@
 import { format, parseISO } from 'date-fns'
 import { Clock, BarChart2, Target, Calendar } from 'lucide-react'
 import { Badge } from '../../common/AntigravityUI'
-import { formatDuration } from '../../../lib/leaderboardUtils'
+import { formatDuration } from '../../../utils/timeUtils'
 import { RankBadge } from './RankBadge'
 import type { LeaderboardEntry } from '../../../types/leaderboard.types'
 

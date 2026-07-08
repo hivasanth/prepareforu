@@ -32,15 +32,9 @@ import { UserSelectionTabs } from '../../components/user/UserSelectionTabs';
 import { SectionReveal } from '../../components/common/AntigravityAnimation';
 
 import { LeaderboardRow, MetricItem } from './LeaderboardViews/LeaderboardComponents';
+import { formatDurationMinutesSeconds } from '../../utils/timeUtils';
 
 type TimeRange = 'all' | '30d' | '7d' | 'today';
-
-const formatDuration = (secs?: number) => {
-  if (secs == null) return '--:--';
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-};
 
 export default function UserLeaderboard() {
   const { user, loading: authLoading } = useAuth();
@@ -247,7 +241,7 @@ export default function UserLeaderboard() {
                             entry={entry}
                             isMe={entry.user_id === user?.id}
                             isMobile={isMobile}
-                            formatDuration={formatDuration}
+                            formatDuration={formatDurationMinutesSeconds}
                           />
                         ))}
                       </tbody>
@@ -276,7 +270,7 @@ export default function UserLeaderboard() {
                 <div className="flex items-center gap-4 md:gap-8 lg:gap-12">
                   <MetricItem label="SCORE" value={userRank.score} />
                   <MetricItem label="ACCURACY" value={`${userRank.accuracy}%`} color="text-success" />
-                  <MetricItem label="BEST TIME" value={formatDuration(userRank.duration_seconds)} className="hidden sm:flex" />
+                  <MetricItem label="BEST TIME" value={formatDurationMinutesSeconds(userRank.duration_seconds)} className="hidden sm:flex" />
                 </div>
               </Card>
             </div>
