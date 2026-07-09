@@ -31,6 +31,7 @@ export const Input: React.FC<InputProps> = ({ rightIcon: RightIcon, leftIcon: Le
         <button
           type="button"
           onClick={onRightIconClick}
+          aria-label={RightIcon.displayName || 'Input action'}
           className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-text-secondary/40 hover:text-primary transition-colors"
         >
           <RightIcon size={18} />
@@ -130,6 +131,8 @@ export const Switch: React.FC<SwitchProps> = ({
       )}
       <button
         type="button"
+        role="switch"
+        aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`
           relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent 

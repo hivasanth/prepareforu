@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import React, { type FC } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend
@@ -20,7 +20,7 @@ interface DiagramRendererProps {
 
 const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'];
 
-export const DiagramRenderer: FC<DiagramRendererProps> = ({ diagram, className = "" }) => {
+export const DiagramRenderer: FC<DiagramRendererProps> = React.memo(({ diagram, className = "" }) => {
   // ── 1. Early Return Guard
   if (!diagram || !diagram.type || !diagram.metadata) return null;
 
@@ -65,7 +65,7 @@ export const DiagramRenderer: FC<DiagramRendererProps> = ({ diagram, className =
       </div>
     </div>
   );
-};
+});
 
 // ── Rendering Implementations ────────────────────────────────────────────────
 
@@ -89,8 +89,7 @@ function renderPieChart(metadata: any) {
             outerRadius={85}
             paddingAngle={5}
             dataKey="value"
-            animationBegin={0}
-            animationDuration={1000}
+            isAnimationActive={false}
             label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
             labelLine={{ stroke: 'var(--text-secondary)', strokeWidth: 1, opacity: 0.3 }}
           >
@@ -158,6 +157,7 @@ function renderBarChart(metadata: any) {
               fill={COLORS[idx % COLORS.length]} 
               radius={[4, 4, 0, 0]} 
               barSize={seriesKeys.length > 2 ? 15 : 30} 
+              isAnimationActive={false}
             />
           ))}
         </BarChart>
@@ -210,6 +210,7 @@ function renderLineGraph(metadata: any) {
               strokeWidth={3} 
               dot={{ r: 4, fill: COLORS[idx % COLORS.length], strokeWidth: 2, stroke: 'var(--card-bg)' }}
               activeDot={{ r: 6, strokeWidth: 0 }}
+              isAnimationActive={false}
             />
           ))}
         </LineChart>

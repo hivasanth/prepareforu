@@ -54,11 +54,20 @@ const PerformanceCharts: React.FC<ChartProps> = ({
     )
   }
 
+const formatTrendTick = (v: number) => {
+  const d = new Date(v);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+const formatPercentTick = (v: number) => `${v}%`;
+
+const legendFormatter = (value: string) => <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest ml-1">{value}</span>;
+
   if (type === 'trend') {
     const validData = data.filter((d: any) => typeof d.accuracy === 'number' && !isNaN(d.accuracy));
 
     return (
-      <div className="w-full h-full min-w-0 relative">
+      <div className="w-full h-full min-w-0 relative" role="img" aria-label="Performance accuracy trend chart">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={validData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)'} />
@@ -70,10 +79,7 @@ const PerformanceCharts: React.FC<ChartProps> = ({
               axisLine={false}
               tickLine={false}
               tick={{ fill: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', fontSize: 10, fontWeight: 700 }}
-              tickFormatter={(v: number) => {
-                const d = new Date(v);
-                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-              }}
+              tickFormatter={formatTrendTick}
               dy={10}
               minTickGap={40}
             />
@@ -82,7 +88,7 @@ const PerformanceCharts: React.FC<ChartProps> = ({
               tickLine={false}
               tick={{ fill: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', fontSize: 10, fontWeight: 700 }}
               domain={[0, 100]}
-              tickFormatter={(v: number) => `${v}%`}
+              tickFormatter={formatPercentTick}
             />
             <Tooltip content={<CustomTooltip />} />
             <Line
@@ -109,7 +115,7 @@ const PerformanceCharts: React.FC<ChartProps> = ({
 
   if (type === 'distribution') {
     return (
-      <div className="w-full h-full min-w-0">
+      <div className="w-full h-full min-w-0" role="img" aria-label="Score distribution pie chart">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -120,6 +126,7 @@ const PerformanceCharts: React.FC<ChartProps> = ({
               outerRadius="80%"
               paddingAngle={8}
               dataKey="value"
+              isAnimationActive={false}
             >
               {data.map((entry: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
@@ -131,7 +138,7 @@ const PerformanceCharts: React.FC<ChartProps> = ({
               align="center"
               iconType="circle"
               wrapperStyle={{ paddingTop: '10px' }}
-              formatter={(value) => <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest ml-1">{value}</span>}
+              formatter={legendFormatter}
             />
           </PieChart>
         </ResponsiveContainer>

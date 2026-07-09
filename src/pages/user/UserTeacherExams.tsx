@@ -93,11 +93,11 @@ export default function UserTeacherExams() {
 
   const [exams, setExams] = useState<TeacherExamWithAttempt[]>(() => {
     if (!cacheKey) return [];
-    return getCachedTeacherExams(user?.id || '') || [];
+    return getCachedTeacherExams({ user }, user?.id || '') || [];
   });
   const [loading, setLoading] = useState(() => {
     if (!cacheKey) return false;
-    return !getCachedTeacherExams(user?.id || '');
+    return !getCachedTeacherExams({ user }, user?.id || '');
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -107,7 +107,7 @@ export default function UserTeacherExams() {
     if (!teacherId) return;
     const id = nextId();
 
-    const cached = getCachedTeacherExams(user?.id || '');
+    const cached = getCachedTeacherExams({ user }, user?.id || '');
     if (!cached) setLoading(true);
     setError(null);
 

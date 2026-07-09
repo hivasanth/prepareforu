@@ -1,12 +1,13 @@
+import { useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 
 const COLORS = ['#12291C', '#C8960C', '#4E342E', '#A87828', '#1A3316', '#8B5A10']
 
 export function SubjectPieChart({ data }: { data: { subject_name: string; question_count: number }[] }) {
-  const chartData = data.map(s => ({ name: s.subject_name, value: s.question_count }))
+  const chartData = useMemo(() => data.map(s => ({ name: s.subject_name, value: s.question_count })), [data])
 
   return (
-    <div className="h-[240px] w-full">
+    <div className="h-[240px] w-full" role="img" aria-label="Subject distribution pie chart">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -18,6 +19,7 @@ export function SubjectPieChart({ data }: { data: { subject_name: string; questi
             paddingAngle={5}
             dataKey="value"
             stroke="none"
+            isAnimationActive={false}
           >
             {chartData.map((_, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

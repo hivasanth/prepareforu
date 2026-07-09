@@ -109,9 +109,7 @@ export function DailyAttemptsChart({ selectedExam }: { selectedExam: string }) {
                 fill="var(--primary)" 
                 radius={[6, 6, 0, 0]}
                 barSize={isXs ? 24 : 32}
-                isAnimationActive={true}
-                animationDuration={600}
-                animationEasing="ease-out"
+                isAnimationActive={false}
               >
                 {chartData.map((entry, index) => (
                   <Cell 

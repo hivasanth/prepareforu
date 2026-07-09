@@ -1186,3 +1186,15 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
   border-top: 1px solid rgba(200, 150, 12, 0.3) !important;
 }
 
+/* ─── Reduced Motion ───────────────────────────────────────────────────────────
+   Respect user preference for reduced motion (WCAG 2.3.3)
+───────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

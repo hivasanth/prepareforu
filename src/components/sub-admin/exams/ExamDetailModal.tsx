@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useBreakpoint } from '../../../hooks/useBreakpoint'
 import { IconBadge } from '../../common/AntigravityUI'
+import { useAuth } from '../../../context/AuthContext'
 import { fetchTeacherExamQuestions, fetchTeacherExamAttempts } from '../../../services/teacherExamService'
 
 interface ExamDetailModalProps {
@@ -21,6 +22,7 @@ interface ExamDetailModalProps {
 }
 
 export default function ExamDetailModal({ exam, onClose }: ExamDetailModalProps) {
+  const { user } = useAuth()
   const { breakpoint } = useBreakpoint()
   const mountedRef = useRef(true)
   useEffect(() => { return () => { mountedRef.current = false } }, [])
@@ -64,8 +66,8 @@ export default function ExamDetailModal({ exam, onClose }: ExamDetailModalProps)
     setError(null)
     try {
       const [questions, leaderboard] = await Promise.all([
-        fetchTeacherExamQuestions(exam.id),
-        fetchTeacherExamAttempts(exam.id),
+        fetchTeacherExamQuestions({ user }, exam.id),
+        fetchTeacherExamAttempts({ user }, exam.id),
       ])
       if (!mountedRef.current) return
 

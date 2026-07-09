@@ -18,6 +18,7 @@ export function TopicCard({ topic, onClick }: TopicCardProps) {
       whileHover={canHover ? (!isDark ? { y: -2, x: -2, boxShadow: "6px 6px 0px #A87828" } : { scale: 1.01 }) : {}}
       whileTap={!isDark ? { y: 2, x: 2, boxShadow: "1px 1px 0px #A87828" } : { scale: 0.99 }}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       className={`group flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all ${
         !isDark
           ? 'bg-[#FFFDF9] border-[2px] border-[#A87828] shadow-[4px_4px_0px_#8B5A10] lg:hover:bg-[#FDF5E2]'

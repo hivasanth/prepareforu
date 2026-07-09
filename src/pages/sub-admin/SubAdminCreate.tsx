@@ -621,7 +621,7 @@ Return ONLY the JSON array. Do not include markdown blocks or any other text.`
 
     setIsPublishing(true)
     try {
-      await createTeacherExamAtomic({
+      await createTeacherExamAtomic({ user }, {
         title: examConfig.title,
         subAdminId: user.id,
         startTime: examConfig.start_time,

@@ -183,11 +183,11 @@ export default function SubAdminExams() {
     setExamsLoading(true)
     setExamsError(null)
     try {
-      const profile = await fetchSubAdminIdByUserId(user.id)
+      const profile = await fetchSubAdminIdByUserId({ user }, user.id)
 
       if (!profile) throw new Error('Could not identify your Sub-Admin profile.')
 
-      const data = await fetchTeacherExamsWithFullFields(profile.id)
+      const data = await fetchTeacherExamsWithFullFields({ user }, profile.id)
       setExams(data ?? [])
     } catch (err: any) {
       setExamsError(err.message ?? 'Failed to load exams.')
@@ -199,17 +199,17 @@ export default function SubAdminExams() {
   useEffect(() => { fetchExams() }, [fetchExams])
 
   // ── Month options (Last 3 months)
-  const monthOptions = Array.from({ length: 3 }).map((_, i) => {
+  const monthOptions = useMemo(() => Array.from({ length: 3 }).map((_, i) => {
     const d = new Date()
     d.setMonth(d.getMonth() - i)
     return { 
       id: d.toISOString().slice(0, 7), 
       name: d.toLocaleString('default', { month: 'long', year: 'numeric' }) 
     }
-  })
+  }), [])
 
   // ── Filter Exams
-  const filteredExams = exams.filter(exam => {
+  const filteredExams = useMemo(() => exams.filter(exam => {
     const term = searchTerm.trim().toUpperCase()
     const matchesSearch = (exam.title || '').toUpperCase().includes(term)
     
@@ -219,7 +219,7 @@ export default function SubAdminExams() {
     // Default view: filter by the selected month
     const matchesMonth = exam.created_at && exam.created_at.startsWith(monthFilter)
     return matchesMonth
-  })
+  }), [exams, searchTerm, monthFilter])
 
   // ── 2. Load evaluation data when exam is selected
   const fetchEvalData = useCallback(async (examId: string) => {
@@ -229,8 +229,8 @@ export default function SubAdminExams() {
     setEvalData(null)
     try {
       // Fetch completed attempts with user info
-      const attempts = await fetchAttemptsWithUsersByTeacherExam(examId)
-      const questions = await fetchTeacherExamQuestions(examId)
+      const attempts = await fetchAttemptsWithUsersByTeacherExam({ user }, examId)
+      const questions = await fetchTeacherExamQuestions({ user }, examId)
 
       const attemptList: AttemptRow[] = (attempts ?? []) as unknown as AttemptRow[]
       const questionList: QuestionRow[] = (questions ?? []) as QuestionRow[]
@@ -241,7 +241,7 @@ export default function SubAdminExams() {
       if (attemptList.length > 0 && questionList.length > 0) {
         const attemptIds = attemptList.map(a => a.id)
 
-        const answers = await fetchAttemptAnswersByAttemptIds(attemptIds)
+        const answers = await fetchAttemptAnswersByAttemptIds({ user }, attemptIds)
         const answerList: AnswerRow[] = (answers ?? []) as AnswerRow[]
 
         // Build question stats

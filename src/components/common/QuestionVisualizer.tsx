@@ -1,4 +1,4 @@
-import { useEffect, useRef, type FC } from 'react';
+import React, { useEffect, useRef, type FC } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area
@@ -58,7 +58,7 @@ function normalizeVisualProp(visual: any): QuestionVisual {
   return visual as QuestionVisual;
 }
 
-export const QuestionVisualizer: FC<QuestionVisualizerProps> = ({ visual: rawVisual, className = "" }) => {
+export const QuestionVisualizer: FC<QuestionVisualizerProps> = React.memo(({ visual: rawVisual, className = "" }) => {
   const visual = normalizeVisualProp(rawVisual);
   const { type, data, title } = visual;
 
@@ -78,7 +78,7 @@ export const QuestionVisualizer: FC<QuestionVisualizerProps> = ({ visual: rawVis
       </div>
     </div>
   );
-};
+});
 
 // --- CHART RENDERING (RECHARTS) ---
 function renderChart(data: any) {
@@ -156,7 +156,7 @@ function renderChart(data: any) {
               contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-subtle)', borderRadius: '12px', color: 'var(--text-primary)' }}
               itemStyle={{ color: '#6366f1' }}
             />
-            <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+            <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive={false}>
               {finalSeries.map((_: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
               ))}
@@ -172,6 +172,7 @@ function renderChart(data: any) {
               outerRadius={80}
               paddingAngle={5}
               dataKey="value"
+              isAnimationActive={false}
             >
               {finalSeries.map((_: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={colors[index % colors.length]} stroke="none" />
@@ -191,7 +192,7 @@ function renderChart(data: any) {
             <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} />
             <YAxis stroke="var(--text-secondary)" fontSize={12} />
             <Tooltip contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-subtle)', borderRadius: '12px' }} />
-            <Area type="monotone" dataKey="value" stroke="#6366f1" fillOpacity={1} fill="url(#colorValue)" />
+            <Area type="monotone" dataKey="value" stroke="#6366f1" fillOpacity={1} fill="url(#colorValue)" isAnimationActive={false} />
           </AreaChart>
         )}
       </ResponsiveContainer>

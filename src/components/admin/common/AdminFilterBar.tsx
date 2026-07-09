@@ -50,7 +50,7 @@ export function AdminFilterBar({
           className="min-w-[140px] shrink-0"
         />
       </div>
-      <IconButton onClick={onRefresh} loading={loading} className="shrink-0">
+      <IconButton onClick={onRefresh} loading={loading} className="shrink-0" aria-label="Refresh data">
         <RefreshCcw size={18} />
       </IconButton>
     </FilterBar>

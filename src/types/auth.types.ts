@@ -45,6 +45,8 @@ export type ServiceErrorCode =
   | 'ACCOUNT_LOCKED'
   | 'MISSING_DATA'
   | 'INVALID_COUPON'
+  | 'CAPTCHA_FAILED'
+  | 'REGISTRATION_FAILED'
   | 'UNKNOWN'
 
 export interface AuthError {

@@ -81,6 +81,15 @@ function NotificationRow({
         onRead(notification.id)
         onNavigate(notification.link)
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onRead(notification.id)
+          onNavigate(notification.link)
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
       {/* Unread dot */}
       {!notification.is_read && (
@@ -112,6 +121,7 @@ function NotificationRow({
           e.stopPropagation()
           onDelete(notification.id)
         }}
+        aria-label={`Delete notification: ${notification.title}`}
         className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center 
                    rounded-lg hover:bg-danger/10 text-text-secondary hover:text-danger 
                    transition-all flex-shrink-0 mt-0.5"
@@ -135,16 +145,24 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
   const [open, setOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
 
-  // Close on outside click
+  // Close on outside click or Escape
   useEffect(() => {
     if (!open) return
-    const handler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent) {
+        if (e.key === 'Escape') setOpen(false)
+        return
+      }
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         setOpen(false)
       }
     }
     document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('keydown', handler)
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('keydown', handler)
+    }
   }, [open])
 
   const handleNavigate = (link: string | null) => {
@@ -160,6 +178,8 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
       {/* ── Bell button ─────────────────────────────────────────────────────── */}
       <button
         onClick={() => setOpen(prev => !prev)}
+        aria-expanded={open}
+        aria-haspopup="true"
         className={`relative w-9 h-9 flex items-center justify-center rounded-xl transition-all
           ${open
             ? 'bg-primary/20 text-primary'
@@ -215,6 +235,7 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
                 <button
                   onClick={refresh}
                   title="Refresh"
+                  aria-label="Refresh notifications"
                   className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-hover-bg text-text-secondary hover:text-text-primary transition-colors"
                 >
                   <RefreshCcw size={13} />
@@ -223,6 +244,7 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
                   <button
                     onClick={markAllRead}
                     title="Mark all as read"
+                    aria-label="Mark all notifications as read"
                     className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-hover-bg text-text-secondary hover:text-primary transition-colors"
                   >
                     <CheckCheck size={13} />
@@ -232,6 +254,7 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
                   <button
                     onClick={clearAll}
                     title="Clear all"
+                    aria-label="Clear all notifications"
                     className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-danger/10 text-text-secondary hover:text-danger transition-colors"
                   >
                     <Trash2 size={13} />

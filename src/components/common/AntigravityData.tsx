@@ -22,18 +22,39 @@ interface TabsProps {
 export const Tabs: React.FC<TabsProps> = ({ options, activeId, onChange, variant = 'primary', className = '', pillClassName = '' }) => {
   const instanceId = React.useId()
   const isSecondary = variant === 'secondary'
+  const tablistRef = React.useRef<HTMLDivElement>(null)
+
+  const onKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+    let nextIndex: number | null = null
+    if (e.key === 'ArrowRight') nextIndex = (currentIndex + 1) % options.length
+    if (e.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + options.length) % options.length
+    if (nextIndex !== null) {
+      e.preventDefault()
+      onChange(options[nextIndex].id)
+      const buttons = tablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+      buttons?.[nextIndex]?.focus()
+    }
+  }
 
   return (
-    <div className={`w-full overflow-x-auto scrollbar-hide flex ${className}`}>
-      <div className={`flex items-center gap-1 md:gap-2 p-1.5 bg-hover-bg/60 rounded-[16px] border border-border-subtle/80 min-w-max ${isSecondary ? 'h-[40px] md:h-[44px] opacity-80' : 'h-[44px] md:h-[52px]'}`}>
-        {options.map((option) => {
+    <div className={`w-full overflow-x-auto scrollbar-hide flex ${className}`} role="tablist" aria-orientation="horizontal">
+      <div ref={tablistRef} className={`flex items-center gap-1 md:gap-2 p-1.5 bg-hover-bg/60 rounded-[16px] border border-border-subtle/80 min-w-max ${isSecondary ? 'h-[40px] md:h-[44px] opacity-80' : 'h-[44px] md:h-[52px]'}`}>
+        {options.map((option, index) => {
           const isActive = activeId === option.id
           const textColor = isActive ? 'var(--primary)' : 'var(--text-secondary)'
+          const tabId = `${instanceId}-tab-${option.id}`
+          const panelId = `${instanceId}-panel-${option.id}`
 
           return (
             <button
               key={option.id}
+              role="tab"
+              id={tabId}
+              aria-selected={isActive}
+              aria-controls={panelId}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => onChange(option.id)}
+              onKeyDown={(e) => onKeyDown(e, index)}
               className={`relative shrink-0 rounded-[12px] font-bold uppercase tracking-widest transition-all duration-200 outline-none whitespace-nowrap h-full ${isSecondary ? 'px-3 md:px-4 text-[10px]' : 'px-4 md:px-6 text-[11px] md:text-[12px]'}`}
               style={{ color: textColor }}
             >
@@ -144,7 +165,13 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   }
 
   return (
-    <div className={`w-full bg-hover-bg rounded-full overflow-hidden h-1.5 ${className}`}>
+    <div
+      className={`w-full bg-hover-bg rounded-full overflow-hidden h-1.5 ${className}`}
+      role="progressbar"
+      aria-valuenow={Math.min(100, Math.max(0, value))}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
       <div
         className={`h-full rounded-full transition-all duration-300 ease-out ${colors[color]}`}
         style={{ width: `${Math.min(100, Math.max(0, value))}%` }}

@@ -202,7 +202,7 @@ export default function SubAdminSettings() {
     if (!profile) return
     setExportingExams(true)
     try {
-      const data = await fetchTeacherExamsForExport(profile.id)
+      const data = await fetchTeacherExamsForExport({ user }, profile.id)
       if (!data?.length) return showError('No exams found')
 
       const csv = [['Title', 'Questions', 'Marks', 'Created At'].join(','), ...data.map((e: any) => [e.title, e.total_questions, e.total_marks, e.created_at].join(','))].join('\n')

@@ -11,10 +11,10 @@ import { logError, logWarn, logInfo } from '../utils/logger'
 
 // ─── Security Gateway ────────────────────────────────────────────────────────
 /**
- * Invokes the security gateway Edge Function to perform adaptive rate limiting
- * and fingerprinting before sensitive auth calls.
+ * Invokes the security gateway Edge Function to perform adaptive rate limiting,
+ * Turnstile CAPTCHA verification, and fingerprinting before sensitive auth calls.
  */
-async function checkSecurityGateway(pathname: string): Promise<ServiceResult> {
+async function checkSecurityGateway(pathname: string, captchaToken?: string): Promise<ServiceResult> {
   // Fail-open in local development environment to prevent local developers/testing from hanging or blocking
   if (import.meta.env.DEV) {
     logInfo('security-gateway.dev.bypass', {})
@@ -28,7 +28,7 @@ async function checkSecurityGateway(pathname: string): Promise<ServiceResult> {
   try {
     const invokePromise = supabase.functions.invoke('security-gateway', {
       method: 'POST',
-      body: { pathname }
+      body: { pathname, captchaToken }
     })
 
     const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
@@ -48,6 +48,17 @@ async function checkSecurityGateway(pathname: string): Promise<ServiceResult> {
           source: 'auth', 
           code: 'RATE_LIMIT', 
           message: `Too many attempts. Please wait ${data.retryAfter} seconds.` 
+        }
+      }
+    }
+
+    if (data?.error === 'CAPTCHA_FAILED') {
+      return {
+        success: false,
+        error: { 
+          source: 'auth', 
+          code: 'CAPTCHA_FAILED', 
+          message: data?.message || 'Security check failed. Please try again.'
         }
       }
     }
@@ -135,11 +146,11 @@ function mapError(error: any, source: 'auth' | 'db' | 'network' | 'unknown' = 'a
   }
 
   if (msg.includes('user not found') || msg.includes('no user')) {
-    return { source, code: 'USER_NOT_FOUND', message: 'No account found with this email.', field: 'email' }
+    return { source, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.', field: 'general' }
   }
 
   if (msg.includes('already registered') || msg.includes('already exists')) {
-    return { source, code: 'ALREADY_EXISTS', message: 'This email is already registered.', field: 'email' }
+    return { source, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.', field: 'general' }
   }
   
   if (msg.includes('weak password') || msg.includes('password is too short')) {
@@ -171,8 +182,8 @@ export async function signupWithEmail(params: {
   captchaToken: string
   examSelection: string
 }): Promise<ServiceResult> {
-  // 0. Security Gate
-  const security = await checkSecurityGateway('/auth/signup')
+  // 0. Security Gate (includes Turnstile verification)
+  const security = await checkSecurityGateway('/auth/signup', params.captchaToken)
   if (!security.success) return security
 
   try {
@@ -233,9 +244,10 @@ export async function signupWithEmail(params: {
     }
 
     if (exists) {
+      // Return generic error to prevent account enumeration
       return {
         success: false,
-        error: { source: 'db', code: 'ALREADY_EXISTS', field: 'email', message: 'This email is already registered.' }
+        error: { source: 'db', code: 'REGISTRATION_FAILED', field: 'general', message: 'Registration failed. Please try again.' }
       }
     }
 
@@ -286,8 +298,8 @@ export async function loginWithEmail(params: {
   password:     string
   captchaToken: string
 }): Promise<ServiceResult<{ session: any; user: UserProfile }>> {
-  // 0. IP-level rate limit (existing gateway)
-  const security = await checkSecurityGateway('/auth/login')
+  // 0. Security Gate (includes rate limiting & Turnstile verification)
+  const security = await checkSecurityGateway('/auth/login', params.captchaToken)
   if (!security.success) return security
 
   try {
@@ -403,15 +415,14 @@ export async function sendPasswordReset(email: string): Promise<ServiceResult> {
     }
 
     // Check if email exists using secure RPC (bypasses RLS for anonymous check)
+    // We always return generic success to prevent account enumeration
     const { data: exists, error: checkError } = await safeSupabaseCall(userRepo.checkUserExistsRpc(cleanEmail))
 
     if (checkError) {
       logError('authService.resetEmailCheckError', { message: checkError.message })
     } else if (!exists) {
-      return { 
-        success: false, 
-        error: { source: 'db', code: 'USER_NOT_FOUND', field: 'email', message: 'No account found with this email address.' } 
-      }
+      logInfo('authService.resetEmailNotFound', {}) // Log silently, do NOT reveal to caller
+      return { success: true }
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {

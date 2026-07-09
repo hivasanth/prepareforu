@@ -19,10 +19,10 @@ const teTextareaClass = "w-full bg-app-bg text-text-primary p-5 rounded-3xl bord
 // ─── Section Label ────────────────────────────────────────────────────────────
 function SectionLabel({ icon: Icon, children, color = 'text-primary' }: { icon: React.ElementType, children: React.ReactNode, color?: string }) {
   return (
-    <label className="flex items-center gap-2 text-[10px] font-black text-text-secondary uppercase tracking-[0.2em]">
+    <span className="flex items-center gap-2 text-[10px] font-black text-text-secondary uppercase tracking-[0.2em]">
       <Icon className={`w-3 h-3 ${color}`} />
       {children}
-    </label>
+    </span>
   )
 }
 
@@ -173,6 +173,7 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
                     {!isCorrect && (
                       <Button
                         variant="secondary"
+                        aria-label={`Mark option ${opt} as correct`}
                         onClick={() => setFormData({ ...formData, correct_option: opt })}
                         className="absolute bottom-3 right-3 text-[9px] font-black uppercase tracking-widest text-text-muted hover:text-green-500 px-2 py-1 bg-app-bg rounded-lg border border-border-subtle hover:border-green-500 transition-colors !h-auto !px-2 !py-1 !rounded-lg !shadow-none"
                       >
@@ -192,10 +193,12 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
               {isReadOnly ? (
                 <DifficultyBadge difficulty={formData.difficulty || 'medium'} />
               ) : (
-                <div className="flex gap-1.5 p-1 bg-card-bg rounded-xl border border-border-subtle">
+                <div className="flex gap-1.5 p-1 bg-card-bg rounded-xl border border-border-subtle" role="radiogroup" aria-label="Difficulty Level">
                   {(['easy', 'medium', 'hard'] as const).map((d) => (
                     <Button
                       key={d}
+                      role="radio"
+                      aria-checked={formData.difficulty === d}
                       variant="secondary"
                       onClick={() => setFormData({ ...formData, difficulty: d })}
                       className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all !h-auto !px-0 !border-none !shadow-none ${
@@ -271,6 +274,8 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
               <button
                 type="button"
                 onClick={() => !isReadOnly && setShowTelugu(p => !p)}
+                aria-expanded={showTelugu}
+                aria-controls="telugu-section"
                 className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
                   hasTE
                     ? 'border-amber-400/30 bg-amber-400/5 hover:bg-amber-400/10'
@@ -304,7 +309,7 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
 
           {/* Telugu Fields (Collapsible) */}
           {(showTelugu || (isReadOnly && hasTE)) && (
-            <div className="mt-4 space-y-6 p-4 rounded-2xl border border-amber-400/20 bg-amber-400/5">
+            <div id="telugu-section" className="mt-4 space-y-6 p-4 rounded-2xl border border-amber-400/20 bg-amber-400/5">
 
               {/* Telugu Question Text */}
               <div className="space-y-3">

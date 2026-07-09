@@ -261,17 +261,11 @@ export default function SignupPage() {
     'var(--color-success)'
   ];
 
-  // SECURITY NOTE (Option B — frontend guard only):
-  // This captchaToken is NOT verified server-side. A bot calling Supabase auth
-  // endpoints directly will bypass this guard entirely.
-  // To close this gap:
-  //   1. Supabase dashboard → Authentication → Settings → Enable CAPTCHA protection
-  //      Enter your Turnstile SECRET key (not the site key).
-  //   2. Update loginWithEmail() and signupWithEmail() in authService.ts to pass:
-  //      options: { captchaToken }
-  //   3. Cloudflare verify endpoint (for custom edge function if needed):
-  //      POST https://challenges.cloudflare.com/turnstile/v0/siteverify
-  // Ticket: [link to backend verification ticket]
+  // SECURITY NOTE:
+  // captchaToken is passed to Supabase auth methods in authService.ts, which handles
+  // server-side Turnstile verification when CAPTCHA protection is enabled in the
+  // Supabase Dashboard (Authentication → Settings → Enable CAPTCHA protection).
+  // The Turnstile SECRET key must be configured in the Supabase Dashboard.
 
   return (
     <ThemeContext.Provider value={{ isDark: false, toggleTheme: () => {} }}>
@@ -501,9 +495,7 @@ export default function SignupPage() {
                   )}
                 </Stack>
 
-                {/* SECURITY NOTE (Option B — frontend guard only): 
-                    This captchaToken is NOT verified server-side. A bot calling Supabase auth 
-                    endpoints directly will bypass this guard entirely. See top of file for the runbook. */}
+                {/* SECURITY NOTE: captchaToken is verified server-side via Supabase auth */}
                 <div className="flex justify-center mt-2">
                   <Turnstile 
                     siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} 

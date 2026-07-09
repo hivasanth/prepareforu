@@ -89,7 +89,7 @@ export default function SubAdminDashboard() {
       let attempts: any[] = []
       const examIds = (exams || []).map(e => e.id)
       if (examIds.length > 0) {
-        attempts = await fetchAttemptsByTeacherExamIds(examIds)
+        attempts = await fetchAttemptsByTeacherExamIds({ user }, examIds)
       }
 
       // 5. Transform

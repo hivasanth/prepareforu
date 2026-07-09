@@ -34,6 +34,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 }) => {
   if (!isOpen) return null
 
+  const instanceId = React.useId()
+  const titleId = `${instanceId}-title`
+  const descId = description ? `${instanceId}-desc` : undefined
+
   return createPortal(
     <FocusTrap focusTrapOptions={{
       onDeactivate: onClose,
@@ -41,7 +45,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       escapeDeactivates: true,
       initialFocus: false
     }}>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descId}>
         {/* Overlay */}
         <div 
           className="absolute inset-0 bg-app-bg/60 backdrop-blur-md animate-in fade-in duration-300" 
@@ -56,11 +60,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 {headerBadge && <div className="mb-2">{headerBadge}</div>}
-                <h2 className={`text-xl sm:text-2xl font-black text-text-primary tracking-tight ${titleClassName}`}>
+                <h2 id={titleId} className={`text-xl sm:text-2xl font-black text-text-primary tracking-tight ${titleClassName}`}>
                   {title}
                 </h2>
                 {description && (
-                  <p className="text-[10px] sm:text-xs text-text-secondary font-medium">
+                  <p id={descId} className="text-[10px] sm:text-xs text-text-secondary font-medium">
                     {description}
                   </p>
                 )}

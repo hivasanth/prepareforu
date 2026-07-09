@@ -1,7 +1,10 @@
 {
   "name": "prepareforu",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "PrepareForU - Premium Competitive Examination Preparation Platform",
+  "author": "B. Muni Vasanth Kumar",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "vite",

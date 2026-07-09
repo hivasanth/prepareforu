@@ -110,7 +110,17 @@ export async function deleteTeacherExam(
   queryCache.invalidateByPrefix(`teacher_exams_${exam.sub_admin_id}`);
 }
 
-export async function fetchSubAdminIdByUserId(userId: string): Promise<{ id: string } | null> {
+export async function fetchSubAdminIdByUserId(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  userId: string
+): Promise<{ id: string } | null> {
+  ensureRole({
+    user: ctx.user,
+    allowedRoles: ['admin', 'sub_admin', 'user'],
+    operation: 'fetchSubAdminIdByUserId',
+    requestId: ctx.requestId,
+    resourceOwnerId: userId
+  });
   try {
     return await teacherExamRepo.fetchSubAdminIdByUserId(userId)
   } catch (error: any) {
@@ -119,7 +129,17 @@ export async function fetchSubAdminIdByUserId(userId: string): Promise<{ id: str
   }
 }
 
-export async function fetchTeacherExamsWithFullFields(subAdminId: string): Promise<any[]> {
+export async function fetchTeacherExamsWithFullFields(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  subAdminId: string
+): Promise<any[]> {
+  ensureRole({
+    user: ctx.user,
+    allowedRoles: ['admin', 'sub_admin'],
+    operation: 'fetchTeacherExamsWithFullFields',
+    requestId: ctx.requestId,
+    resourceOwnerId: subAdminId
+  });
   try {
     return (await teacherExamRepo.fetchTeacherExamsWithFullFields(subAdminId)) ?? []
   } catch (error: any) {
@@ -128,11 +148,39 @@ export async function fetchTeacherExamsWithFullFields(subAdminId: string): Promi
   }
 }
 
-export async function fetchTeacherExamQuestions(examId: string): Promise<any[]> {
+export async function fetchTeacherExamQuestions(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  examId: string
+): Promise<any[]> {
+  const exam = await teacherExamRepo.findTeacherExamById(examId);
+  if (!exam) {
+    throw new Error('Exam not found or unauthorized access.');
+  }
+  ensureRole({
+    user: ctx.user,
+    allowedRoles: ['admin', 'sub_admin', 'user'],
+    operation: 'fetchTeacherExamQuestions',
+    requestId: ctx.requestId,
+    resourceOwnerId: (exam as Record<string, unknown>).sub_admin_id as string | undefined
+  });
   return (await teacherExamRepo.fetchTeacherExamQuestions(examId)) ?? [];
 }
 
-export async function fetchAttemptsWithUsersByTeacherExam(examId: string): Promise<any[]> {
+export async function fetchAttemptsWithUsersByTeacherExam(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  examId: string
+): Promise<any[]> {
+  const exam = await teacherExamRepo.findTeacherExamById(examId);
+  if (!exam) {
+    throw new Error('Exam not found or unauthorized access.');
+  }
+  ensureRole({
+    user: ctx.user,
+    allowedRoles: ['admin', 'sub_admin'],
+    operation: 'fetchAttemptsWithUsersByTeacherExam',
+    requestId: ctx.requestId,
+    resourceOwnerId: (exam as Record<string, unknown>).sub_admin_id as string | undefined
+  });
   try {
     return (await attemptRepo.fetchAttemptsWithUsersByTeacherExam(examId)) ?? []
   } catch (error: any) {
@@ -141,8 +189,17 @@ export async function fetchAttemptsWithUsersByTeacherExam(examId: string): Promi
   }
 }
 
-export async function fetchAttemptAnswersByAttemptIds(attemptIds: string[]): Promise<any[]> {
+export async function fetchAttemptAnswersByAttemptIds(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  attemptIds: string[]
+): Promise<any[]> {
   if (attemptIds.length === 0) return []
+  ensureRole({
+    user: ctx.user,
+    allowedRoles: ['admin', 'sub_admin'],
+    operation: 'fetchAttemptAnswersByAttemptIds',
+    requestId: ctx.requestId,
+  });
   try {
     return (await attemptRepo.fetchAttemptAnswersByAttemptIds(attemptIds)) ?? []
   } catch (error: any) {
@@ -151,12 +208,35 @@ export async function fetchAttemptAnswersByAttemptIds(attemptIds: string[]): Pro
   }
 }
 
-export async function fetchTeacherExamAttempts(examId: string): Promise<any[]> {
+export async function fetchTeacherExamAttempts(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  examId: string
+): Promise<any[]> {
+  const exam = await teacherExamRepo.findTeacherExamById(examId);
+  if (!exam) {
+    throw new Error('Exam not found or unauthorized access.');
+  }
+  ensureRole({
+    user: ctx.user,
+    allowedRoles: ['admin', 'sub_admin'],
+    operation: 'fetchTeacherExamAttempts',
+    requestId: ctx.requestId,
+    resourceOwnerId: (exam as Record<string, unknown>).sub_admin_id as string | undefined
+  });
   return (await attemptRepo.fetchTeacherExamAttempts(examId, 50)) ?? [];
 }
 
-export async function fetchAttemptsByTeacherExamIds(examIds: string[]): Promise<any[]> {
+export async function fetchAttemptsByTeacherExamIds(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  examIds: string[]
+): Promise<any[]> {
   if (examIds.length === 0) return []
+  ensureRole({
+    user: ctx.user,
+    allowedRoles: ['admin', 'sub_admin'],
+    operation: 'fetchAttemptsByTeacherExamIds',
+    requestId: ctx.requestId,
+  });
   try {
     return (await attemptRepo.fetchAttemptsByTeacherExamIds(examIds)) ?? []
   } catch (error: any) {
@@ -165,11 +245,23 @@ export async function fetchAttemptsByTeacherExamIds(examIds: string[]): Promise<
   }
 }
 
-export function getCachedTeacherExams(subAdminId: string): any[] {
+export function getCachedTeacherExams(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  subAdminId: string
+): any[] {
+  ensureRole({
+    user: ctx.user,
+    allowedRoles: ['admin', 'sub_admin', 'user'],
+    operation: 'getCachedTeacherExams',
+    requestId: ctx.requestId,
+    resourceOwnerId: subAdminId
+  });
   return queryCache.get(`teacher_exams_${subAdminId}`) || [];
 }
 
-export async function createTeacherExamAtomic(config: {
+export async function createTeacherExamAtomic(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  config: {
   title: string
   subAdminId: string   // user_id (auth), not sub_admins.id
   startTime: string
@@ -179,6 +271,13 @@ export async function createTeacherExamAtomic(config: {
   negativeMarkValue: number
   questions: any[]
 }): Promise<void> {
+  ensureRole({
+    user: ctx.user,
+    allowedRoles: ['admin', 'sub_admin'],
+    operation: 'createTeacherExamAtomic',
+    requestId: ctx.requestId,
+    resourceOwnerId: config.subAdminId
+  });
   const profile = (await teacherExamRepo.fetchSubAdminIdByUserId(config.subAdminId)) as Record<string, unknown> | null
   if (!profile) {
     throw new Error('Your Sub-Admin identity could not be verified. Are you registered as an educator?')
@@ -197,6 +296,16 @@ export async function createTeacherExamAtomic(config: {
   });
 }
 
-export async function fetchTeacherExamsForExport(subAdminId: string): Promise<any[]> {
+export async function fetchTeacherExamsForExport(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  subAdminId: string
+): Promise<any[]> {
+  ensureRole({
+    user: ctx.user,
+    allowedRoles: ['admin', 'sub_admin'],
+    operation: 'fetchTeacherExamsForExport',
+    requestId: ctx.requestId,
+    resourceOwnerId: subAdminId
+  });
   return (await teacherExamRepo.fetchTeacherExamsBySubAdminId(subAdminId)) ?? [];
 }

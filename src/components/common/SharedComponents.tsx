@@ -101,7 +101,7 @@ export const EmptyState = memo(({
 }) => {
   return (
     <div className={'flex flex-col items-center justify-center p-12 text-center gap-2 border-2 border-dashed border-border-subtle rounded-[32px] bg-card-bg/30'}>
-      <div className="text-5xl mb-4" role="img" aria-label={typeof icon === 'string' ? title : undefined}>{icon}</div>
+      <div className="text-5xl mb-4" role="img" aria-label={title}>{icon}</div>
       <div className={`text-xl font-black text-text-primary uppercase tracking-tight font-['Vend_Sans']`}>{title}</div>
       <div className={'text-sm font-bold text-text-secondary max-w-sm'}>{subtitle}</div>
       {onAction && actionLabel && (

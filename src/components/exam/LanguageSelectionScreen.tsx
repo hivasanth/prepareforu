@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Globe, BookOpen, AlertCircle, ChevronRight } from 'lucide-react';
 import { IconBadge } from '../common/AntigravityUI';
+import { FocusTrap } from 'focus-trap-react';
 import type { SupportedLanguage } from '../../utils/languageUtils';
 
 interface LanguageSelectionScreenProps {
@@ -20,14 +21,17 @@ export function LanguageSelectionScreen({
   teluguAvailable,
   onSelect,
 }: LanguageSelectionScreenProps) {
+  const titleId = 'lang-selection-title';
+
   return (
-    <div className="fixed inset-0 bg-app-bg flex items-center justify-center p-4 z-50">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="w-full max-w-md"
-      >
+    <FocusTrap focusTrapOptions={{ initialFocus: false, escapeDeactivates: false }}>
+      <div className="fixed inset-0 bg-app-bg flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="w-full max-w-md"
+        >
         {/* Card */}
         <div className="bg-card-bg rounded-[28px] border border-border-subtle shadow-2xl overflow-hidden">
 
@@ -36,7 +40,7 @@ export function LanguageSelectionScreen({
             <IconBadge icon={Globe} size="2xl" className="rounded-2xl flex-shrink-0" />
             <div className="min-w-0">
               <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Choose Language</p>
-              <h2 className="text-[13px] font-black text-text-primary uppercase tracking-tight truncate">{paperName}</h2>
+              <h2 id={titleId} className="text-[13px] font-black text-text-primary uppercase tracking-tight truncate">{paperName}</h2>
             </div>
           </div>
 
@@ -125,5 +129,6 @@ export function LanguageSelectionScreen({
         </div>
       </motion.div>
     </div>
+    </FocusTrap>
   );
 }

@@ -26,6 +26,19 @@ export default defineConfig({
   esbuild: {
     pure: ['console.debug'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react':       ['react', 'react-dom', 'react-router-dom'],
+          'vendor-recharts':    ['recharts'],
+          'vendor-framer':      ['framer-motion'],
+          'vendor-supabase':    ['@supabase/supabase-js'],
+          'vendor-mermaid':     ['mermaid'],
+        },
+      },
+    },
+  },
   server: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',

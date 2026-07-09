@@ -1,6 +1,7 @@
 import type { FC, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { FocusTrap } from 'focus-trap-react';
 
 interface SubmitExamModalProps {
   isOpen: boolean;
@@ -18,17 +19,24 @@ export const SubmitExamModal: FC<SubmitExamModalProps> = ({
   onConfirm,
   isAutoSubmit = false,
 }) => {
+  const titleId = 'submit-exam-title';
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-md"
-            onClick={isAutoSubmit ? undefined : onClose}
-          />
+        <FocusTrap focusTrapOptions={{
+          escapeDeactivates: !isAutoSubmit,
+          clickOutsideDeactivates: !isAutoSubmit,
+          initialFocus: false,
+        }}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+              onClick={isAutoSubmit ? undefined : onClose}
+            />
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -41,7 +49,7 @@ export const SubmitExamModal: FC<SubmitExamModalProps> = ({
                 <IconWrapper autoSubmit>
                   <AlertCircle size={32} className="text-danger" />
                 </IconWrapper>
-                <h2 className="text-2xl font-black mb-2 text-text-primary">Time's Up!</h2>
+                <h2 id={titleId} className="text-2xl font-black mb-2 text-text-primary">Time's Up!</h2>
                 <p className="font-bold mb-8 text-text-secondary">
                   Your time is over. Your responses are being saved automatically.
                 </p>
@@ -55,7 +63,7 @@ export const SubmitExamModal: FC<SubmitExamModalProps> = ({
                 <IconWrapper>
                   <CheckCircle2 size={32} className="text-primary" />
                 </IconWrapper>
-                <h2 className="text-2xl font-black mb-2 text-text-primary">Submit Exam</h2>
+                <h2 id={titleId} className="text-2xl font-black mb-2 text-text-primary">Submit Exam</h2>
                 <p className="font-bold mb-8 text-text-secondary">
                   Are you sure you want to submit your exam?
                 </p>
@@ -77,6 +85,7 @@ export const SubmitExamModal: FC<SubmitExamModalProps> = ({
             )}
           </motion.div>
         </div>
+        </FocusTrap>
       )}
     </AnimatePresence>
   );

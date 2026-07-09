@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { FocusTrap } from 'focus-trap-react';
 
 import { Trophy, X } from 'lucide-react';
 import { fetchTeacherExamLeaderboard } from '../../services/teacherExamService';
@@ -58,6 +59,7 @@ export function TeacherLeaderboardModal({ exam, user, onClose }: TeacherLeaderbo
   const titleId = `${modalId}-title`;
 
   return (
+    <FocusTrap focusTrapOptions={{ escapeDeactivates: true, clickOutsideDeactivates: true, initialFocus: false }}>
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
       role="dialog"
@@ -129,5 +131,6 @@ export function TeacherLeaderboardModal({ exam, user, onClose }: TeacherLeaderbo
         </div>
       </Card>
     </div>
+    </FocusTrap>
   );
 }

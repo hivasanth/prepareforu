@@ -23,6 +23,33 @@ const ratelimit = new Ratelimit({
   prefix: "@upstash/ratelimit",
 })
 
+/**
+ * Verifies a Turnstile token with Cloudflare's siteverify endpoint.
+ */
+async function verifyTurnstileToken(token: string): Promise<boolean> {
+  const secretKey = Deno.env.get("TURNSTILE_SECRET_KEY")
+  if (!secretKey) {
+    console.warn('[security-gateway] TURNSTILE_SECRET_KEY not configured — skipping verification')
+    return true // Fail-open: allow if not configured
+  }
+
+  const formData = new URLSearchParams()
+  formData.append('secret', secretKey)
+  formData.append('response', token)
+
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: formData,
+    })
+    const data = await response.json()
+    return data.success === true
+  } catch (err) {
+    console.error('[security-gateway] Turnstile verify error:', err)
+    return false
+  }
+}
+
 serve(async (req) => {
   const url = new URL(req.url)
   const pathname = url.pathname
@@ -31,7 +58,17 @@ serve(async (req) => {
 
   const isAuthRoute = pathname.includes('/auth/') || pathname.includes('/login') || pathname.includes('/signup')
 
+  // Parse request body for captchaToken
+  let captchaToken: string | undefined
   try {
+    const body = await req.clone().json()
+    captchaToken = body.captchaToken
+  } catch {
+    // No JSON body or no captchaToken — proceed
+  }
+
+  try {
+    // 1. Rate Limiting
     const fingerprintInput = `${ip}-${userAgent}`
     const encoder = new TextEncoder()
     const data = encoder.encode(fingerprintInput)
@@ -55,6 +92,26 @@ serve(async (req) => {
         status: 429,
         headers: { "Content-Type": "application/json", "Retry-After": Math.floor((reset - Date.now()) / 1000).toString() }
       })
+    }
+
+    // 2. Turnstile Verification (auth routes only)
+    if (isAuthRoute && captchaToken) {
+      const isValid = await verifyTurnstileToken(captchaToken)
+      if (!isValid) {
+        await supabaseAdmin.rpc('log_security_event', {
+          p_type: 'captcha_failed',
+          p_identifier: fingerprint,
+          p_severity: 'medium',
+          p_metadata: { ip, userAgent, pathname }
+        })
+        return new Response(JSON.stringify({ 
+          error: "CAPTCHA_FAILED", 
+          message: "Security check failed. Please try again."
+        }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" }
+        })
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { "Content-Type": "application/json" } })
