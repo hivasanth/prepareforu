@@ -14,12 +14,12 @@ export function DailyAttemptsChart({ selectedExam }: { selectedExam: string }) {
   const { isXs } = useBreakpoint();
   const { ranges, selectedRangeId, setSelectedRangeId, selectedRange } = useDateRange()
 
-  const { data, loading, error, refetch } = useSupabaseQuery(async () => {
+  const { data, loading, error, refetch } = useSupabaseQuery<Record<string, number>>(async () => {
     try {
-      if (!selectedRange) return { data: [], error: null }
+      if (!selectedRange) return { data: {} as Record<string, number>, error: null }
 
       if (!KNOWN_EXAM_IDS.includes(selectedExam)) {
-        return { data: [], error: null }
+        return { data: {} as Record<string, number>, error: null }
       }
 
       const resolvedIds = resolveExamIds(selectedExam)

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, RefreshCw, LogOut, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
-import { supabase } from '../lib/supabase';
+import * as authService from '../services/authService';
 import {
   Stack,
   Card,
@@ -47,7 +47,7 @@ export default function VerifyEmailPage() {
     setChecking(true);
     try {
       // Force a fresh server-side user fetch to pick up email_confirmed_at
-      await supabase.auth.getUser();
+      await authService.getCurrentUser();
       await refreshUser();
     } finally {
       setChecking(false);
@@ -62,7 +62,7 @@ export default function VerifyEmailPage() {
 
     setResending(true);
     try {
-      await supabase.auth.resend({ type: 'signup', email });
+      await authService.resendVerificationEmail(email);
       // Trigger a 60-second cooldown
       setResendCooldown(60);
       const interval = setInterval(() => {

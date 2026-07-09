@@ -73,7 +73,7 @@ interface Student {
 
 export default function SubAdminStudents() {
   const { user, loading: authLoading } = useAuth()
-  const { showSuccess } = useToast()
+  const { showSuccess, showError } = useToast()
 
   const mountedRef = useRef(true)
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false } }, [])
@@ -336,12 +336,12 @@ export default function SubAdminStudents() {
           }
         >
           <Stack gap="xl">
-            <Grid cols={4} gap={16}>
+            <div className="grid grid-cols-4 gap-4">
               <StatCard icon={Users} label="Coupon" value={s.coupon_code || 'N/A'} color="var(--primary)" />
               <StatCard icon={Calendar} label="Joined" value={new Date(s.created_at).toLocaleDateString()} color="var(--success)" />
               <StatCard icon={TrendingUp} label="Avg. Score" value={`${s.stats.avgScore}%`} color="var(--warning)" />
               <StatCard icon={Award} label="Best Score" value={`${s.stats.bestScore}%`} color="var(--danger)" />
-            </Grid>
+            </div>
 
             <Stack gap="md">
               <div className="flex items-center justify-between">

@@ -9,8 +9,8 @@ import {
   type ReactNode,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase }    from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
+import * as authService from '../services/authService'
 import { getProfile }  from '../services/userService'
 import type { UserProfile } from '../types/auth.types'
 import Loader from '../components/Loader'
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       logDebug('auth.refreshUser', { step: 'fetching_user' });
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+      const { data: { user: authUser }, error: authError } = await authService.getCurrentUser()
       
       if (authError || !authUser) {
         logDebug('auth.refreshUser', { step: 'no_user', error: authError?.message });
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     originRef.current = 'manual'
 
     try {
-      const { data: { session: s }, error } = await supabase.auth.refreshSession()
+      const { data: { session: s }, error } = await authService.refreshSession()
       if (!error && s) {
         setSession(s)
         await refreshUser()
@@ -163,17 +163,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     clearUser()
     try {
-      await supabase.auth.signOut()
+      await authService.logout()
     } catch (e) {
       logError('auth.signOut', { message: e instanceof Error ? e.message : 'Unknown error' })
-    }
-    // Flush local storage
-    localStorage.removeItem('supabase.auth.token')
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i)
-      if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
-        localStorage.removeItem(key)
-      }
     }
     // Trigger cross-tab sync logout event
     localStorage.setItem('p4u_logout_event', Date.now().toString())
@@ -211,12 +203,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await new Promise(r => setTimeout(r, 100));
 
         logDebug('auth.boot', { step: 'checking_session' });
-        const { data: { session: s }, error: sErr } = await supabase.auth.getSession()
+        const { data: { session: s }, error: sErr } = await authService.getCurrentSession()
         if (sErr) throw sErr;
 
         if (!s?.user) {
           logDebug('auth.boot', { step: 'storage_empty_probing_server' });
-          const { data: { user: authUser } } = await supabase.auth.getUser()
+          const { data: { user: authUser } } = await authService.getCurrentUser()
           if (!authUser) {
             logDebug('auth.boot', { step: 'no_session_guest_mode' });
             if (mountedRef.current) { setUserSync(null); setSession(null); }
@@ -257,7 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth()
 
     // ─── Auth State Listener (Stable & Efficient) ────────────────────────────
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+    const { data: { subscription } } = authService.onAuthStateChange(async (event, currentSession) => {
       if (!mountedRef.current) return
       
       logDebug('auth.onAuthStateChange', { event, origin: originRef.current, hasUser: !!userRef.current })
@@ -318,9 +310,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         case 'TOKEN_REFRESH_FAILED':
           logDebug('auth.token_refresh', { action: 'failed_recovering' })
           await new Promise(r => setTimeout(r, 500))
-          const recovery = await supabase.auth.refreshSession()
+          const recovery = await authService.refreshSession()
           if (recovery.error) {
-            supabase.auth.signOut()
+            authService.logout()
             if (mountedRef.current) setUserSync(null)
           }
           break

@@ -10,7 +10,7 @@ import {
   Stack,
 } from '../../components/common/AntigravityUI';
 import { clearTopicTestCache } from '../../services/topicTestService';
-import { fetchTopicsBySubject, fetchTopicTestQuestions, fetchTopicCounts, fetchAppscPapers, fetchSubjectsByExam, fetchSubjectsByPaper, mapQuestionsToStandard, type TopicItem, type SubjectQuestion } from '../../services/topicTestService';
+import { fetchTopicsBySubject, fetchTopicTestQuestions, fetchTopicCounts, fetchAppscPapers, fetchSubjectsByExam, fetchSubjectsByPaper, mapQuestionsToStandard, type TopicItem } from '../../services/topicTestService';
 import { getAllowedExamIds } from '../../utils/examUtils';
 import { getCachedSubjects, getCachedPapers } from '../../services/subjectTestService';
 import { getMinQuestions, getDefaultMinQuestions } from '../../services/questionAvailabilityService';

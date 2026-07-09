@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
 import { isAdmin } from '../../utils/authUtils'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { useSupabaseQuery } from '../../hooks/useSupabaseQuery'
 import { useToast, ToastContainer } from '../../hooks/useToast'
@@ -9,7 +8,7 @@ import {
   PageContainer
 } from '../../components/common/AntigravityUI'
 import { GuardLoader } from '../../guards/Guards'
-import { removeSubAdmin } from '../../services/userService'
+import { fetchAllSubAdmins, onboardSubAdmin, removeSubAdmin } from '../../services/userService'
 import type { SubAdminRow } from '../../types/subAdmin.types'
 import { AdminSubAdminsView } from '../../components/admin/sub-admins/AdminSubAdminsView'
 
@@ -29,13 +28,11 @@ export default function AdminSubAdmins() {
   const [searchQuery, setSearchQuery] = useState('')
 
   const { data, loading, error: queryError, refetch } = useSupabaseQuery(async () => {
-    return await supabase
-      .from('sub_admins')
-      .select('id, full_name, email, coupon_code, total_referrals, status, created_at')
-      .order('created_at', { ascending: false })
+    const rows = await fetchAllSubAdmins()
+    return { data: rows, error: null }
   }, [])
 
-  const filteredSAs: SubAdminRow[] = (data || []).filter((sa: SubAdminRow) =>
+  const filteredSAs: SubAdminRow[] = ((data || []) as unknown as SubAdminRow[]).filter((sa: SubAdminRow) =>
     sa.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     sa.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     sa.coupon_code.toLowerCase().includes(searchQuery.toLowerCase())
@@ -50,14 +47,7 @@ export default function AdminSubAdmins() {
     }
     setAddingSa(true)
     try {
-      const { data: res, error: functionError } = await supabase.functions.invoke('onboard-sub-admin', {
-        body: {
-          email: newSAEmail,
-          full_name: newSAName,
-          coupon_code: newSACoupon.trim().toUpperCase()
-        }
-      })
-      if (functionError || res?.error) throw new Error(res?.message || 'Failed to onboard educator.')
+      await onboardSubAdmin(newSAEmail, newSAName, newSACoupon.trim().toUpperCase())
       showSuccess('Invitation sent to educator successfully!')
       setShowAddModal(false)
       setNewSAName('')

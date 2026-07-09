@@ -95,17 +95,31 @@ export const Stack: React.FC<{
   )
 }
 
-export const Grid: React.FC<{ children: React.ReactNode; cols?: 1|2|3|4; gap?: number; className?: string }> = ({ children, cols = 1, gap, className = '' }) => {
-  const colClass = {
-    1: 'grid-cols-1',
-    2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
-  }
+export const Grid: React.FC<{
+  children: React.ReactNode
+  cols?: 1|2|3|4
+  sm?: 1|2|3|4
+  md?: 1|2|3|4
+  lg?: 1|2|3|4
+  gap?: number
+  className?: string
+}> = ({ children, cols = 1, sm, md, lg, gap, className = '' }) => {
+  const hasResponsive = sm !== undefined || md !== undefined || lg !== undefined
+  const finalColClass = hasResponsive
+    ? [
+        `grid-cols-${cols}`,
+        sm ? `sm:grid-cols-${sm}` : '',
+        md ? `md:grid-cols-${md}` : '',
+        lg ? `lg:grid-cols-${lg}` : '',
+      ].filter(Boolean).join(' ')
+    : ({
+        1: 'grid-cols-1',
+        2: 'grid-cols-1 md:grid-cols-2',
+        3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+        4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
+      } as Record<number, string>)[cols]
   const gapClass = gap !== undefined ? '' : 'gap-4 md:gap-5 lg:gap-6'
   const gapStyle = gap !== undefined ? { gap: `${gap}px` } : undefined
-  const hasCustomCols = className.includes('grid-cols-')
-  const finalColClass = hasCustomCols ? '' : colClass[cols]
   return (
     <div className={`grid ${finalColClass} ${gapClass} ${className}`} style={gapStyle}>
       {children}

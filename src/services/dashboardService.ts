@@ -1,11 +1,13 @@
 import * as attemptRepo from '../lib/repositories/attempt.repository';
 import * as dashboardRepo from '../lib/repositories/dashboard.repository';
+import { countQuery } from '../lib/repositories/base.repository';
 import { fetchPerformanceAttempts } from './performanceService';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 import { format, parseISO } from 'date-fns';
 import type { ServiceResult } from '../types/auth.types';
 import type { AttemptWithRelations } from '../types/exam.types';
+import { logError } from '../utils/logger'
 
 export interface DashboardStats {
   daily_streak: number;
@@ -20,20 +22,26 @@ export const dashboardService = {
       { start: selectedRange.start.toISOString(), end: selectedRange.end.toISOString() },
       resolvedIds
     )
-    return data.reduce<Record<string, number>>((acc, a) => {
-      const date = format(parseISO(a.started_at), 'yyyy-MM-dd')
+    return (data ?? []).reduce<Record<string, number>>((acc, a) => {
+      const date = format(parseISO((a as Record<string, unknown>).started_at as string), 'yyyy-MM-dd')
       acc[date] = (acc[date] || 0) + 1
       return acc
     }, {})
   },
 
   fetchOverviewCounts: async (selectedExam: string, resolvedIds: string[]) => {
-    return dashboardRepo.fetchOverviewCounts({
-      users: { is_active: true, role: 'user', ...(selectedExam !== 'all' ? { exam_selection: selectedExam } : {}) },
-      questions: { is_active: true, ...(resolvedIds.length ? { exam_id: resolvedIds } : {}) },
-      configs: { is_published: true, ...(selectedExam !== 'all' ? { exam_selection: selectedExam } : {}) },
-      attempts: { source: 'exam_tab', ...(resolvedIds.length ? { exam_id: resolvedIds } : {}) },
-    })
+    const [users, questions, configs, attempts] = await Promise.allSettled([
+      countQuery('users', { is_active: true, role: 'user', ...(selectedExam !== 'all' ? { exam_selection: selectedExam } : {}) }),
+      countQuery('questions', { is_active: true, ...(resolvedIds.length ? { exam_id: resolvedIds } : {}) }),
+      countQuery('exam_configs', { is_published: true, ...(selectedExam !== 'all' ? { exam_selection: selectedExam } : {}) }),
+      countQuery('attempts', { source: 'exam_tab', ...(resolvedIds.length ? { exam_id: resolvedIds } : {}) }),
+    ])
+    return {
+      users: users.status === 'fulfilled' ? users.value : 0,
+      questions: questions.status === 'fulfilled' ? questions.value : 0,
+      configs: configs.status === 'fulfilled' ? configs.value : 0,
+      attempts: attempts.status === 'fulfilled' ? attempts.value : 0,
+    }
   },
 
   // Step 4: Encapsulate cache keys and retrieval
@@ -66,7 +74,7 @@ export const dashboardService = {
         data: statsData || { daily_streak: 0, exams_taken: 0, accuracy: 0, global_rank: 'N/A' } 
       };
     } catch (err: any) {
-      console.error('[dashboardService] fetchDashboardStats error:', err.message);
+      logError('dashboardService.fetchDashboardStats.error', { message: err.message });
       return { success: false, error: { source: 'db', code: 'UNKNOWN', message: err.message || 'Failed to fetch dashboard stats' } };
     }
   },
@@ -84,7 +92,7 @@ export const dashboardService = {
         
       return { success: true, data: formatted };
     } catch (err: any) {
-      console.error('[dashboardService] fetchRecentAttempts error:', err.message);
+      logError('dashboardService.fetchRecentAttempts.error', { message: err.message });
       return { success: false, error: { source: 'db', code: 'UNKNOWN', message: err.message || 'Failed to fetch recent attempts' } };
     }
   }

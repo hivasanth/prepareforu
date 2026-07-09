@@ -3,6 +3,7 @@ import * as questionRepo from '../lib/repositories/question.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 import { assertValidEnFields } from '../utils/languageUtils';
+import { logWarn } from '../utils/logger';
 
 export {
   fetchSubjectsByExam,
@@ -156,7 +157,7 @@ export async function fetchTopicTestQuestions(params: {
     .slice(0, count);
 
   if (selectedQuestions.length === 0) {
-    console.warn('[TopicTestService] No questions found for topic:', params.topicName);
+    logWarn('topicTestService.fetchTopicTestQuestions.warn', { topicName: params.topicName });
     throw new Error(`No questions available for topic: ${params.topicName}`);
   }
 

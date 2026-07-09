@@ -23,12 +23,11 @@ import {
   ExternalLink,
   ShieldCheck
 } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useToast } from '../../hooks/useToast'
 import { DiagramRenderer } from '../../components/common/DiagramRenderer'
-import { 
+import {
   PageContainer,
   Tabs, 
   Badge, 
@@ -38,9 +37,7 @@ import {
   Button,
   IconBadge,
 } from '../../components/common/AntigravityUI'
-import { AdminCard } from '../../components/admin/common/AdminCard'
-import { AdminIconWrap } from '../../components/admin/common/AdminIconWrap'
-import { AdminText } from '../../components/admin/common/AdminText'
+import { createTeacherExamAtomic } from '../../services/teacherExamService'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type DiagramData = 
@@ -599,7 +596,7 @@ Return ONLY the JSON array. Do not include markdown blocks or any other text.`
   }
 
 
-  // ── STEP 6 Logic: Publish
+  // ── STEP 5 Logic: Publish
   const handlePublish = async () => {
     if (isPublishing) return
     setPublishError(null)
@@ -623,29 +620,16 @@ Return ONLY the JSON array. Do not include markdown blocks or any other text.`
 
     setIsPublishing(true)
     try {
-      const { data: profile, error: pErr } = await supabase
-        .from('sub_admins')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (pErr || !profile) {
-        throw new Error('Your Sub-Admin identity could not be verified. Are you registered as an educator?')
-      }
-
-      const { error: rpcErr } = await supabase.rpc('create_teacher_exam_atomic', {
-        p_title: examConfig.title,
-        p_sub_admin_id: profile.id,
-        p_start_time: examConfig.start_time,
-        p_end_time: examConfig.end_time,
-        p_duration_minutes: examConfig.duration_minutes,
-        p_marks_per_question: examConfig.marks_per_question,
-        p_negative_mark_value: examConfig.negative_mark_value,
-        p_source_type: null,
-        p_questions: questions
+      await createTeacherExamAtomic({
+        title: examConfig.title,
+        subAdminId: user.id,
+        startTime: examConfig.start_time,
+        endTime: examConfig.end_time,
+        durationMinutes: examConfig.duration_minutes,
+        marksPerQuestion: examConfig.marks_per_question,
+        negativeMarkValue: examConfig.negative_mark_value,
+        questions: questions
       })
-
-      if (rpcErr) throw rpcErr
 
       setIsPublished(true)
       showSuccess(`Exam "${examConfig.title}" published successfully!`)
@@ -1285,7 +1269,7 @@ function QuestionCard({ q, idx, getTypo, getDimension, onDelete, onUpdate }: Que
               </div>
               {!isEditing ? (
                 <span className="font-medium flex-1 truncate text-xs">
-                  {q[enKey as keyof QuestionData]}
+                  {String(q[enKey as keyof QuestionData] ?? '')}
                 </span>
               ) : (
                 <input
@@ -1295,7 +1279,7 @@ function QuestionCard({ q, idx, getTypo, getDimension, onDelete, onUpdate }: Que
               )}
               {isEditing && (
                 <button
-                  onClick={() => setLocalQ({ ...localQ, correct_option: opt.toUpperCase() })}
+                  onClick={() => setLocalQ({ ...localQ, correct_option: opt.toUpperCase() as 'A' | 'B' | 'C' | 'D' })}
                   title="Mark as correct"
                   className={`w-3.5 h-3.5 rounded-full border-2 transition-all shrink-0 ${
                     localQ.correct_option === opt.toUpperCase()

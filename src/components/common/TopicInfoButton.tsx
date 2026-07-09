@@ -13,7 +13,7 @@ export function TopicInfoButton({ displayTitle, heading = 'Topic Name' }: TopicI
   const [isTooltipOpen, setIsTooltipOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
-  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {

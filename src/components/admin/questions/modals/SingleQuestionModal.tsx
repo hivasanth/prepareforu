@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { ChevronRight, Save, PenSquare, AlertTriangle } from 'lucide-react'
 import { BilingualToggle } from '../../../common/BilingualToggle'
 import { Button } from '../../../common/AntigravityUI'
-import type { Question } from '../../../../types/exam.types'
+import type { Question, QuestionVisual, VisualType } from '../../../../types/exam.types'
 import { adminQuestionService } from '../../../../services/adminQuestionService'
 import { useAuth } from '../../../../context/AuthContext'
 import { SingleQuestionSchema } from '../../../../validations/questionSchema'
@@ -56,11 +56,12 @@ export function SingleQuestionModal({
         // Normalize visual_engine → visual (handles DB records with either format)
         let normalizedVisual = question.visual || (question as Partial<Question> & { visual_engine?: unknown }).visual_engine || null
         if (normalizedVisual && typeof normalizedVisual === 'object') {
-          if (normalizedVisual.render_type && normalizedVisual.metadata !== undefined) {
+          const legacy = normalizedVisual as { render_type?: unknown; metadata?: unknown; title?: unknown }
+          if (legacy.render_type != null && legacy.metadata !== undefined) {
             normalizedVisual = {
-              type: normalizedVisual.render_type,
-              title: normalizedVisual.title || undefined,
-              data: normalizedVisual.metadata,
+              type: legacy.render_type as VisualType,
+              title: (legacy.title as string) || undefined,
+              data: legacy.metadata,
             }
           }
         }
@@ -68,7 +69,7 @@ export function SingleQuestionModal({
         // Edit/View: populate modern bilingual fields
         setFormData({
           ...question,
-          visual: normalizedVisual,
+          visual: normalizedVisual as QuestionVisual | undefined,
           question_text_en: question.question_text_en || '',
           option_a_en: question.option_a_en || '',
           option_b_en: question.option_b_en || '',

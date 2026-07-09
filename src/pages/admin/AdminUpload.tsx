@@ -4,8 +4,8 @@ import { useAdminFilters } from '../../hooks/useAdminFilters'
 import { useAuth } from '../../context/AuthContext'
 import { isAdmin } from '../../utils/authUtils'
 import { PlusCircle, FileJson, Sparkles, ArrowLeft, Database } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
 import { useSupabaseQuery } from '../../hooks/useSupabaseQuery'
+import { adminQuestionService } from '../../services/adminQuestionService'
 import { GuardLoader } from '../../guards/Guards'
 import { AdminSelectionTabs } from '../../components/admin/shared/AdminSelectionTabs'
 import { SingleQuestionModal } from '../../components/admin/questions/modals/SingleQuestionModal'
@@ -20,7 +20,6 @@ import {
   Body, 
   Badge
 } from '../../components/common/AntigravityUI'
-import { AdminCard } from '../../components/admin/common/AdminCard'
 import { AdminIconWrap } from '../../components/admin/common/AdminIconWrap'
 import { AdminText } from '../../components/admin/common/AdminText'
 import { useToast } from '../../hooks/useToast'
@@ -39,14 +38,16 @@ export default function AdminUpload() {
 
   const { data: questionCount, refetch: refetchCount } = useSupabaseQuery<number>(async () => {
     if (!isContextValid) return { data: 0, error: null }
-    const { count, error } = await supabase
-      .from('questions')
-      .select('*', { count: 'exact', head: true })
-      .eq('exam_id', selectedExam)
-      .eq('paper_id', selectedPaper)
-      .eq('subject_name', selectedSubject)
-    
-    return { data: count || 0, error }
+    try {
+      const count = await adminQuestionService.countQuestions({
+        examId: selectedExam,
+        paperId: selectedPaper,
+        subjectName: selectedSubject,
+      })
+      return { data: count, error: null }
+    } catch (error: any) {
+      return { data: 0, error: error.message || 'Failed to count questions.' }
+    }
   }, [selectedExam, selectedPaper, selectedSubject, isContextValid])
 
   if (authLoading) return <GuardLoader />
@@ -77,7 +78,7 @@ export default function AdminUpload() {
                   role="button" tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setUploadType('single') }}
                 >
-                  <AdminIconWrap size="lg" rounded="2xl" className="mb-6 transition-all group-hover:scale-110 shadow-xl shadow-primary/20">
+                  <AdminIconWrap size="lg" rounded="lg" className="mb-6 transition-all group-hover:scale-110 shadow-xl shadow-primary/20">
                     <PlusCircle size={28} />
                   </AdminIconWrap>
                   <div className="flex-1">
@@ -104,7 +105,7 @@ export default function AdminUpload() {
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setUploadType('bulk') }}
                 >
                   <div className="flex justify-between items-start mb-6">
-                    <AdminIconWrap size="lg" rounded="2xl" className="transition-all group-hover:scale-110 shadow-xl shadow-secondary/20">
+                    <AdminIconWrap size="lg" rounded="lg" className="transition-all group-hover:scale-110 shadow-xl shadow-secondary/20">
                       <FileJson size={28} />
                     </AdminIconWrap>
                     <Badge variant="primary" icon={Sparkles}>AI Optimized</Badge>

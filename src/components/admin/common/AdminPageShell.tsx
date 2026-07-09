@@ -15,7 +15,7 @@ export function AdminPageShell({
   loading,
   error,
   empty,
-  onRetry,
+  onRetry: _onRetry,
   loadingState,
   errorState,
   emptyState,

@@ -88,9 +88,11 @@ export const adminQuestionService = {
           selectedPaper: params.selectedPaper,
           selectedSubject: params.selectedSubject,
           difficultyFilter: params.difficultyFilter,
-          searchQuery: params.searchQuery,
+          searchQuery: params.searchQuery.trim(),
           offset: params.offset,
           pageSize: params.pageSize,
+          sortColumn: 'updated_at',
+          sortAscending: false,
         })
       )
       if (error) throw error
@@ -202,13 +204,13 @@ export const adminQuestionService = {
       if (payload.topic_en) {
         const qData = await questionRepo.fetchQuestionMeta(id).catch(() => null)
           
-        if (qData && qData.topic_en) {
+        if (qData && (qData.topic_en as string)) {
           await adminQuestionService.registerTopicIfNeeded(
-            qData.exam_id,
-            qData.paper_id,
-            qData.subject_name,
-            qData.topic_en,
-            qData.topic_te,
+            qData.exam_id as string,
+            qData.paper_id as string | null,
+            qData.subject_name as string,
+            qData.topic_en as string,
+            qData.topic_te as string | null,
             { requestId }
           )
         }
@@ -486,6 +488,19 @@ export const adminQuestionService = {
         error: sanitizeError(err)
       })
       return { success: false, data: null, error: asError(err.message || 'Failed to delete prompt') }
+    }
+  },
+
+  async countQuestions(params: {
+    examId: string
+    paperId: string
+    subjectName: string
+  }): Promise<number> {
+    try {
+      return (await questionRepo.countQuestionsByFilter(params)) ?? 0
+    } catch (error: any) {
+      logError('adminQuestionService.countQuestions', { message: error.message })
+      return 0
     }
   }
 }

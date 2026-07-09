@@ -35,6 +35,7 @@ export default function UserExams() {
   const [retryKey, setRetryKey] = useState(0);
   const { nextId, isStale } = useStableFetch();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(true);
   
   const isAppsc = user?.exam_selection === 'APPSC_GROUPS' || user?.exam_selection === 'APPSC';
   

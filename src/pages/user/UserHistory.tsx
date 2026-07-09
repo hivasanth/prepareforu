@@ -9,8 +9,6 @@ import {
   fetchPerformanceAttempts, 
   clearPerformanceCache,
   fetchPerformanceMetadata,
-  PERF_ATTEMPTS_PREFIX,
-  PERF_METADATA_PREFIX,
   getCachedAttempts,
   getCachedMetadata,
   type PerformanceMetadata 
@@ -37,14 +35,6 @@ export default function UserHistory() {
 
   const isAppsc = user?.exam_selection === 'APPSC_GROUPS' || user?.exam_selection === 'APPSC';
   
-  const attemptsCacheKey = useMemo(() => {
-    return user?.id ? `${PERF_ATTEMPTS_PREFIX}${user.id}` : '';
-  }, [user?.id]);
-
-  const metaCacheKey = useMemo(() => {
-    return user?.exam_selection ? `${PERF_METADATA_PREFIX}${user.exam_selection}` : '';
-  }, [user?.exam_selection]);
-
   const [allAttempts, setAllAttempts] = useState<AttemptWithRelations[]>(() => {
     return getCachedAttempts(user?.id || '');
   });
@@ -54,14 +44,13 @@ export default function UserHistory() {
   
   const [loading, setLoading] = useState(() => {
     if (authLoading) return true;
-    return !user?.id || !getCachedAttempts(user.id).length || !getCachedMetadata(user.exam_selection)?.exams?.length;
+    return !user?.id || !getCachedAttempts(user.id ?? '').length || !getCachedMetadata(user.exam_selection ?? '')?.exams?.length;
   });
   
   const [error, setError] = useState<string | null>(null)
   const [selectedExamId, setSelectedExamId] = useState<string>('')
   const [selectedPaperId, setSelectedPaperId] = useState<string>('')
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const { nextId, isStale } = useStableFetch();
 
   const loadHistory = useCallback(async (force = false) => {

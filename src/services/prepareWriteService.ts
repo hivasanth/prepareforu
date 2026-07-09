@@ -3,6 +3,7 @@ import * as examRepo from '../lib/repositories/exam.repository';
 import * as questionRepo from '../lib/repositories/question.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
+import { logWarn } from '../utils/logger';
 import type { Question, ExamSubject } from '../types/exam.types';
 
 export interface PaperDistribution {
@@ -87,13 +88,13 @@ export async function fetchPrepareQuestions(
     let subjectQuestionsPool: Question[];
 
     if (attemptedQuestionIds.length > 0) {
-      subjectQuestionsPool = (await questionRepo.fetchQuestionsByPaperAndSubjectExcluding(
+      subjectQuestionsPool = ((await questionRepo.fetchQuestionsByPaperAndSubjectExcluding(
         '*', paperId, subject.subject_name, examIds, attemptedQuestionIds, poolLimit
-      )) as Question[];
+      )) ?? []) as unknown as Question[];
     } else {
-      subjectQuestionsPool = (await questionRepo.fetchQuestionsByPaperAndSubject(
+      subjectQuestionsPool = ((await questionRepo.fetchQuestionsByPaperAndSubject(
         '*', paperId, subject.subject_name, examIds, poolLimit
-      )) as Question[];
+      )) ?? []) as unknown as Question[];
     }
     
     // Shuffle the pool and take the required count
@@ -107,7 +108,7 @@ export async function fetchPrepareQuestions(
       
       const attemptedPoolData = (await questionRepo.fetchQuestionsByPaperAndSubjectIncluding(
         '*', paperId, subject.subject_name, examIds, attemptedQuestionIds, poolLimit
-      )) as Question[];
+      )) as unknown as Question[];
 
       if (attemptedPoolData) {
         const shuffledAttempted = (attemptedPoolData as Question[])
@@ -119,7 +120,7 @@ export async function fetchPrepareQuestions(
     // Check if we have enough questions for this subject
     if (selectedSubjectQuestions.length < subject.question_count) {
       const msg = `Insufficient questions for subject: ${subject.subject_name}. Required: ${subject.question_count}, Found: ${selectedSubjectQuestions.length}`;
-      console.warn(msg);
+      logWarn('prepareWriteService.buildPaper.warn', { message: msg });
       throw new Error(msg);
     }
 

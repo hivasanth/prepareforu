@@ -1,3 +1,4 @@
+import { supabase } from '../lib/supabase'
 import * as attemptRepo from '../lib/repositories/attempt.repository';
 import * as examRepo from '../lib/repositories/exam.repository';
 import * as questionRepo from '../lib/repositories/question.repository';
@@ -15,6 +16,7 @@ import type {
 import { queryCache } from '../utils/queryCache';
 import { clearPerformanceCache } from './performanceService';
 import { assertValidEnFields } from '../utils/languageUtils';
+import { logError, logWarn } from '../utils/logger'
 
 /**
  * EXAM SERVICE
@@ -98,16 +100,16 @@ export const fetchQuestionsForPaper = async (
     for (const subject of subjects) {
       // 1. Fetch unattempted questions from a larger pool
       const poolLimit = Math.max(subject.question_count * 3, 100);
-      let subjectQuestionsPool: any[] = [];
+      let subjectQuestionsPool: Record<string, unknown>[] = [];
 
       if (attemptedQuestionIds.length > 0) {
-        subjectQuestionsPool = await questionRepo.fetchQuestionsByPaperAndSubjectExcluding(
+        subjectQuestionsPool = (await questionRepo.fetchQuestionsByPaperAndSubjectExcluding(
           SELECT_FIELDS, paperId, subject.subject_name, [], attemptedQuestionIds, poolLimit
-        );
+        )) ?? [];
       } else {
-        subjectQuestionsPool = await questionRepo.fetchQuestionsByPaperAndSubject(
+        subjectQuestionsPool = (await questionRepo.fetchQuestionsByPaperAndSubject(
           SELECT_FIELDS, paperId, subject.subject_name, [], poolLimit
-        );
+        )) ?? [];
       }
       
       let selectedSubjectQuestions = subjectQuestionsPool
@@ -125,11 +127,11 @@ export const fetchQuestionsForPaper = async (
         if (attemptedPoolData) {
           const shuffledAttempted = (attemptedPoolData as unknown as Question[])
             .sort(() => Math.random() - 0.5);
-          selectedSubjectQuestions.push(...shuffledAttempted.slice(0, remainingNeeded));
+          selectedSubjectQuestions.push(...shuffledAttempted.slice(0, remainingNeeded) as unknown as Record<string, unknown>[]);
         }
       }
 
-      finalQuestions.push(...selectedSubjectQuestions);
+      finalQuestions.push(...selectedSubjectQuestions as unknown as Question[]);
     }
 
     if (finalQuestions.length === 0) {
@@ -148,10 +150,34 @@ export const fetchQuestionsForPaper = async (
     // Shuffle final set
     return mappedQuestions.sort(() => Math.random() - 0.5);
   } catch (error: any) {
-    console.error('fetchQuestionsForPaper Error:', error.message);
+    logError('examService.fetchQuestionsForPaper.error', { message: error.message });
     throw error;
   }
 };
+
+export const findAttemptById = async (attemptId: string, userId: string): Promise<Attempt | null> => {
+  try {
+    return await attemptRepo.findAttemptById(attemptId, userId)
+  } catch (error: any) {
+    logError('examService.findAttemptById.error', { message: error.message })
+    return null
+  }
+}
+
+export const findInProgressAttempt = async (params: {
+  userId: string
+  paperId?: string
+  teacherExamId?: string
+  examId?: string
+  source?: AttemptSource
+}): Promise<Attempt | null> => {
+  try {
+    return await attemptRepo.findInProgressAttempt(params)
+  } catch (error: any) {
+    logError('examService.findInProgressAttempt.error', { message: error.message })
+    return null
+  }
+}
 
 export const createAttempt = async (params: {
   userId: string;
@@ -165,9 +191,12 @@ export const createAttempt = async (params: {
 }): Promise<{ attemptId: string; isResumed: boolean; attemptData?: Attempt }> => {
   // 0. Security Gate (Fail-Open for Exams)
   try {
-    await examRepo.invokeSecurityGateway('/exams/start');
+    await supabase.functions.invoke('security-gateway', {
+      method: 'POST',
+      body: { pathname: '/exams/start' }
+    })
   } catch (err) {
-    console.warn('[security-gateway] Exam start check bypassed:', err);
+    logWarn('examService.securityGateway.bypassed', { message: err instanceof Error ? err.message : String(err) });
   }
 
   try {
@@ -205,7 +234,7 @@ export const createAttempt = async (params: {
       // lookup above returns null (race) but a row already exists in the DB.
       // Recovery: fetch the existing in_progress row and treat it as resumed.
       if (error.code === '23505' && error.message?.includes('one_active_attempt')) {
-        console.warn('[createAttempt] Constraint hit — recovering existing in_progress attempt');
+        logWarn('examService.createAttempt.constraintRecovery', {});
         const recovered = await attemptRepo.findInProgressAttempt({
           userId: params.userId,
           paperId: params.paperId,
@@ -219,7 +248,7 @@ export const createAttempt = async (params: {
       throw error;
     }
   } catch (error: any) {
-    console.error('createAttempt Error:', error.message);
+    logError('examService.createAttempt.error', { message: error.message });
     throw error;
   }
 };
@@ -228,7 +257,7 @@ export const syncAnswersCache = async (attemptId: string, answers: Record<string
   try {
     await attemptRepo.updateAttempt(attemptId, { answers_json: answers } as any);
   } catch (error: any) {
-    console.error('syncAnswersCache Error:', error.message);
+    logError('examService.syncAnswersCache.error', { message: error.message });
   }
 };
 
@@ -247,7 +276,7 @@ export const submitAttempt = async (attemptId: string, userId?: string): Promise
     
     return data as SubmitResult;
   } catch (error: any) {
-    console.error('submitAttempt Error:', error.message);
+    logError('examService.submitAttempt.error', { message: error.message });
     throw error;
   } finally {
     clearTimeout(timeoutId);
@@ -260,7 +289,7 @@ export const updateTabSwitchCount = async (attemptId: string, currentCount: numb
     await attemptRepo.updateAttempt(attemptId, { tab_switch_count: newCount } as any);
     return newCount;
   } catch (error: any) {
-    console.error('updateTabSwitchCount Error:', error.message);
+    logError('examService.updateTabSwitchCount.error', { message: error.message });
     throw error;
   }
 };
@@ -275,7 +304,7 @@ export const fetchAttemptResult = async (attemptId: string, userId: string): Pro
     const answers = await attemptRepo.findAnswersByAttemptId(attemptId);
     return { attempt: attempt as Attempt, answers: answers as AttemptAnswer[] };
   } catch (error: any) {
-    console.error('fetchAttemptResult Error:', error.message);
+    logError('examService.fetchAttemptResult.error', { message: error.message });
     throw error;
   }
 };
@@ -286,9 +315,9 @@ export const fetchAttemptResult = async (attemptId: string, userId: string): Pro
  */
 export const fetchAttemptAnswers = async (attemptId: string): Promise<AttemptAnswer[]> => {
   try {
-    return await attemptRepo.findAnswersByAttemptId(attemptId);
+    return (await attemptRepo.findAnswersByAttemptId(attemptId)) ?? [];
   } catch (error: any) {
-    console.error('fetchAttemptAnswers Error:', error.message);
+    logError('examService.fetchAttemptAnswers.error', { message: error.message });
     throw error;
   }
 };
@@ -347,7 +376,7 @@ export const markReviewAccessed = async (attemptId: string): Promise<void> => {
   try {
     await attemptRepo.updateAttempt(attemptId, { review_accessed: true } as any);
   } catch (error: any) {
-    console.error('markReviewAccessed Error:', error.message);
+    logError('examService.markReviewAccessed.error', { message: error.message });
     throw error;
   }
 };
@@ -365,7 +394,7 @@ export const fetchTeacherExamQuestions = async (examId: string): Promise<Questio
       negative_marks: 0
     })) as unknown as Question[];
   } catch (error: any) {
-    console.error('fetchTeacherExamQuestions Error:', error.message);
+    logError('examService.fetchTeacherExamQuestions.error', { message: error.message });
     throw error;
   }
 };
@@ -384,7 +413,7 @@ export const batchCheckAvailability = async (paperIds: string[]): Promise<Record
     const counts: Record<string, number> = {};
     countsData?.forEach(c => {
       const key = `${c.paper_id}|${c.subject_name}`;
-      counts[key] = c.count || 0;
+      counts[key] = (c.count as number) || 0;
     });
 
     // 4. Validate each paper
@@ -401,7 +430,7 @@ export const batchCheckAvailability = async (paperIds: string[]): Promise<Record
       let isValid = true;
       for (const sub of paperSubjects) {
         const actual = counts[`${id}|${sub.subject_name}`] || 0;
-        if (actual < sub.question_count) {
+        if (actual < (sub.question_count as number)) {
           isValid = false;
           break;
         }
@@ -414,7 +443,7 @@ export const batchCheckAvailability = async (paperIds: string[]): Promise<Record
 
     return results;
   } catch (error) {
-    console.error('batchCheckAvailability Error:', error instanceof Error ? error.message : error);
+    logError('examService.batchCheckAvailability.error', { message: error instanceof Error ? error.message : String(error) });
     const fallback: Record<string, { valid: boolean; message?: string }> = {};
     paperIds.forEach(id => fallback[id] = { valid: false, message: "Unable to verify availability." });
     return fallback;

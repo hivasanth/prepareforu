@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { GuardLoader } from '../../guards/Guards'
 import { isSubAdmin } from '../../utils/authUtils'
 
@@ -18,7 +18,7 @@ import {
   Users,
   BookOpen
 } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import * as authService from '../../services/authService'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../hooks/useToast'
 import { downloadCSV } from '../../utils/csvUtils'
@@ -35,6 +35,8 @@ import {
   Body
 } from '../../components/common/AntigravityUI'
 import { ConfirmModal } from '../../components/common/SharedComponents'
+import { fetchSubAdminProfileAndUser, updateSubAdminProfile, updateSubAdminNotificationPrefs, fetchStudentsByEducatorId } from '../../services/userService'
+import { fetchTeacherExamsForExport } from '../../services/teacherExamService'
 import { useSignOutConfirmation } from '../../hooks/useSignOutConfirmation'
 
 interface NotificationPrefs {
@@ -60,7 +62,6 @@ interface ProfileData {
 export default function SubAdminSettings() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showSuccess, showError } = useToast()
-  const navigate = useNavigate()
   const { isOpen: isSignOutOpen, openDialog: openSignOut, closeDialog: closeSignOut, handleConfirm: confirmSignOut } = useSignOutConfirmation(logout)
 
   // ── State ──
@@ -89,33 +90,17 @@ export default function SubAdminSettings() {
     async function loadData() {
       if (!user) return
       try {
-        const { data: saData, error: saErr } = await supabase
-          .from('sub_admins')
-          .select('id, full_name, email, coupon_code, notification_prefs')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
+        const { profile, lastActivity } = await fetchSubAdminProfileAndUser(user.id)
         if (cancelled) return
-        if (saErr) throw saErr
-        if (saData) {
-          const prefs: NotificationPrefs = { ...DEFAULT_PREFS, ...(saData.notification_prefs as any) }
-          setProfile({ ...saData, notification_prefs: prefs })
-          setName(saData.full_name || '')
+        if (profile) {
+          const prefs: NotificationPrefs = { ...DEFAULT_PREFS, ...(profile.notification_prefs as any) }
+          setProfile(profile)
+          setName(profile.full_name || '')
           setNotifyAttempt(prefs.notify_on_attempt)
           setNotifyCompletion(prefs.notify_on_exam_closure)
           setNotifyNewStudent(prefs.notify_on_new_student)
         }
-
-        const { data: uData, error: uErr } = await supabase
-          .from('users')
-          .select('last_activity_date')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        if (cancelled) return
-        if (!uErr && uData?.last_activity_date) {
-          setLastLogin(new Date(uData.last_activity_date).toLocaleDateString())
-        }
+        setLastLogin(lastActivity)
       } catch (err: any) {
         if (!cancelled) showError(err.message || 'Failed to load profile')
       }
@@ -132,19 +117,13 @@ export default function SubAdminSettings() {
     setSaving(true)
     try {
       if (name !== profile.full_name) {
-        const { error: updateErr } = await supabase
-          .from('sub_admins')
-          .update({ full_name: name })
-          .eq('id', profile.id)
-        if (updateErr) throw updateErr
-        
-        await supabase.from('users').update({ full_name: name }).eq('id', user?.id)
+        await updateSubAdminProfile(profile.id, user?.id, name)
         setProfile({ ...profile, full_name: name })
       }
 
       if (password) {
-        const { error: passErr } = await supabase.auth.updateUser({ password })
-        if (passErr) throw passErr
+        const result = await authService.updatePassword(password)
+        if (!result.success) throw new Error(result.error?.message)
         setPassword('')
       }
 
@@ -166,20 +145,13 @@ export default function SubAdminSettings() {
     try {
       const newPrefs = { ...profile.notification_prefs, [key]: value }
       
-      const { error } = await supabase
-        .from('sub_admins')
-        .update({ notification_prefs: newPrefs })
-        .eq('id', profile.id)
-        
-      if (error) {
-        // Revert on error
-        setter(!value)
-        throw error
-      }
+      await updateSubAdminNotificationPrefs(profile.id, newPrefs)
       
       // Update local profile state
       setProfile({ ...profile, notification_prefs: newPrefs })
     } catch (err: any) {
+      // Revert on error
+      setter(!value)
       showError(err.message || 'Failed to save preference')
     } finally {
       setSavingPrefs(false)
@@ -214,19 +186,13 @@ export default function SubAdminSettings() {
   }
 
   const handleExportStudents = async () => {
-    if (!profile) return
+    if (!user?.id) return
     setExportingStudents(true)
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('full_name, email, created_at')
-        .eq('educator_id', user?.id)
-        .limit(5000)
-
-      if (error) throw error
+      const data = await fetchStudentsByEducatorId(user.id)
       if (!data?.length) return showError('No students found')
 
-      const csv = [['Name', 'Email', 'Joined'].join(','), ...data.map(u => [u.full_name, u.email, u.created_at].join(','))].join('\n')
+      const csv = [['Name', 'Email', 'Joined'].join(','), ...data.map((u: any) => [u.full_name, u.email, u.created_at].join(','))].join('\n')
       downloadFile(csv, 'students_export.csv')
       showSuccess('Export complete')
     } catch (e) { showError('Export failed') } finally { setExportingStudents(false) }
@@ -236,16 +202,10 @@ export default function SubAdminSettings() {
     if (!profile) return
     setExportingExams(true)
     try {
-      const { data, error } = await supabase
-        .from('teacher_exams')
-        .select('title, total_questions, total_marks, created_at')
-        .eq('sub_admin_id', profile.id)
-        .limit(1000)
-
-      if (error) throw error
+      const data = await fetchTeacherExamsForExport(profile.id)
       if (!data?.length) return showError('No exams found')
 
-      const csv = [['Title', 'Questions', 'Marks', 'Created At'].join(','), ...data.map(e => [e.title, e.total_questions, e.total_marks, e.created_at].join(','))].join('\n')
+      const csv = [['Title', 'Questions', 'Marks', 'Created At'].join(','), ...data.map((e: any) => [e.title, e.total_questions, e.total_marks, e.created_at].join(','))].join('\n')
       downloadFile(csv, 'exams_export.csv')
       showSuccess('Export complete')
     } catch (e) { showError('Export failed') } finally { setExportingExams(false) }

@@ -5,6 +5,7 @@
  */
 
 import { queryCache } from '../utils/queryCache';
+import { logError } from '../utils/logger';
 
 const ADMIN_TTL = 60000; // 60 seconds
 
@@ -57,7 +58,7 @@ export function invalidateCache(): void {
   queryCache.clear();
   try {
     window.dispatchEvent(new CustomEvent('admin:cache-invalidated'));
-  } catch {
-    /* noop */
+  } catch (e) {
+    logError('adminQueryCache.invalidateCache.error', { message: (e as Error).message });
   }
 }

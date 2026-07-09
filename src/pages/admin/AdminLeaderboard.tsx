@@ -2,11 +2,10 @@ import { useState, useRef, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { isAdmin } from '../../utils/authUtils'
-import { supabase } from '../../lib/supabase'
 import { useSupabaseQuery } from '../../hooks/useSupabaseQuery'
 import { useAdminFilters } from '../../hooks/useAdminFilters'
 import { GuardLoader } from '../../guards/Guards'
-import { assignRanks, APPSC_GROUPS, type LeaderboardEntry } from '../../utils/rankUtils'
+import { refreshLeaderboardView, fetchAdminLeaderboard } from '../../services/leaderboardService'
 
 // Components
 import { RefreshCw } from 'lucide-react'
@@ -37,8 +36,6 @@ export default function AdminLeaderboard() {
 
   const { data, loading, error, refetch } = useSupabaseQuery(async () => {
     try {
-      // Industry Best Practice: Automatic background refresh with cooldown
-      // This ensures the materialized view is fresh without requiring a manual button
       const isValidExam = selectedExam === 'all' || selectedExam === 'APPSC_GROUPS' || selectedExam.startsWith('APPSC_GROUP_')
       if (!isValidExam) {
         return { data: { entries: [], count: 0 }, error: null }
@@ -47,93 +44,13 @@ export default function AdminLeaderboard() {
       const now = Date.now()
       if (now - lastRefreshRef.current > REFRESH_COOLDOWN) {
         lastRefreshRef.current = now
-        await supabase.rpc('refresh_leaderboard_view')
+        await refreshLeaderboardView()
       }
 
-      const offset = page * PAGE_SIZE
-
-      // When a specific paper is selected, query the leaderboard table
-      // (has paper_id column) instead of the materialized view.
-      if (selectedPaper !== 'all') {
-        const examId = selectedExam === 'APPSC_GROUPS' ? null : selectedExam
-
-        let lbQuery = supabase
-          .from('leaderboard')
-          .select('*', { count: 'exact' })
-          .order('best_score', { ascending: false })
-          .order('best_accuracy', { ascending: false })
-          .order('best_time_secs', { ascending: true })
-          .range(offset, offset + PAGE_SIZE - 1)
-
-        if (examId) lbQuery = lbQuery.eq('exam_id', examId)
-        else lbQuery = lbQuery.in('exam_id', APPSC_GROUPS)
-        lbQuery = lbQuery.eq('paper_id', selectedPaper)
-
-        const lbRes = await lbQuery
-        if (lbRes.error) throw lbRes.error
-
-        const lbData = lbRes.data || []
-
-        // Fetch user names for the returned user IDs
-        const userIds = [...new Set(lbData.map(d => d.user_id))]
-        const { data: users } = await supabase
-          .from('users')
-          .select('id, full_name')
-          .in('id', userIds)
-        const userMap: Record<string, string> = {}
-        for (const u of users || []) {
-          userMap[u.id] = u.full_name
-        }
-
-        const examSelection = selectedExam === 'APPSC_GROUPS' || (selectedExam.startsWith?.('APPSC_GROUP_') ?? false)
-          ? 'APPSC_GROUPS'
-          : selectedExam
-
-        const entries: LeaderboardEntry[] = lbData.map(d => ({
-          user_id: d.user_id,
-          user_name: userMap[d.user_id] || 'Unknown',
-          exam_id: d.exam_id,
-          exam_selection: examSelection,
-          paper_id: d.paper_id,
-          best_score: d.best_score,
-          best_accuracy: d.best_accuracy,
-          best_time_secs: d.best_time_secs,
-          last_attempt_date: d.best_submitted_at,
-          total_attempts: d.attempt_count
-        }))
-
-        return {
-          data: {
-            entries: assignRanks(entries),
-            count: lbRes.count || 0
-          },
-          error: null
-        }
-      }
-
-      // Use admin_leaderboard_view for non-paper queries
-      let query = supabase.from('admin_leaderboard_view').select('*', { count: 'exact' })
-      
-      if (selectedExam === 'APPSC_GROUPS') {
-        query = query.eq('exam_selection', 'APPSC_GROUPS')
-      } else if (selectedExam !== 'all') {
-        query = query.eq('exam_id', selectedExam)
-      }
-
-      query = query
-        .order('best_score', { ascending: false })
-        .order('best_accuracy', { ascending: false })
-        .order('best_time_secs', { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1)
-
-      const res = await query
-      if (res.error) throw res.error
+      const result = await fetchAdminLeaderboard(selectedExam, selectedPaper, page, PAGE_SIZE)
 
       return {
-        data: {
-          entries: assignRanks(res.data as LeaderboardEntry[]),
-          count: res.count || 0
-        },
+        data: { entries: result.entries, count: result.count },
         error: null
       }
     } catch (e) {

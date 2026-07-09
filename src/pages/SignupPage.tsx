@@ -200,7 +200,7 @@ export default function SignupPage() {
         email:        data.email,
         password:     data.password,
         couponCode:   data.couponCode,
-        captchaToken: captchaToken,
+        captchaToken: captchaToken ?? '',
         examSelection: data.examSelection,
       });
 

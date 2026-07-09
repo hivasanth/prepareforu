@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import * as authService from '../../services/authService'
 import { ThemeContext } from '../../context/ThemeContext'
 import LoadingScreen from '../../components/LoadingScreen'
 
@@ -52,7 +52,7 @@ export default function AuthCallbackPage() {
       return
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = authService.onAuthStateChange((event, session) => {
       console.log('[AuthCallback] Auth event:', event, '| session:', !!session, '| type:', type)
 
       // ── Password Recovery flow ───────────────────────────────────────────────

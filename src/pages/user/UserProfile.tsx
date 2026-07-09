@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 
 import { useAuth } from '../../context/AuthContext';
 import { useStableFetch } from '../../hooks/useStableFetch';
-import { supabase } from '../../lib/supabase';
+import * as authService from '../../services/authService';
 import { useToast, ToastContainer } from '../../hooks/useToast';
 import {
   Mail,
@@ -64,10 +64,7 @@ export default function UserProfile() {
     const id = nextId();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: user?.email || '',
-        password: currentPass
-      });
+      const { error } = await authService.reauthenticate(user?.email || '', currentPass);
 
       if (isStale(id)) return;
       if (error) {
@@ -91,9 +88,10 @@ export default function UserProfile() {
     const id = nextId();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/login?type=recovery`,
-      });
+      const { error } = await authService.sendPasswordResetWithRedirect(
+        user.email,
+        `${window.location.origin}/login?type=recovery`
+      );
       if (isStale(id)) return;
       if (error) throw error;
       showSuccess('Password reset link has been sent to your email.');
@@ -117,15 +115,15 @@ export default function UserProfile() {
     const id = nextId();
     setLoading(true);
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPass });
+      const result = await authService.updatePassword(newPass);
       if (isStale(id)) return;
-      if (updateError) throw updateError;
+      if (!result.success) throw new Error(result.error?.message);
 
       showSuccess('Password updated successfully! Logging out for security...');
 
       setTimeout(async () => {
         if (!isStale(id)) {
-          await supabase.auth.signOut();
+          await authService.logout();
           window.location.href = '/login';
         }
       }, 2000);

@@ -127,14 +127,6 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-export function hasPendingOperation(key: string): boolean {
-  return activeGenerations.has(key);
-}
-
 export function clearAllPendingOperations(): void {
-  const count = activeGenerations.size;
   activeGenerations.clear();
-  if (count > 0) {
-    console.info(`[persistenceRetry] Cleared ${count} pending operation(s)`);
-  }
 }

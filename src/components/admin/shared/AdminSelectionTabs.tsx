@@ -193,7 +193,7 @@ export function AdminSelectionTabs({
     if (selectedPaper !== 'all' && papers && papers.length > 0) {
       const paperObj = papers.find(p => p.id === selectedPaper)
       if (paperObj) {
-        paperLabel = paperObj.paper_name.toUpperCase()
+        paperLabel = ('paper_name' in paperObj ? paperObj.paper_name : paperObj.label).toUpperCase()
       }
     }
 
@@ -208,9 +208,9 @@ export function AdminSelectionTabs({
     if (subjects === null || subjectsLoading || !setSelectedSubject || !showSubjects) return 
     
     if (subjects.length > 0) {
-      const exists = subjects.find(s => s.subject_name === selectedSubject)
+      const exists = subjects.find(s => 'subject_name' in s ? s.subject_name === selectedSubject : s.label === selectedSubject)
       if (!exists) {
-        if (hideAll) setSelectedSubject(subjects[0].subject_name)
+        if (hideAll) setSelectedSubject('subject_name' in subjects[0] ? subjects[0].subject_name : subjects[0].label)
         else if (selectedSubject !== 'all') setSelectedSubject('all')
       }
     } else if (subjects.length === 0) {

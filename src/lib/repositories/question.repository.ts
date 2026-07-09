@@ -1,4 +1,5 @@
 import { supabase } from '../supabase'
+import type { Question } from '../../types/exam.types'
 
 // ─── questions table ─────────────────────────────────────────────────────────
 
@@ -8,7 +9,7 @@ export async function fetchQuestionsByPaperAndSubject(
   subjectName: string,
   examIds: string[],
   limit: number
-): Promise<any[]> {
+): Promise<Record<string, unknown>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -19,7 +20,7 @@ export async function fetchQuestionsByPaperAndSubject(
   query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return data as unknown as Record<string, unknown>[] | null
 }
 
 export async function fetchQuestionsByPaperAndSubjectExcluding(
@@ -29,7 +30,7 @@ export async function fetchQuestionsByPaperAndSubjectExcluding(
   examIds: string[],
   excludeIds: string[],
   limit: number
-): Promise<any[]> {
+): Promise<Record<string, unknown>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -38,12 +39,12 @@ export async function fetchQuestionsByPaperAndSubjectExcluding(
     .eq('subject_name', subjectName)
     .in('exam_id', examIds)
   if (excludeIds.length > 0) {
-    query = query.not('id', 'in', `(${excludeIds.join(',')})`)
+    query = query.not('id', 'in', excludeIds)
   }
   query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return data as unknown as Record<string, unknown>[] | null
 }
 
 export async function fetchQuestionsByPaperAndSubjectIncluding(
@@ -53,7 +54,7 @@ export async function fetchQuestionsByPaperAndSubjectIncluding(
   examIds: string[],
   includeIds: string[],
   limit: number
-): Promise<any[]> {
+): Promise<Record<string, unknown>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -65,7 +66,7 @@ export async function fetchQuestionsByPaperAndSubjectIncluding(
     .limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return data as unknown as Record<string, unknown>[] | null
 }
 
 export async function fetchQuestionsBySubject(
@@ -75,7 +76,7 @@ export async function fetchQuestionsBySubject(
   paperId: string | undefined,
   excludeIds: string[],
   limit: number
-): Promise<any[]> {
+): Promise<Record<string, unknown>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -84,12 +85,12 @@ export async function fetchQuestionsBySubject(
     .in('exam_id', examIds)
   if (paperId) query = query.eq('paper_id', paperId)
   if (excludeIds.length > 0) {
-    query = query.not('id', 'in', `(${excludeIds.join(',')})`)
+    query = query.not('id', 'in', excludeIds)
   }
   query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return data as unknown as Record<string, unknown>[] | null
 }
 
 export async function fetchQuestionsBySubjectIncluding(
@@ -99,7 +100,7 @@ export async function fetchQuestionsBySubjectIncluding(
   paperId: string | undefined,
   includeIds: string[],
   limit: number
-): Promise<any[]> {
+): Promise<Record<string, unknown>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -111,7 +112,7 @@ export async function fetchQuestionsBySubjectIncluding(
   query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return data as unknown as Record<string, unknown>[] | null
 }
 
 export async function fetchQuestionsByTopic(
@@ -121,7 +122,7 @@ export async function fetchQuestionsByTopic(
   examIds: string[],
   paperId: string | undefined,
   limit: number
-): Promise<any[]> {
+): Promise<Record<string, unknown>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -133,14 +134,14 @@ export async function fetchQuestionsByTopic(
   query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return data as unknown as Record<string, unknown>[] | null
 }
 
 export async function fetchDistinctTopics(
   examIds: string[],
   subjectName: string,
   paperId?: string
-): Promise<any[]> {
+): Promise<Record<string, unknown>[] | null> {
   let query = supabase
     .from('questions')
     .select('topic_en, topic_te')
@@ -152,14 +153,14 @@ export async function fetchDistinctTopics(
   query = query.limit(200)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return data
 }
 
 export async function fetchTopicCounts(
   examIds: string[],
   subjectName: string,
   paperId?: string
-): Promise<any[]> {
+): Promise<Record<string, unknown>[] | null> {
   let query = supabase
     .from('questions')
     .select('topic_en')
@@ -171,7 +172,7 @@ export async function fetchTopicCounts(
   query = query.limit(200)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return data
 }
 
 // ─── Admin question CRUD ─────────────────────────────────────────────────────
@@ -184,30 +185,34 @@ export async function listQuestions(params: {
   searchQuery: string
   offset: number
   pageSize: number
-}): Promise<{ data: any[]; count: number }> {
+  sortColumn?: string
+  sortAscending?: boolean
+}): Promise<{ data: Question[] | null; count: number | null }> {
   let q = supabase.from('questions').select('*', { count: 'exact' })
   if (params.resolvedIds.length > 0) q = q.in('exam_id', params.resolvedIds)
   if (params.selectedPaper !== 'all') q = q.eq('paper_id', params.selectedPaper)
   if (params.selectedSubject !== 'all') q = q.eq('subject_name', params.selectedSubject)
   if (params.difficultyFilter !== 'all') q = q.eq('difficulty', params.difficultyFilter)
-  if (params.searchQuery.trim()) {
-    q = q.ilike('question_text_en', `%${params.searchQuery.trim()}%`)
+  if (params.searchQuery) {
+    q = q.ilike('question_text_en', `%${params.searchQuery}%`)
   }
-  q = q.order('updated_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false })
+  if (params.sortColumn) {
+    q = q.order(params.sortColumn, { ascending: params.sortAscending ?? false })
+  }
   q = q.range(params.offset, params.offset + params.pageSize - 1)
   const { data, count, error } = await q
   if (error) throw error
-  return { data: (data as any[]) || [], count: count || 0 }
+  return { data: data as Question[] | null, count }
 }
 
-export async function upsertQuestion(payload: any): Promise<void> {
+export async function upsertQuestion(payload: Record<string, unknown>): Promise<void> {
   const { error } = await supabase
     .from('questions')
     .upsert([payload], { onConflict: 'content_hash', ignoreDuplicates: true })
   if (error) throw error
 }
 
-export async function updateQuestion(id: string, payload: any): Promise<void> {
+export async function updateQuestion(id: string, payload: Record<string, unknown>): Promise<void> {
   const { error } = await supabase.from('questions').update(payload).eq('id', id)
   if (error) throw error
 }
@@ -222,28 +227,34 @@ export async function bulkDeleteQuestions(ids: string[]): Promise<void> {
   if (error) throw error
 }
 
-export async function upsertQuestionBulk(payload: any[]) {
-  for (const q of payload) {
-    const { error } = await supabase
-      .from('questions')
-      .upsert(q, { onConflict: 'content_hash' })
-    if (error) throw error
-  }
-}
-
-export async function upsertQuestionNoIgnore(payload: any): Promise<void> {
+export async function upsertQuestionNoIgnore(payload: Record<string, unknown>): Promise<void> {
   const { error } = await supabase
     .from('questions')
     .upsert(payload, { onConflict: 'content_hash' })
   if (error) throw error
 }
 
-export async function fetchQuestionMeta(id: string): Promise<any> {
+export async function countQuestionsByFilter(params: {
+  examId: string
+  paperId: string
+  subjectName: string
+}): Promise<number | null> {
+  const { count, error } = await supabase
+    .from('questions')
+    .select('*', { count: 'exact', head: true })
+    .eq('exam_id', params.examId)
+    .eq('paper_id', params.paperId)
+    .eq('subject_name', params.subjectName)
+  if (error) throw error
+  return count
+}
+
+export async function fetchQuestionMeta(id: string): Promise<Record<string, unknown>> {
   const { data, error } = await supabase
     .from('questions')
     .select('exam_id, paper_id, subject_name, topic_en, topic_te')
     .eq('id', id)
     .single()
   if (error) throw error
-  return data
+  return data as Record<string, unknown>
 }

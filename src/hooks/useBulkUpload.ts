@@ -68,8 +68,6 @@ interface UseBulkUploadOptions {
   onIsUploadingChange?: (isUploading: boolean) => void
   showToast: (message: string, type: 'success' | 'error' | 'warning') => void
   authUser: UserProfile | null
-  parsedData: ParsedDataItem[]
-  setParsedData: React.Dispatch<React.SetStateAction<ParsedDataItem[]>>
 }
 
 const GENERIC_PROMPT = `Extract all the multiple choice questions from the uploaded documents.
@@ -259,7 +257,7 @@ FINAL CHECK BEFORE OUTPUT
 END OF INSTRUCTIONS`
 
 export function useBulkUpload({
-  examId, examLabel, paperId, paperLabel, subjectName, onSuccess, onClose, activeTab, setActiveTab, parsedData, setParsedData, onIsUploadingChange, showToast, authUser
+  examId, examLabel: _examLabel, paperId, paperLabel: _paperLabel, subjectName, onSuccess, onClose, activeTab: _activeTab, setActiveTab, parsedData, setParsedData, onIsUploadingChange, showToast, authUser
 }: UseBulkUploadOptions) {
   const [jsonText, setJsonText] = useState('')
   const [errors, setErrors] = useState<{ row: number; message: string }[]>([])
@@ -430,7 +428,7 @@ export function useBulkUpload({
       }
 
       const validItem = result.data
-      const hash = await generateQuestionHash(validItem as unknown as Partial<Question>)
+      const hash = await generateQuestionHash(validItem as unknown as Parameters<typeof generateQuestionHash>[0])
 
       if (seenHashes.has(hash)) {
         dupeCount++
@@ -448,7 +446,7 @@ export function useBulkUpload({
         question: validItem.question_text_en,
         options: [validItem.option_a_en, validItem.option_b_en, validItem.option_c_en, validItem.option_d_en],
         correct: validItem.correct_option,
-        explanation: validItem.explanation_en,
+        explanation: validItem.explanation_en ?? '',
         difficulty: validItem.difficulty,
         visual: validItem.visual,
         topic_en: validItem.topic_en,

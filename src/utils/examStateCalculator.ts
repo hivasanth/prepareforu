@@ -80,7 +80,7 @@ export function convertAnswersRecord(
     id: '',
     attempt_id: '',
     question_id: q.id,
-    selected_option: answers[q.id] !== undefined ? answers[q.id] : null,
+    selected_option: answers[q.id] !== undefined ? answers[q.id] as "A" | "B" | "C" | "D" | null : null,
     correct_option: q.correct_option,
     is_correct: answers[q.id] !== undefined && answers[q.id] !== null ? answers[q.id] === q.correct_option : null,
     marks_awarded: 0,

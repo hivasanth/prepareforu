@@ -67,18 +67,18 @@ export default function UserPerformance() {
 
   // ── State
   const [allAttempts, setAllAttempts] = useState<Attempt[]>(() => {
-    if (!attemptsCacheKey) return [];
+    if (!attemptsCacheKey || !user) return [];
     return getCachedAttempts(user.id) || [];
   });
   const [allAnswers, setAllAnswers] = useState<Answer[]>([])
   const [metadata, setMetadata] = useState<PerformanceMetadata>(() => {
-    if (!metaCacheKey) return { exams: [], papers: [], subjects: [] };
-    return getCachedMetadata(user.exam_selection) || { exams: [], papers: [], subjects: [] };
+    if (!metaCacheKey || !user) return { exams: [], papers: [], subjects: [] };
+    return getCachedMetadata(user.exam_selection ?? '') || { exams: [], papers: [], subjects: [] };
   });
 
   const [loading, setLoading] = useState(() => {
     if (authLoading) return true;
-    if (!attemptsCacheKey) return true;
+    if (!attemptsCacheKey || !user) return true;
     return !getCachedAttempts(user.id);
   });
   const [error, setError] = useState<string | null>(null)

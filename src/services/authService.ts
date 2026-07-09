@@ -7,6 +7,7 @@ import type {
   ServiceResult,
 } from '../types/auth.types'
 import { getProfile } from './userService'
+import { logError, logWarn, logInfo } from '../utils/logger'
 
 // ─── Security Gateway ────────────────────────────────────────────────────────
 /**
@@ -16,7 +17,7 @@ import { getProfile } from './userService'
 async function checkSecurityGateway(pathname: string): Promise<ServiceResult> {
   // Fail-open in local development environment to prevent local developers/testing from hanging or blocking
   if (import.meta.env.DEV) {
-    console.log('[security-gateway] Local development detected. Bypassing gateway check.');
+    logInfo('security-gateway.dev.bypass', {})
     return { success: true };
   }
 
@@ -25,13 +26,15 @@ async function checkSecurityGateway(pathname: string): Promise<ServiceResult> {
   );
 
   try {
-    const invokePromise = userRepo.invokeSecurityGateway(pathname);
+    const invokePromise = supabase.functions.invoke('security-gateway', {
+      method: 'POST',
+      body: { pathname }
+    })
 
     const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
 
     if (error) {
-      console.error('[security-gateway] Function error:', error.message)
-      // Fail-Closed for Auth is the enterprise policy in prod
+      logError('security-gateway.functionError', { message: error.message })
       return {
         success: false,
         error: { source: 'auth', code: 'SECURITY_ERROR', message: 'Security check failed. Please try again later.' }
@@ -52,13 +55,13 @@ async function checkSecurityGateway(pathname: string): Promise<ServiceResult> {
     return { success: true }
   } catch (err: any) {
     if (err.message === 'TIMEOUT') {
-      console.warn('[security-gateway] Request timed out. Failing closed for production auth safety.');
+      logWarn('security-gateway.timeout', {})
       return {
         success: false,
         error: { source: 'network', code: 'TIMEOUT', message: 'Security check timed out. Please try again.' }
       }
     }
-    console.error('[security-gateway] Network error:', err.message)
+    logError('security-gateway.networkError', { message: err.message })
     return {
       success: false,
       error: { source: 'network', code: 'NETWORK_ERROR', message: 'Security layer unreachable.' }
@@ -188,7 +191,7 @@ export async function signupWithEmail(params: {
       )
       
       if (import.meta.env.DEV) {
-        console.log('[authService] Coupon validation result:', { status: couponData?.valid, hasError: !!couponErr })
+        logInfo('authService.couponValidation', { status: couponData?.valid, hasError: !!couponErr })
       }
 
       if (couponErr || !couponData || couponData.valid !== true) {
@@ -216,7 +219,7 @@ export async function signupWithEmail(params: {
     )
     
     if (checkError) {
-      console.error('[authService] Signup email check error:', checkError.message)
+      logError('authService.signupEmailCheckError', { message: checkError.message })
       if (checkError.message === 'CHECK_USER_TIMEOUT') {
         return {
           success: false,
@@ -318,7 +321,7 @@ export async function loginWithEmail(params: {
     // 3. Wrong password → increment counter (NEW)
     if (authError) {
       if (import.meta.env.DEV) {
-        console.warn('[authService] Login failed:', authError.message)
+        logWarn('authService.loginFailed', { message: authError.message })
       }
 
       const isWrongPassword =
@@ -327,10 +330,9 @@ export async function loginWithEmail(params: {
         authError.message?.toLowerCase().includes('incorrect')
 
       if (isWrongPassword) {
-        // Fire-and-forget — don't block the user-facing error response
         safeSupabaseCall(
           userRepo.recordFailedLoginRpc(cleanEmail)
-        ).catch(() => {})
+        ).catch((e) => logError('authService.recordFailedLogin.error', { message: e?.message }))
       }
 
       return { success: false, error: mapError(authError) }
@@ -350,7 +352,7 @@ export async function loginWithEmail(params: {
     // 4. Successful login → reset counter (NEW)
     safeSupabaseCall(
       userRepo.resetFailedLoginRpc(cleanEmail)
-    ).catch(() => {})
+    ).catch((e) => logError('authService.resetFailedLogin.error', { message: e?.message }))
 
     // 5. Fetch profile (existing)
     const profile = await getProfile(authData.user.id)
@@ -366,7 +368,7 @@ export async function loginWithEmail(params: {
       data: { session: activeSession, user: profile },
     }
   } catch (err: any) {
-    console.error('[authService] Login exception:', err.message)
+    logError('authService.loginException', { message: err.message })
     return { success: false, error: mapError(err, 'unknown') }
   }
 }
@@ -404,7 +406,7 @@ export async function sendPasswordReset(email: string): Promise<ServiceResult> {
     const { data: exists, error: checkError } = await safeSupabaseCall(userRepo.checkUserExistsRpc(cleanEmail))
 
     if (checkError) {
-      console.error('[authService] Reset email check error:', checkError.message)
+      logError('authService.resetEmailCheckError', { message: checkError.message })
     } else if (!exists) {
       return { 
         success: false, 
@@ -470,7 +472,7 @@ export async function completePasswordlessSignIn(_email: string, link: string): 
     const code = url.searchParams.get('code');
 
     if (code) {
-      console.log('[authService] Magic Link: Exchanging code for session...');
+      logInfo('authService.magicLink.exchangeCode', {});
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) throw error;
     }
@@ -481,7 +483,7 @@ export async function completePasswordlessSignIn(_email: string, link: string): 
       throw new Error('Authentication failed: No valid session found after link verification.');
     }
   } catch (err: any) {
-    console.error('[authService] completePasswordlessSignIn error:', err.message);
+    logError('authService.completePasswordlessSignIn.error', { message: err.message });
     throw err;
   }
 }
@@ -494,5 +496,35 @@ export function parseAuthError(error: any): string {
     return mapError({ code: error, message: error }).message;
   }
   return mapError(error).message;
+}
+
+// ─── Session Management ─────────────────────────────────────────────────────
+
+export async function getCurrentSession() {
+  return await supabase.auth.getSession()
+}
+
+export async function getCurrentUser() {
+  return await supabase.auth.getUser()
+}
+
+export async function refreshSession() {
+  return await supabase.auth.refreshSession()
+}
+
+export function onAuthStateChange(callback: (event: string, session: any) => void) {
+  return supabase.auth.onAuthStateChange(callback)
+}
+
+export async function resendVerificationEmail(email: string) {
+  return await supabase.auth.resend({ type: 'signup', email })
+}
+
+export async function reauthenticate(email: string, password: string) {
+  return await supabase.auth.signInWithPassword({ email, password })
+}
+
+export async function sendPasswordResetWithRedirect(email: string, redirectTo: string) {
+  return await supabase.auth.resetPasswordForEmail(email, { redirectTo })
 }
 

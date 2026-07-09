@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useSearchParams, Navigate } from 'react-router-dom'
 import { isAdmin } from '../../utils/authUtils'
-import { supabase } from '../../lib/supabase'
 import { KNOWN_EXAM_IDS } from '../../lib/examUtils'
 import { useAuth } from '../../context/AuthContext'
 import { useSupabaseQuery } from '../../hooks/useSupabaseQuery'
@@ -11,24 +10,15 @@ import {
 } from '../../components/common/AntigravityUI'
 import { ConfirmModal } from '../../components/common/SharedComponents'
 import { GuardLoader } from '../../guards/Guards'
-import { toggleUserStatus } from '../../services/userService'
+import { toggleUserStatus, fetchUsersPaginated } from '../../services/userService'
 import type { UserRow } from '../../types/user.types'
 import { AdminUsersView } from '../../components/admin/users/AdminUsersView'
 
 export default function AdminUsers() {
   const { user, loading: authLoading } = useAuth()
   const { toasts, showSuccess, showError } = useToast()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const activeTab = searchParams.get('exam') || 'all'
-
-  const setActiveTab = useCallback((val: string) => {
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev)
-      if (val === 'all') next.delete('exam')
-      else next.set('exam', val)
-      return next
-    }, { replace: true })
-  }, [setSearchParams])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('active')
@@ -42,26 +32,18 @@ export default function AdminUsers() {
       return { data: { rows: [], total: 0 }, error: null }
     }
 
-    const offset = (page - 1) * PAGE_SIZE
-    let query = supabase
-      .from('users')
-      .select('id, full_name, email, exam_selection, is_active, created_at, streak, total_exams', { count: 'exact' })
-      .eq('role', 'user')
-
-    if (activeTab !== 'all') query = query.eq('exam_selection', activeTab)
-    if (statusFilter === 'active') query = query.eq('is_active', true)
-    else if (statusFilter === 'inactive') query = query.eq('is_active', false)
-
-    const q = searchQuery.trim()
-    if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`)
-
-    const res = await query
-      .order('created_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1)
-
-    if (res.error) return { data: null, error: res.error }
-    const rows = (res.data || []) as UserRow[]
-    return { data: { rows, total: res.count || 0 }, error: null }
+    try {
+      const result = await fetchUsersPaginated({
+        activeTab,
+        statusFilter,
+        searchQuery,
+        page,
+        pageSize: PAGE_SIZE,
+      })
+      return { data: { rows: result.rows as unknown as UserRow[], total: result.total }, error: null }
+    } catch (error: any) {
+      return { data: null, error: error.message || 'Failed to load users.' }
+    }
   }, [activeTab, statusFilter, searchQuery, page])
 
   const users = (data?.rows || []).map(u => ({

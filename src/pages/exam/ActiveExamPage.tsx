@@ -23,11 +23,12 @@ import {
 } from '../../components/exam';
 import { ExamFinishButton } from '../../components/exam/ExamFinishButton';
 
-import { supabase } from '../../lib/supabase';
 import {
   fetchPaperWithSubjects,
   fetchQuestionsForPaper,
   fetchAttemptAnswers,
+  findAttemptById,
+  findInProgressAttempt,
   createAttempt,
   touchQuestionVisit,
   setQuestionAnswer,
@@ -283,9 +284,8 @@ export default function ActiveExamPage() {
         setLoading(true);
         setPhase('loading');
         clearExamSession();
-        const { data: attemptData, error: attemptErr } = await supabase
-          .from('attempts').select('*').eq('id', state.attemptId).single();
-        if (attemptErr || !attemptData) throw new Error('Failed to load exam attempt.');
+        const attemptData = await findAttemptById(state.attemptId, user?.id ?? '');
+        if (!attemptData) throw new Error('Failed to load exam attempt.');
         const resolvedQ: Question[] = [...state.questions];
 
         // ── Pre-fetch ALL persisted state BEFORE any state writes ──
@@ -364,14 +364,11 @@ export default function ActiveExamPage() {
 
       // Detect existing in_progress attempt BEFORE generating questions.
       // On resume, questions_snapshot is immutable — never regenerate.
-      const { data: existingAttempt } = await supabase
-        .from('attempts')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('paper_id', paperId)
-        .eq('status', 'in_progress')
-        .eq('source', 'exam_tab')
-        .maybeSingle();
+      const existingAttempt = await findInProgressAttempt({
+        userId: user.id,
+        paperId,
+        source: 'exam_tab'
+      });
 
       let fetchedQuestions: Question[];
       if (existingAttempt?.questions_snapshot?.length) {

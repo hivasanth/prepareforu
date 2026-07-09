@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { isSubAdmin } from '../../utils/authUtils'
 import { GuardLoader } from '../../guards/Guards'
-import { fetchTeacherExams } from '../../services/teacherExamService'
+import { fetchTeacherExams, fetchAttemptsByTeacherExamIds } from '../../services/teacherExamService'
+import { findSubAdminProfileSimple, countUsersByEducatorId } from '../../services/userService'
 import { 
   Users, 
   BookOpen, 
@@ -25,8 +25,7 @@ import {
   SectionReveal, 
   Card, 
   Button, 
-  Badge, 
-  Label,
+  Badge,
   Body
 } from '../../components/common/AntigravityUI'
 import { AdminIconWrap } from '../../components/admin/common/AdminIconWrap'
@@ -67,28 +66,18 @@ export default function SubAdminDashboard() {
     
     try {
       // 1 & 2. Parallel — get sub-admin identity + student count
-      const [profileResult, countResult] = await Promise.all([
-        supabase
-          .from('sub_admins')
-          .select('id, coupon_code')
-          .eq('user_id', user.id)
-          .maybeSingle(),
-        supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('educator_id', user.id)
+      const [profileData, studentCount] = await Promise.all([
+        findSubAdminProfileSimple(user.id),
+        countUsersByEducatorId(user.id)
       ])
 
-      if (profileResult.error) throw profileResult.error
-      if (!profileResult.data) {
+      if (!profileData) {
         showError('Educator profile not found. Please contact admin.')
         setLoading(false)
         return
       }
-      if (countResult.error) throw countResult.error
 
-      const saId = profileResult.data.id
-      const studentCount = countResult.count
+      const saId = profileData.id
 
       // 3. Fetch Exams
       const exams = await fetchTeacherExams(
@@ -100,14 +89,7 @@ export default function SubAdminDashboard() {
       let attempts: any[] = []
       const examIds = (exams || []).map(e => e.id)
       if (examIds.length > 0) {
-        const { data, error: attemptsErr } = await supabase
-          .from('attempts')
-          .select('*, users(full_name)')
-          .in('teacher_exam_id', examIds)
-          .order('created_at', { ascending: false })
-          .limit(50)
-        if (attemptsErr) throw attemptsErr
-        attempts = data || []
+        attempts = await fetchAttemptsByTeacherExamIds(examIds)
       }
 
       // 5. Transform
@@ -284,7 +266,7 @@ export default function SubAdminDashboard() {
                       className="flex items-center justify-between p-3 border border-border-subtle/30 rounded-2xl transition-all group cursor-default bg-card-bg hover:border-secondary/30"
                     >
                       <Stack direction="row" gap="md" align="center">
-                        <AdminIconWrap size="sm" rounded="xl" className="font-black text-xs">
+                        <AdminIconWrap size="sm" rounded="lg" className="font-black text-xs">
                           {attempt.users?.full_name?.charAt(0) || 'S'}
                         </AdminIconWrap>
                         <Stack gap={0}>

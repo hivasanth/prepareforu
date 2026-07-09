@@ -44,7 +44,7 @@ export default function UserLeaderboard() {
   const isMobile = isXs || isSm;
   const isAppsc = user?.exam_selection === 'APPSC_GROUPS';
 
-  const [metadata, setMetadata] = useState<LeaderboardMetadata>(() => getCachedLeaderboardMetadata(user?.exam_selection) || { exams: [], papers: [] });
+  const [metadata, setMetadata] = useState<LeaderboardMetadata>(() => getCachedLeaderboardMetadata(user?.exam_selection ?? '') || { exams: [], papers: [] });
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ export default function UserLeaderboard() {
   const [selectedExam, setSelectedExam] = useState<string>('all');
   const [selectedPaper, setSelectedPaper] = useState<string>('all');
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('30d');
-  const [isInitialLoad, setIsInitialLoad] = useState(!getCachedLeaderboardMetadata(user?.exam_selection));
+  const [isInitialLoad, setIsInitialLoad] = useState(!getCachedLeaderboardMetadata(user?.exam_selection ?? ''));
   const { nextId, isStale } = useStableFetch();
 
   useEffect(() => {

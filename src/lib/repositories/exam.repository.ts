@@ -28,53 +28,43 @@ export async function updateExamConfigById(examId: string, updates: Partial<Exam
   if (error) throw error
 }
 
-export async function fetchExamConfigsByIds(ids: string[]): Promise<any[]> {
+export async function fetchExamConfigsByIds(ids: string[]): Promise<ExamConfig[] | null> {
   const { data, error } = await supabase
     .from('exam_configs')
     .select('*')
     .in('exam_id', ids)
     .limit(200)
   if (error) throw error
-  return data || []
+  return data as ExamConfig[] | null
 }
 
-export async function fetchExamConfigNames(ids: string[]): Promise<any[]> {
+export async function fetchExamConfigNames(ids: string[]): Promise<Record<string, unknown>[] | null> {
   const { data, error } = await supabase
     .from('exam_configs')
     .select('exam_id, name')
     .in('exam_id', ids)
   if (error) throw error
-  return data || []
+  return data
 }
 
-export async function fetchExamConfigNamesWithSelection(ids: string[]): Promise<any[]> {
+export async function fetchExamConfigNamesWithSelection(ids: string[]): Promise<Record<string, unknown>[] | null> {
   const { data, error } = await supabase
     .from('exam_configs')
     .select('exam_id, name, exam_selection')
     .in('exam_id', ids)
     .limit(200)
   if (error) throw error
-  return data || []
+  return data
 }
 
-export async function fetchExamConfigsByIdsLimited(ids: string[], select: string, limit = 50): Promise<any[]> {
-  const { data, error } = await supabase
-    .from('exam_configs')
-    .select(select)
-    .in('exam_id', ids)
-    .limit(limit)
-  if (error) throw error
-  return data || []
-}
-
-export async function fetchMinQuestions(examIds: string[]): Promise<any[]> {
+export async function fetchMinQuestions(examIds: string[]): Promise<Record<string, unknown>[] | null> {
   const { data, error } = await supabase
     .from('exam_configs')
     .select('min_questions')
     .in('exam_id', examIds)
     .limit(50)
   if (error) throw error
-  return data || []
+  return data
 }
 
 // ─── exam_papers table ───────────────────────────────────────────────────────
@@ -131,31 +121,31 @@ export async function syncPapersFromConfig(
   if (error) throw error
 }
 
-export async function fetchPaperIdsAndNames(examIds: string[]): Promise<any[]> {
+export async function fetchPaperIdsAndNames(examIds: string[]): Promise<Record<string, unknown>[] | null> {
   const { data, error } = await supabase
     .from('exam_papers')
     .select('id, exam_id, paper_name')
     .in('exam_id', examIds)
   if (error) throw error
-  return data || []
+  return data
 }
 
 // ─── exam_subjects table ─────────────────────────────────────────────────────
 
-export async function fetchSubjectsByPaperId(paperId: string): Promise<ExamSubject[]> {
+export async function fetchSubjectsByPaperId(paperId: string): Promise<ExamSubject[] | null> {
   const { data, error } = await supabase
     .from('exam_subjects')
     .select('*')
     .eq('paper_id', paperId)
     .order('display_order', { ascending: true })
   if (error) throw error
-  return (data || []) as ExamSubject[]
+  return data as ExamSubject[] | null
 }
 
 export async function fetchSubjectsByExamId(
   examId: string,
   paperId?: string | null
-): Promise<ExamSubject[]> {
+): Promise<ExamSubject[] | null> {
   let query = supabase
     .from('exam_subjects')
     .select('*')
@@ -163,10 +153,10 @@ export async function fetchSubjectsByExamId(
   if (paperId) query = query.eq('paper_id', paperId)
   const { data, error } = await query.order('display_order', { ascending: true })
   if (error) throw error
-  return data || []
+  return data as ExamSubject[] | null
 }
 
-export async function fetchSubjectNamesByExam(examIds: string[]): Promise<string[]> {
+export async function fetchSubjectNamesByExam(examIds: string[]): Promise<Record<string, unknown>[] | null> {
   const { data, error } = await supabase
     .from('exam_subjects')
     .select('subject_name')
@@ -174,11 +164,10 @@ export async function fetchSubjectNamesByExam(examIds: string[]): Promise<string
     .order('display_order', { ascending: true })
     .limit(200)
   if (error) throw error
-  const names = (data as any[])?.map((s: any) => s.subject_name).filter(Boolean)
-  return Array.from(new Set(names)) as string[]
+  return data
 }
 
-export async function fetchSubjectNamesByPaper(paperId: string): Promise<string[]> {
+export async function fetchSubjectNamesByPaper(paperId: string): Promise<Record<string, unknown>[] | null> {
   const { data, error } = await supabase
     .from('exam_subjects')
     .select('subject_name')
@@ -186,11 +175,10 @@ export async function fetchSubjectNamesByPaper(paperId: string): Promise<string[
     .order('display_order', { ascending: true })
     .limit(100)
   if (error) throw error
-  const names = (data as any[])?.map((s: any) => s.subject_name).filter(Boolean)
-  return Array.from(new Set(names)) as string[]
+  return data
 }
 
-export async function fetchSubjectCountsByExam(examIds: string[], paperId?: string): Promise<any[]> {
+export async function fetchSubjectCountsByExam(examIds: string[], paperId?: string): Promise<Record<string, unknown>[] | null> {
   let query = supabase
     .from('question_counts')
     .select('subject_name, count')
@@ -199,37 +187,37 @@ export async function fetchSubjectCountsByExam(examIds: string[], paperId?: stri
   query = query.limit(200)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return data
 }
 
-export async function fetchSubjectsWithQuestionCount(paperIds: string[]): Promise<any[]> {
+export async function fetchSubjectsWithQuestionCount(paperIds: string[]): Promise<Record<string, unknown>[] | null> {
   const { data, error } = await supabase
     .from('exam_subjects')
     .select('paper_id, subject_name, question_count')
     .in('paper_id', paperIds)
   if (error) throw error
-  return data || []
+  return data
 }
 
-export async function fetchSubjectMetadata(examIds: string[]): Promise<any[]> {
+export async function fetchSubjectMetadata(examIds: string[]): Promise<Record<string, unknown>[] | null> {
   const { data, error } = await supabase
     .from('exam_subjects')
     .select('paper_id, subject_name')
     .in('exam_id', examIds)
     .limit(500)
   if (error) throw error
-  return data || []
+  return data
 }
 
 // ─── question_counts view ────────────────────────────────────────────────────
 
-export async function fetchQuestionCountsByPapers(paperIds: string[]): Promise<any[]> {
+export async function fetchQuestionCountsByPapers(paperIds: string[]): Promise<Record<string, unknown>[] | null> {
   const { data, error } = await supabase
     .from('question_counts')
     .select('paper_id, subject_name, count')
     .in('paper_id', paperIds)
   if (error) throw error
-  return data || []
+  return data
 }
 
 // ─── exam_topics table ──────────────────────────────────────────────────────
@@ -251,7 +239,7 @@ export async function fetchTopicsBySubject(
   examIds: string[],
   subjectName: string,
   paperId?: string
-): Promise<any[]> {
+): Promise<Record<string, unknown>[] | null> {
   let query = supabase
     .from('exam_topics')
     .select('topic_en, topic_te, display_order')
@@ -262,7 +250,7 @@ export async function fetchTopicsBySubject(
   query = query.limit(200)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return data
 }
 
 // ─── prompt_templates table ──────────────────────────────────────────────────
@@ -271,7 +259,7 @@ export async function fetchPrompts(
   examId: string,
   paperId: string,
   subjectName: string
-): Promise<any[]> {
+): Promise<Record<string, unknown>[] | null> {
   const { data, error } = await supabase
     .from('prompt_templates')
     .select('*')
@@ -280,16 +268,16 @@ export async function fetchPrompts(
     .eq('subject_name', subjectName)
     .order('created_at', { ascending: true })
   if (error) throw error
-  return data || []
+  return data
 }
 
-export async function upsertPrompt(payload: any): Promise<void> {
+export async function upsertPrompt(payload: Record<string, unknown>): Promise<void> {
   if (payload.id) {
     const { id, ...updatePayload } = payload
     const { error } = await supabase
       .from('prompt_templates')
       .update(updatePayload)
-      .eq('id', id)
+      .eq('id', id as string)
     if (error) throw error
   } else {
     const { error } = await supabase
@@ -309,7 +297,7 @@ export async function deletePromptById(id: string): Promise<void> {
 
 // ─── RPCs ────────────────────────────────────────────────────────────────────
 
-export async function createNewExamRpc(examData: any): Promise<void> {
+export async function createNewExamRpc(examData: Record<string, unknown>): Promise<void> {
   const { error } = await supabase.rpc('create_new_exam_rpc', { p_exam: examData })
   if (error) throw error
 }
@@ -319,12 +307,4 @@ export async function updateExamSubjectsBatchRpc(subjects: { id: string; questio
   if (error) throw error
 }
 
-// ─── Security Gateway ─────────────────────────────────────────────────────────
 
-export async function invokeSecurityGateway(pathname: string): Promise<any> {
-  const invokePromise = supabase.functions.invoke('security-gateway', {
-    method: 'POST',
-    body: { pathname }
-  })
-  return invokePromise
-}

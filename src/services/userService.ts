@@ -1,8 +1,8 @@
+import { supabase } from '../lib/supabase'
 import * as attemptRepo from '../lib/repositories/attempt.repository'
 import * as userRepo from '../lib/repositories/user.repository'
-import { queryCache } from '../utils/queryCache'
 import { ensureRole } from '../utils/authUtils'
-import { logError } from '../utils/logger'
+import { logError, logWarn, logInfo } from '../utils/logger'
 import type { 
   UserProfile, 
   ExamSelection, 
@@ -12,15 +12,15 @@ import type {
 
 export async function getProfile(userId: string): Promise<UserProfile | null> {
   const START_TIME  = Date.now()
-  const MAX_TIMEOUT = 5000 // 5.0s total failure bound
-  const RETRY_DELAY = [400, 800, 1500] // Exponential delays
-  
-  console.log(`[userService] getProfile: Initializing fetch...`)
+  const MAX_TIMEOUT = 5000
+  const RETRY_DELAY = [400, 800, 1500]
+
+  logInfo('userService.getProfile.start', { userId })
 
   for (let i = 0; i <= RETRY_DELAY.length; i++) {
     const elapsed = Date.now() - START_TIME
     if (elapsed > MAX_TIMEOUT) {
-      console.warn(`[userService] getProfile: Timeout exceeded (${elapsed}ms).`)
+      logWarn('userService.getProfile.timeout', { elapsed })
       break
     }
 
@@ -28,11 +28,10 @@ export async function getProfile(userId: string): Promise<UserProfile | null> {
       const userData = await userRepo.findUserById(userId).catch(() => null)
 
       if (userData) {
-        console.log(`[userService] getProfile: Base profile found.`)
-        
+        logInfo('userService.getProfile.found', { userId })
+
         let sub_admin_id = userData.sub_admin_id;
 
-        // For sub-admins: always resolve their own sub_admins table ID authoritatively.
         if (userData.role === 'sub_admin') {
           const saData = await userRepo.findSubAdminByUserId(userId).catch(() => null);
 
@@ -47,27 +46,19 @@ export async function getProfile(userId: string): Promise<UserProfile | null> {
         } as UserProfile;
       }
 
-      console.warn(`[userService] getProfile: Record not found in 'users' table (Attempt ${i + 1}).`)
-
-      const isRecordMissing = true
-      const isNetworkError  = false
-
-      if (!isRecordMissing && !isNetworkError) {
-        console.error(`[userService] getProfile: Terminal logic error. Stopping.`);
-        return null
-      }
+      logWarn('userService.getProfile.notFound', { attempt: i + 1 })
 
       if (i < RETRY_DELAY.length) {
         const delay = RETRY_DELAY[i]
-        console.log(`[userService] getProfile: Retrying in ${delay}ms...`)
+        logInfo('userService.getProfile.retry', { delay })
         await new Promise(r => setTimeout(r, delay))
       }
     } catch (err) {
-      console.error('[userService] getProfile: Unexpected exception', err instanceof Error ? err.message : err)
+      logError('userService.getProfile.exception', { message: err instanceof Error ? err.message : String(err) })
     }
   }
 
-  console.warn(`[userService] getProfile: Exhausted all attempts.`)
+  logWarn('userService.getProfile.exhausted', { userId })
   return null
 }
 
@@ -107,12 +98,13 @@ export async function validateCoupon(couponCode: string): Promise<CouponResult> 
     try {
       const data = await userRepo.validateCouponRpc(couponCode.trim().toUpperCase())
       if (!data || !data.valid) return { valid: false, error: 'Invalid or expired coupon.' }
-      return { valid: true, subAdminName: data.sub_admin_name }
+      return { valid: true, subAdminName: (data as Record<string, unknown>).sub_admin_name as string }
     } catch (error: any) {
-      console.error('[userService] validateCoupon error:', error.message)
+      logError('userService.validateCoupon.error', { message: error.message })
       return { valid: false, error: 'Could not validate coupon.' }
     }
   } catch (err: unknown) {
+    logError('userService.validateCoupon.outerError', { message: err instanceof Error ? err.message : String(err) })
     return { valid: false, error: 'Network error. Could not validate coupon.' }
   }
 }
@@ -137,9 +129,9 @@ export async function fetchSubAdminStudents(
 
   try {
     const data = await userRepo.fetchUsersByEducatorId(educatorId);
-    return data as UserProfile[];
+    return (data as unknown as UserProfile[]) ?? [];
   } catch (error: any) {
-    console.error('[userService] fetchSubAdminStudents error:', error.message);
+    logError('userService.fetchSubAdminStudents.error', { message: error.message });
     throw new Error('Unable to fetch students for this educator.');
   }
 }
@@ -230,16 +222,6 @@ export async function removeSubAdmin(
 }
 
 /**
- * Forcefully invalidates dashboard-related cached data for a user.
- */
-export async function clearDashboardCache(userId: string) {
-  if (!userId) return;
-  console.log(`[userService] Clearing dashboard cache...`);
-  // Clear dashboard stats
-  queryCache.invalidateByPrefix(`dash_stats_${userId}`);
-}
-
-/**
  * Fetches the sub-admin profile for a given user.
  */
 export async function fetchSubAdminProfile(
@@ -261,7 +243,7 @@ export async function fetchSubAdminProfile(
     if (!data) throw new Error('Sub-admin not found');
     return data;
   } catch (error: any) {
-    console.error('[userService] fetchSubAdminProfile error:', error.message);
+    logError('userService.fetchSubAdminProfile.error', { message: error.message });
     throw new Error('Unable to identify sub-admin profile.');
   }
 }
@@ -269,6 +251,41 @@ export async function fetchSubAdminProfile(
 /**
  * Fetches attempts for a list of students specifically for a sub-admin's exams.
  */
+// ─── Sub-admin Profile ────────────────────────────────────────────────────────
+export async function fetchSubAdminProfileAndUser(
+  userId: string
+): Promise<{ profile: any; lastActivity: string }> {
+  const profile = await userRepo.findSubAdminProfileByUserId(userId);
+  const uData = await userRepo.findUserLastActivity(userId);
+  const lastLogin = uData?.last_activity_date
+    ? new Date(uData.last_activity_date).toLocaleDateString()
+    : '—';
+  return { profile, lastActivity: lastLogin };
+}
+
+export async function updateSubAdminProfile(
+  saId: string,
+  userId: string | undefined,
+  fullName: string
+): Promise<void> {
+  await userRepo.updateSubAdmin(saId, { full_name: fullName });
+  if (userId) {
+    await userRepo.updateUser(userId, { full_name: fullName });
+  }
+}
+
+export async function onboardSubAdmin(
+  email: string,
+  fullName: string,
+  couponCode: string
+): Promise<any> {
+  const result = await supabase.functions.invoke('onboard-sub-admin', {
+    body: { email, full_name: fullName, coupon_code: couponCode }
+  })
+  if (result.error) throw new Error(result.error?.message || 'Failed to onboard educator.');
+  return result;
+}
+
 export async function fetchAttemptsForSubAdminStudents(
   ctx: { user: UserProfile | null | undefined; requestId?: string },
   studentIds: string[],
@@ -287,9 +304,74 @@ export async function fetchAttemptsForSubAdminStudents(
   if (studentIds.length === 0) return [];
 
   try {
-    return await attemptRepo.fetchAttemptsForStudents(studentIds, subAdminId);
+    return (await attemptRepo.fetchAttemptsForStudents(studentIds, subAdminId)) ?? [];
   } catch (error: any) {
-    console.error('[userService] fetchAttemptsForSubAdminStudents error:', error.message);
+    logError('userService.fetchAttemptsForSubAdminStudents.error', { message: error.message });
     throw new Error('Unable to fetch student performance data.');
+  }
+}
+
+export async function findSubAdminProfileSimple(userId: string): Promise<{ id: string; coupon_code: string } | null> {
+  try {
+    return await userRepo.findSubAdminProfileByUserIdSimple(userId)
+  } catch (error: any) {
+    logError('userService.findSubAdminProfileSimple', { message: error.message })
+    return null
+  }
+}
+
+export async function countUsersByEducatorId(educatorId: string): Promise<number> {
+  try {
+    return (await userRepo.countUsersByEducatorId(educatorId)) ?? 0
+  } catch (error: any) {
+    logError('userService.countUsersByEducatorId', { message: error.message })
+    return 0
+  }
+}
+
+export async function fetchUsersPaginated(params: {
+  activeTab: string
+  statusFilter: string
+  searchQuery: string
+  page: number
+  pageSize: number
+}): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+  try {
+    const offset = (params.page - 1) * params.pageSize
+    const result = await userRepo.fetchUsersPaginated({
+      activeTab: params.activeTab,
+      statusFilter: params.statusFilter,
+      searchQuery: params.searchQuery.trim(),
+      offset,
+      pageSize: params.pageSize,
+      sortColumn: 'created_at',
+      sortAscending: false,
+    })
+    return { rows: result.rows ?? [], total: result.count ?? 0 }
+  } catch (error: any) {
+    logError('userService.fetchUsersPaginated', { message: error.message })
+    throw error
+  }
+}
+
+export async function fetchAllSubAdmins(): Promise<Record<string, unknown>[] | null> {
+  return await userRepo.fetchAllSubAdmins()
+}
+
+export async function fetchStudentsByEducatorId(educatorId: string): Promise<Record<string, unknown>[] | null> {
+  try {
+    return await userRepo.fetchStudentsByEducatorId(educatorId)
+  } catch (error: any) {
+    logError('userService.fetchStudentsByEducatorId', { message: error.message })
+    throw new Error('Unable to load students for this educator.')
+  }
+}
+
+export async function updateSubAdminNotificationPrefs(id: string, prefs: Record<string, unknown>): Promise<void> {
+  try {
+    await userRepo.updateSubAdmin(id, { notification_prefs: prefs })
+  } catch (error: any) {
+    logError('userService.updateSubAdminNotificationPrefs', { message: error.message })
+    throw error
   }
 }

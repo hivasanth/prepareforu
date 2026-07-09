@@ -17,12 +17,10 @@ import {
   fetchAppscPapers,
   fetchSubjectsByPaper,
   mapQuestionsToStandard,
-  type SubjectQuestion 
 } from '../../services/subjectTestService';
 import { getAllowedExamIds } from '../../utils/examUtils';
 import { getCachedSubjects, getCachedSubjectCounts, getCachedPapers } from '../../services/subjectTestService';
 import { getMinQuestions, getDefaultMinQuestions } from '../../services/questionAvailabilityService';
-import { cleanOptionText } from '../../utils/testUtils';
 
 // Views (lazy-loaded)
 const SubjectPortalView = lazy(() => import('./SubjectTestViews/SubjectPortalView').then(m => ({ default: m.SubjectPortalView })));

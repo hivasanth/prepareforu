@@ -3,6 +3,7 @@ import * as examRepo from '../lib/repositories/exam.repository';
 import * as leaderboardRepo from '../lib/repositories/leaderboard.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
+import { assignRanks, APPSC_GROUPS } from '../utils/rankUtils';
 
 export interface LeaderboardEntry {
   user_id: string;
@@ -186,4 +187,68 @@ export function getCachedLeaderboardMetadata(examSelection: string): any {
 
 export function clearLeaderboardCache() {
   queryCache.invalidateByPrefix('lb_');
+}
+
+// ─── Admin Leaderboard ───────────────────────────────────────────────────────
+
+export async function refreshLeaderboardView(): Promise<void> {
+  await leaderboardRepo.refreshLeaderboardViewRpc();
+}
+
+export async function fetchAdminLeaderboard(
+  selectedExam: string,
+  selectedPaper: string,
+  page: number,
+  pageSize: number
+): Promise<{ entries: any[]; count: number }> {
+  if (selectedPaper !== 'all') {
+    const examId = selectedExam === 'APPSC_GROUPS' ? null : selectedExam;
+
+    const offset = page * pageSize;
+    const result = await leaderboardRepo.fetchLeaderboardByPaperPaginated(
+      examId,
+      selectedPaper,
+      APPSC_GROUPS,
+      offset,
+      pageSize
+    );
+
+    const lbData = result.data ?? [];
+    const userIds = [...new Set(lbData.map((d: any) => d.user_id))];
+    const users = await leaderboardRepo.fetchUserNamesByIds(userIds);
+    const userMap: Record<string, string> = {};
+    for (const u of users || []) {
+      userMap[u.id as string] = u.full_name as string;
+    }
+
+    const examSelection = selectedExam === 'APPSC_GROUPS' || (selectedExam.startsWith?.('APPSC_GROUP_') ?? false)
+      ? 'APPSC_GROUPS'
+      : selectedExam;
+
+    const entries = lbData.map((d: any) => ({
+      user_id: d.user_id,
+      user_name: userMap[d.user_id] || 'Unknown',
+      exam_id: d.exam_id,
+      exam_selection: examSelection,
+      paper_id: d.paper_id,
+      best_score: d.best_score,
+      best_accuracy: d.best_accuracy,
+      best_time_secs: d.best_time_secs,
+      last_attempt_date: d.best_submitted_at,
+      total_attempts: d.attempt_count
+    }));
+
+    return { entries: assignRanks(entries), count: result.count ?? 0 };
+  }
+
+  const isAppscGroups = selectedExam === 'APPSC_GROUPS';
+  const offset = page * pageSize;
+  const result = await leaderboardRepo.fetchLeaderboardView(
+    selectedExam,
+    offset,
+    pageSize,
+    isAppscGroups || selectedExam.startsWith('APPSC_GROUP_')
+  );
+
+  return { entries: assignRanks((result.data ?? []) as any[]), count: result.count ?? 0 };
 }

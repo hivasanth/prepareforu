@@ -5,9 +5,12 @@ interface AdminCardProps {
   children: ReactNode
   className?: string
   variant?: 'default' | 'elevated' | 'subtle'
+  role?: string
+  'aria-label'?: string
+  'aria-live'?: 'off' | 'assertive' | 'polite'
 }
 
-export function AdminCard({ children, className = '', variant = 'default' }: AdminCardProps) {
+export function AdminCard({ children, className = '', variant = 'default', ...rest }: AdminCardProps) {
   const { isDark } = useTheme()
 
   const variants: Record<string, string> = {
@@ -17,7 +20,7 @@ export function AdminCard({ children, className = '', variant = 'default' }: Adm
   }
 
   return (
-    <div className={`${variants[variant]} ${className}`}>
+    <div className={`${variants[variant]} ${className}`} {...rest}>
       {children}
     </div>
   )

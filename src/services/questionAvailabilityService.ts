@@ -32,21 +32,8 @@ export async function getMinQuestions(examSelection: string, force = false): Pro
   }
 }
 
-/**
- * Validates whether a given count meets the minimum requirement.
- */
-export async function validateQuestionCount(
-  examSelection: string,
-  count: number
-): Promise<{ valid: boolean; min: number }> {
-  const min = await getMinQuestions(examSelection);
-  return { valid: count >= min, min };
-}
-
-/**
- * Returns the minimum questions for display purposes without fetching.
- * Useful for server-rendered or cached-first scenarios.
- */
 export function getDefaultMinQuestions(): number {
   return DEFAULT_MIN_QUESTIONS;
 }
+
+

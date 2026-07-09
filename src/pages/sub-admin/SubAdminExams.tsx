@@ -24,8 +24,14 @@ import {
   FileText,
   Loader2,
 } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import {
+  fetchSubAdminIdByUserId,
+  fetchTeacherExamsWithFullFields,
+  fetchTeacherExamQuestions,
+  fetchAttemptsWithUsersByTeacherExam,
+  fetchAttemptAnswersByAttemptIds,
+} from '../../services/teacherExamService'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useToast } from '../../hooks/useToast'
 import { formatNumber, formatDurationShort } from '../../utils/timeUtils'
@@ -42,7 +48,6 @@ import {
   Button,
 } from '../../components/common/AntigravityUI'
 import { AdminFilterBar } from '../../components/admin/common/AdminFilterBar'
-import { AdminCard } from '../../components/admin/common/AdminCard'
 import { AdminIconWrap } from '../../components/admin/common/AdminIconWrap'
 import { AdminText } from '../../components/admin/common/AdminText'
 
@@ -116,7 +121,7 @@ export default function SubAdminExams() {
   if (authLoading) return <GuardLoader />
   if (!isSubAdmin(user)) return <Navigate to="/unauthorized" replace />
   const { breakpoint } = useBreakpoint()
-  const { showSuccess } = useToast()
+  const { showSuccess, showError } = useToast()
 
   // ── Exam list
   const [exams, setExams] = useState<TeacherExamOption[]>([])
@@ -180,22 +185,11 @@ export default function SubAdminExams() {
     setExamsLoading(true)
     setExamsError(null)
     try {
-      const { data: profile, error: pErr } = await supabase
-        .from('sub_admins')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle()
+      const profile = await fetchSubAdminIdByUserId(user.id)
 
-      if (pErr || !profile) throw new Error('Could not identify your Sub-Admin profile.')
+      if (!profile) throw new Error('Could not identify your Sub-Admin profile.')
 
-      const { data, error } = await supabase
-        .from('teacher_exams')
-        .select('id, title, total_questions, total_marks, marks_per_question, start_time, end_time, created_at, status')
-        .eq('sub_admin_id', profile.id)
-        .order('created_at', { ascending: false })
-        .limit(100)
-
-      if (error) throw error
+      const data = await fetchTeacherExamsWithFullFields(profile.id)
       setExams(data ?? [])
     } catch (err: any) {
       setExamsError(err.message ?? 'Failed to load exams.')
@@ -237,36 +231,8 @@ export default function SubAdminExams() {
     setEvalData(null)
     try {
       // Fetch completed attempts with user info
-      const { data: attempts, error: aErr } = await supabase
-        .from('attempts')
-        .select(`
-          id,
-          user_id,
-          score,
-          total_marks,
-          correct_count,
-          wrong_count,
-          skipped_count,
-          accuracy,
-          duration_seconds,
-          submitted_at,
-          status,
-          users ( full_name, email )
-        `)
-        .eq('teacher_exam_id', examId)
-        .in('status', ['completed', 'auto_submitted'])
-        .order('score', { ascending: false })
-        .limit(200)
-
-      if (aErr) throw aErr
-
-      const { data: questions, error: qErr } = await supabase
-        .from('teacher_exam_questions')
-        .select('id, question_text_en, correct_option, display_order')
-        .eq('teacher_exam_id', examId)
-        .order('display_order', { ascending: true })
-
-      if (qErr) throw qErr
+      const attempts = await fetchAttemptsWithUsersByTeacherExam(examId)
+      const questions = await fetchTeacherExamQuestions(examId)
 
       const attemptList: AttemptRow[] = (attempts ?? []) as unknown as AttemptRow[]
       const questionList: QuestionRow[] = (questions ?? []) as QuestionRow[]
@@ -277,13 +243,7 @@ export default function SubAdminExams() {
       if (attemptList.length > 0 && questionList.length > 0) {
         const attemptIds = attemptList.map(a => a.id)
 
-        const { data: answers, error: ansErr } = await supabase
-          .from('attempt_answers')
-          .select('question_id, selected_option, is_correct, attempt_id')
-          .in('attempt_id', attemptIds)
-
-        if (ansErr) throw ansErr
-
+        const answers = await fetchAttemptAnswersByAttemptIds(attemptIds)
         const answerList: AnswerRow[] = (answers ?? []) as AnswerRow[]
 
         // Build question stats
@@ -343,7 +303,7 @@ export default function SubAdminExams() {
 
   const summaryStats = useMemo(() => {
     if (!evalData?.attempts.length) return null
-    return computeSummaryStats(evalData.attempts)
+    return computeSummaryStats(evalData.attempts.map(a => ({ ...a, duration_seconds: a.duration_seconds ?? undefined })))
   }, [evalData?.attempts])
 
   const scoreDistribution = useMemo(() => {

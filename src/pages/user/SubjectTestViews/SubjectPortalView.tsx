@@ -24,9 +24,9 @@ interface SubjectPortalViewProps {
 
 export function SubjectPortalView({
   isAppsc,
-  isMobile,
-  isFilterOpen,
-  setIsFilterOpen,
+  isMobile: _isMobile,
+  isFilterOpen: _isFilterOpen,
+  setIsFilterOpen: _setIsFilterOpen,
   groupOptions,
   papers,
   activeGroup,

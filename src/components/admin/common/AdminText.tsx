@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react'
+import type { ElementType, ReactNode } from 'react'
 import { useTheme } from '../../../context/ThemeContext'
 
 interface AdminTextProps {
-  as?: keyof JSX.IntrinsicElements
+  as?: ElementType
   variant?: 'cinzel' | 'garamond' | 'cinzel-value' | 'garamond-value'
   className?: string
   children: ReactNode

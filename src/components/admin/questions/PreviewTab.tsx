@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertTriangle, Clock } from 'lucide-react'
+import { AlertTriangle, Clock } from 'lucide-react'
 import { DifficultyBadge } from '../common/DifficultyBadge'
 import type { ParsedDataItem } from '../../../hooks/useBulkUpload'
 
@@ -42,12 +42,12 @@ export function PreviewTab({ parsedData, validationSummary, duplicateCount }: Pr
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0">
                 <DifficultyBadge difficulty={item.difficulty || 'medium'} />
-                <span className={item.status === 'ready' ? 'text-success' : 'text-warning'}>
-                  {item.status === 'ready' ? <CheckCircle2 size={14} /> : <Clock size={14} className="animate-pulse" />}
+                <span className="text-warning">
+                  <Clock size={14} className="animate-pulse" />
                 </span>
               </div>
             </div>
-            <p className="text-xs font-medium text-text-primary mt-2 line-clamp-1">{item.question || item.question_text_en || 'No question text'}</p>
+            <p className="text-xs font-medium text-text-primary mt-2 line-clamp-1">{item.question || 'No question text'}</p>
             {item.options && (
               <div className="flex gap-4 mt-1">
                 <span className="text-[10px] text-text-secondary truncate">{item.options[0]}</span>

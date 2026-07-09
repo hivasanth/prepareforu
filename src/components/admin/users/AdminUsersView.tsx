@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Mail, Search, ChevronLeft, ChevronRight, ShieldCheck, ShieldAlert, Users as UsersIcon } from 'lucide-react'
 import {
@@ -12,7 +12,6 @@ import { AdminIconWrap } from '../common/AdminIconWrap'
 import { AdminText } from '../common/AdminText'
 import { ExamTabs } from '../../admin/overview/ExamTabs'
 import { ErrorState, EmptyState, LoadingSkeleton } from '../../common/SharedComponents'
-import { ConfirmModal } from '../../common/SharedComponents'
 import { UserMobileCard } from './UserMobileCard'
 import { formatDate } from '../../../utils/dateUtils'
 import type { UserRow } from '../../../types/user.types'

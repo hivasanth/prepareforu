@@ -35,9 +35,9 @@ interface TopicPortalViewProps {
 
 export function TopicPortalView({
   isAppsc,
-  isMobile,
-  isFilterOpen,
-  setIsFilterOpen,
+  isMobile: _isMobile,
+  isFilterOpen: _isFilterOpen,
+  setIsFilterOpen: _setIsFilterOpen,
   groupOptions,
   papers,
   activeGroup,

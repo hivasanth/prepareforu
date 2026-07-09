@@ -4,6 +4,7 @@ import { queryCache } from '../utils/queryCache';
 import { ensureRole } from '../utils/authUtils';
 import type { UserProfile } from '../types/auth.types';
 import type { TeacherExamWithAttempt, TeacherExamLeaderboardEntry } from '../types/exam.types';
+import { logError } from '../utils/logger'
 
 export async function fetchTeacherExams(
   ctx: { user: UserProfile | null | undefined; requestId?: string },
@@ -30,7 +31,7 @@ export async function fetchTeacherExams(
       );
       return teacherExams || [];
     } catch (examErr: any) {
-      console.error('Error fetching teacher exams:', examErr.message);
+      logError('teacherExamService.fetchTeacherExams.error', { message: examErr?.message });
       throw new Error('Unable to load your assigned exams. Please verify your connection.');
     }
   }, 30000, force); // 30 s TTL — keeps live/upcoming fresh
@@ -58,7 +59,7 @@ export async function fetchTeacherExamLeaderboard(
       allowedRoles: ['admin', 'sub_admin', 'user'],
       operation: 'fetchTeacherExamLeaderboard',
       requestId,
-      resourceOwnerId: exam.sub_admin_id
+      resourceOwnerId: (exam as Record<string, unknown>).sub_admin_id as string | undefined
     });
 
     const attempts = await attemptRepo.fetchCompletedAttemptsByTeacherExam(examId, 200);
@@ -94,14 +95,14 @@ export async function deleteTeacherExam(
     allowedRoles: ['admin', 'sub_admin'],
     operation: 'deleteTeacherExam',
     requestId,
-    resourceOwnerId: exam.sub_admin_id
+    resourceOwnerId: (exam as Record<string, unknown>).sub_admin_id as string | undefined
   });
 
   // 3. Delete
   try {
     await teacherExamRepo.deleteTeacherExamById(examId);
   } catch (error: any) {
-    console.error('Error deleting teacher exam:', error.message);
+    logError('teacherExamService.deleteTeacherExam.error', { message: error.message });
     throw new Error('Failed to delete the exam analysis.');
   }
 
@@ -109,14 +110,93 @@ export async function deleteTeacherExam(
   queryCache.invalidateByPrefix(`teacher_exams_${exam.sub_admin_id}`);
 }
 
+export async function fetchSubAdminIdByUserId(userId: string): Promise<{ id: string } | null> {
+  try {
+    return await teacherExamRepo.fetchSubAdminIdByUserId(userId)
+  } catch (error: any) {
+    logError('teacherExamService.fetchSubAdminIdByUserId.error', { message: error.message })
+    return null
+  }
+}
+
+export async function fetchTeacherExamsWithFullFields(subAdminId: string): Promise<any[]> {
+  try {
+    return (await teacherExamRepo.fetchTeacherExamsWithFullFields(subAdminId)) ?? []
+  } catch (error: any) {
+    logError('teacherExamService.fetchTeacherExamsWithFullFields.error', { message: error.message })
+    throw new Error('Unable to load exam list.')
+  }
+}
+
 export async function fetchTeacherExamQuestions(examId: string): Promise<any[]> {
-  return await teacherExamRepo.fetchTeacherExamQuestions(examId);
+  return (await teacherExamRepo.fetchTeacherExamQuestions(examId)) ?? [];
+}
+
+export async function fetchAttemptsWithUsersByTeacherExam(examId: string): Promise<any[]> {
+  try {
+    return (await attemptRepo.fetchAttemptsWithUsersByTeacherExam(examId)) ?? []
+  } catch (error: any) {
+    logError('teacherExamService.fetchAttemptsWithUsersByTeacherExam.error', { message: error.message })
+    throw new Error('Unable to load attempt data for evaluation.')
+  }
+}
+
+export async function fetchAttemptAnswersByAttemptIds(attemptIds: string[]): Promise<any[]> {
+  if (attemptIds.length === 0) return []
+  try {
+    return (await attemptRepo.fetchAttemptAnswersByAttemptIds(attemptIds)) ?? []
+  } catch (error: any) {
+    logError('teacherExamService.fetchAttemptAnswersByAttemptIds.error', { message: error.message })
+    throw new Error('Unable to load answer data.')
+  }
 }
 
 export async function fetchTeacherExamAttempts(examId: string): Promise<any[]> {
-  return await attemptRepo.fetchTeacherExamAttempts(examId, 50);
+  return (await attemptRepo.fetchTeacherExamAttempts(examId, 50)) ?? [];
+}
+
+export async function fetchAttemptsByTeacherExamIds(examIds: string[]): Promise<any[]> {
+  if (examIds.length === 0) return []
+  try {
+    return (await attemptRepo.fetchAttemptsByTeacherExamIds(examIds)) ?? []
+  } catch (error: any) {
+    logError('teacherExamService.fetchAttemptsByTeacherExamIds.error', { message: error.message })
+    throw new Error('Unable to load attempt data.')
+  }
 }
 
 export function getCachedTeacherExams(subAdminId: string): any[] {
   return queryCache.get(`teacher_exams_${subAdminId}`) || [];
+}
+
+export async function createTeacherExamAtomic(config: {
+  title: string
+  subAdminId: string   // user_id (auth), not sub_admins.id
+  startTime: string
+  endTime: string
+  durationMinutes: number
+  marksPerQuestion: number
+  negativeMarkValue: number
+  questions: any[]
+}): Promise<void> {
+  const profile = (await teacherExamRepo.fetchSubAdminIdByUserId(config.subAdminId)) as Record<string, unknown> | null
+  if (!profile) {
+    throw new Error('Your Sub-Admin identity could not be verified. Are you registered as an educator?')
+  }
+
+  await teacherExamRepo.createTeacherExamAtomicRpc({
+    p_title: config.title,
+    p_sub_admin_id: profile.id as string,
+    p_start_time: config.startTime,
+    p_end_time: config.endTime,
+    p_duration_minutes: config.durationMinutes,
+    p_marks_per_question: config.marksPerQuestion,
+    p_negative_mark_value: config.negativeMarkValue,
+    p_source_type: null,
+    p_questions: config.questions,
+  });
+}
+
+export async function fetchTeacherExamsForExport(subAdminId: string): Promise<any[]> {
+  return (await teacherExamRepo.fetchTeacherExamsBySubAdminId(subAdminId)) ?? [];
 }

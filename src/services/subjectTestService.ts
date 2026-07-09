@@ -4,6 +4,7 @@ import * as questionRepo from '../lib/repositories/question.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 import { assertValidEnFields } from '../utils/languageUtils';
+import { logWarn } from '../utils/logger';
 import type { Question } from '../types/exam.types';
 
 export interface SubjectQuestion {
@@ -28,12 +29,13 @@ export interface SubjectQuestion {
   subject_name: string;
 }
 
-export async function fetchSubjectsByExam(examSelection: string, force = false) {
+export async function fetchSubjectsByExam(examSelection: string, force = false): Promise<string[]> {
   const cacheKey = `subjects_exam_${examSelection}`;
   return queryCache.fetchWithDedup(cacheKey, async () => {
     const allowedIds = getAllowedExamIds(examSelection);
-    return await examRepo.fetchSubjectNamesByExam(allowedIds);
-  }, 600000, force); // 10 min TTL
+    const data = await examRepo.fetchSubjectNamesByExam(allowedIds);
+    return (data ?? []).map((s: Record<string, unknown>) => String(s.subject_name ?? '')).filter(Boolean);
+  }, 600000, force);
 }
 
 /**
@@ -50,10 +52,11 @@ export async function fetchAppscPapers(examSelection: string, force = false) {
 /**
  * Fetches subjects for a specific APPSC paper
  */
-export async function fetchSubjectsByPaper(paperId: string, force = false) {
+export async function fetchSubjectsByPaper(paperId: string, force = false): Promise<string[]> {
   const cacheKey = `subjects_paper_${paperId}`;
   return queryCache.fetchWithDedup(cacheKey, async () => {
-    return await examRepo.fetchSubjectNamesByPaper(paperId);
+    const data = await examRepo.fetchSubjectNamesByPaper(paperId);
+    return (data ?? []).map((s: Record<string, unknown>) => String(s.subject_name ?? '')).filter(Boolean);
   }, 600000, force);
 }
 
@@ -119,13 +122,13 @@ export async function fetchSubjectTestQuestions(params: {
   let finalPool: any[];
 
   if (attemptedQuestionIds.length > 0) {
-    finalPool = await questionRepo.fetchQuestionsBySubject(
+    finalPool = (await questionRepo.fetchQuestionsBySubject(
       selectFields, params.subjectName, allowedIds, params.paperId, attemptedQuestionIds, poolLimit
-    );
+    )) ?? [];
   } else {
-    finalPool = await questionRepo.fetchQuestionsBySubject(
+    finalPool = (await questionRepo.fetchQuestionsBySubject(
       selectFields, params.subjectName, allowedIds, params.paperId, [], poolLimit
-    );
+    )) ?? [];
   }
 
   // Shuffle and slice to the requested count
@@ -149,7 +152,7 @@ export async function fetchSubjectTestQuestions(params: {
   }
 
   if (selectedQuestions.length === 0) {
-    console.warn('[SubjectTestService] No questions found for:', params.subjectName);
+    logWarn('subjectTestService.fetchSubjectTestQuestions.warn', { subjectName: params.subjectName });
     throw new Error(`No questions available for ${params.subjectName}`);
   }
 
@@ -217,8 +220,8 @@ export function mapToQuestion(q: SubjectQuestion): Question {
     correct_option: (String.fromCharCode(65 + (q.correct_option || 0))) as 'A' | 'B' | 'C' | 'D',
     difficulty: 'medium' as const,
     negative_marks: 0,
-    visual: q.visual || q.diagram || null,
-    diagram: q.diagram || q.visual || null,
+    visual: (q as any).visual || q.diagram || null,
+    diagram: q.diagram || (q as any).visual || null,
     question_text_en: q.question_text_en || '',
     question_text_te: q.question_text_te || '',
     explanation_en: q.explanation_en || '',
@@ -249,8 +252,9 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 
-export function getCachedSubjects(examSelection: string): any[] {
-  return queryCache.get(`subjects_exam_${examSelection}`) || [];
+export function getCachedSubjects(examSelection: string): string[] {
+  const cached = queryCache.get(`subjects_exam_${examSelection}`) || [];
+  return cached.map((s: any) => typeof s === 'string' ? s : String(s?.subject_name ?? '')).filter(Boolean);
 }
 
 export function getCachedSubjectCounts(examSelection: string): any {

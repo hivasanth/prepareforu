@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import * as notificationService from '../services/notificationService'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type NotificationType = 'info' | 'success' | 'warning' | 'exam' | 'student' | 'system'
@@ -30,16 +31,10 @@ export function useNotifications() {
     if (!user?.id) return
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(30)
-
-      if (!error && data) {
-        setNotifications(data as AppNotification[])
-      }
+      const data = await notificationService.fetchNotifications(user.id)
+      setNotifications(data as unknown as AppNotification[])
+    } catch {
+      // Service already logs errors
     } finally {
       setLoading(false)
     }
@@ -111,42 +106,31 @@ export function useNotifications() {
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, is_read: true } : n))
     )
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', id)
-      .eq('user_id', user?.id ?? '')
+    if (user?.id) {
+      await notificationService.markRead(id, user.id)
+    }
   }, [user?.id])
 
   // ── Mark all as read ──────────────────────────────────────────────────────
   const markAllRead = useCallback(async () => {
     if (!user?.id) return
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false)
+    await notificationService.markAllRead(user.id)
   }, [user?.id])
 
   // ── Delete a single notification ──────────────────────────────────────────
   const deleteNotification = useCallback(async (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id))
-    await supabase
-      .from('notifications')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user?.id ?? '')
+    if (user?.id) {
+      await notificationService.deleteNotification(id, user.id)
+    }
   }, [user?.id])
 
   // ── Clear all notifications ───────────────────────────────────────────────
   const clearAll = useCallback(async () => {
     if (!user?.id) return
     setNotifications([])
-    await supabase
-      .from('notifications')
-      .delete()
-      .eq('user_id', user.id)
+    await notificationService.clearAll(user.id)
   }, [user?.id])
 
   return {

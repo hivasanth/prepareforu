@@ -60,7 +60,7 @@ export const adminService = {
 
   async fetchPapersByExam(examId: string): Promise<ExamPaper[]> {
     try {
-      return await examRepo.fetchPapersByExamId(examId);
+      return (await examRepo.fetchPapersByExamId(examId)) ?? [];
     } catch (error: any) {
       throw error;
     }
@@ -68,7 +68,7 @@ export const adminService = {
 
   async fetchSubjectsByPaper(paperId: string): Promise<ExamSubject[]> {
     try {
-      return await examRepo.fetchSubjectsByPaperId(paperId);
+      return (await examRepo.fetchSubjectsByPaperId(paperId)) ?? [];
     } catch (error: any) {
       throw error;
     }
@@ -175,7 +175,7 @@ export const adminService = {
     });
 
     try {
-      return await examRepo.fetchSubjectsByExamId(examId, paperId);
+      return (await examRepo.fetchSubjectsByExamId(examId, paperId)) ?? [];
     } catch (error: any) {
       logError('adminService.fetchExamSubjects', { error: { message: error.message, code: error.code } });
       throw new Error('Failed to load exam subjects.');
