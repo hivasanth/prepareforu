@@ -218,7 +218,7 @@ function renderTable(data: any) {
           {rows.map((row: any[], i: number) => (
             <tr key={i} className="hover:bg-hover-bg/40">
               {row.map((val, j) => (
-                <td key={j} className="px-3 py-2 text-text-primary whitespace-nowrap">{val}</td>
+                <td key={j} className="px-3 py-2 text-text-primary whitespace-nowrap">{typeof val === 'object' ? JSON.stringify(val) : val}</td>
               ))}
             </tr>
           ))}
@@ -307,8 +307,8 @@ function renderMap(data: any) {
           }
         </Geographies>
         
-        {overlays.map((marker: any, index: number) => (
-          <Marker key={index} coordinates={[marker.lng, marker.lat]}>
+        {overlays.map((marker: any) => (
+          <Marker key={marker.lng + ',' + marker.lat} coordinates={[marker.lng, marker.lat]}>
             <circle r={6} fill={marker.color || "#f43f5e"} stroke="var(--text-primary)" strokeWidth={2} />
             {marker.label && (
               <text

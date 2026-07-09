@@ -250,8 +250,6 @@ function CompactDateTimePicker({ value, onChange, minStr, getTypo }: { value: st
 // ─── Component ──────────────────────────────────────────────────────────────
 export default function SubAdminCreate() {
   const { user, loading: authLoading } = useAuth()
-  if (authLoading) return <GuardLoader />
-  if (!isSubAdmin(user)) return <Navigate to="/unauthorized" replace />
   const { breakpoint } = useBreakpoint()
   const { showSuccess, showError } = useToast()
   const navigate = useNavigate()
@@ -290,6 +288,9 @@ export default function SubAdminCreate() {
   // ── Validation Errors
   const [jsonError, setJsonError] = useState<string | null>(null)
   const [configErrors, setConfigErrors] = useState<string[]>([])
+
+  if (authLoading) return <GuardLoader />
+  if (!isSubAdmin(user)) return <Navigate to="/unauthorized" replace />
 
   // ── Responsive Scales
   const getTypo = (element: string) => {

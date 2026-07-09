@@ -80,8 +80,8 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
         {/* Sections */}
         <div className="space-y-6">
           {sections.length > 0 ? (
-            sections.map((sec, i) => (
-              <div key={i} className="space-y-2">
+            sections.map((sec, _idx) => (
+              <div key={sec.label_en + sec.type} className="space-y-2">
                 {sec.label_en || sec.label_te ? (
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">
                     {lang === 'en' ? sec.label_en : sec.label_te}

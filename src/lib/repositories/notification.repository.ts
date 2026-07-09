@@ -1,6 +1,17 @@
 import { supabase } from '../supabase'
 
-export async function fetchNotifications(userId: string): Promise<Record<string, unknown>[] | null> {
+type NotificationRow = {
+  id: string
+  user_id: string
+  title: string
+  body: string | null
+  type: string
+  link: string | null
+  is_read: boolean
+  created_at: string
+}
+
+export async function fetchNotifications(userId: string): Promise<NotificationRow[] | null> {
   const { data, error } = await supabase
     .from('notifications')
     .select('*')

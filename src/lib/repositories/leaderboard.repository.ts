@@ -1,9 +1,24 @@
 import { supabase } from '../supabase'
 
+type LeaderboardEntryRow = {
+  user_id: string
+  best_score: number
+  best_accuracy: number
+  best_time_secs: number
+  best_submitted_at: string
+  rank: number
+  users: { full_name: string } | null
+}
+
+type UserNameRow = {
+  id: string
+  full_name: string
+}
+
 export async function fetchLeaderboardByPaper(
   examId: string,
   paperId: string | undefined
-): Promise<Record<string, unknown>[] | null> {
+): Promise<LeaderboardEntryRow[] | null> {
   let query = supabase
     .from('leaderboard')
     .select(`
@@ -21,21 +36,33 @@ export async function fetchLeaderboardByPaper(
   if (paperId) query = query.eq('paper_id', paperId)
   const { data, error } = await query
   if (error) throw error
-  return data
+  return data as unknown as LeaderboardEntryRow[] | null
 }
 
 export async function fetchUserRankRpc(
   examId: string,
   paperId: string | null,
   timeRange: string
-): Promise<Record<string, unknown> | null> {
+): Promise<{
+  rank: number
+  score: number
+  accuracy: number
+  duration: number
+  submitted_at: string
+} | null> {
   const { data, error } = await supabase.rpc('get_user_leaderboard_rank', {
     p_exam_id: examId,
     p_paper_id: paperId,
     p_time_range: timeRange,
   })
   if (error) throw error
-  return data as Record<string, unknown> | null
+  return data as {
+    rank: number
+    score: number
+    accuracy: number
+    duration: number
+    submitted_at: string
+  } | null
 }
 
 export async function refreshLeaderboardViewRpc(): Promise<void> {
@@ -92,7 +119,7 @@ export async function fetchLeaderboardByPaperPaginated(
   return { data: data as Record<string, unknown>[] | null, count }
 }
 
-export async function fetchUserNamesByIds(userIds: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchUserNamesByIds(userIds: string[]): Promise<UserNameRow[] | null> {
   const { data, error } = await supabase
     .from('users')
     .select('id, full_name')

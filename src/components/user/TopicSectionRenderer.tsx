@@ -38,7 +38,7 @@ export function TopicSectionRenderer({ section, lang }: TopicSectionRendererProp
 
               return (
                 <motion.div
-                  key={i}
+                  key={item.heading_en ?? item.heading_te ?? i}
                   whileHover={!isDark && canHover ? { y: -2, x: -2, boxShadow: "4px 4px 0px #A87828" } : {}}
                   className={`flex flex-col sm:flex-row gap-2.5 sm:gap-3 p-4 rounded-2xl border transition-all ${
                     isTableCard ? 'col-span-1 sm:col-span-2' : ''
@@ -99,7 +99,7 @@ export function TopicSectionRenderer({ section, lang }: TopicSectionRendererProp
               const heading = lang === 'en' ? item.heading_en : item.heading_te
               return heading ? (
                 <span
-                  key={i}
+                  key={item.heading_en ?? item.heading_te ?? i}
                   className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black border transition-all ${
                     !isDark
                       ? 'bg-[#FDF5E2] border-[2px] border-[#A87828] shadow-[2px_2px_0px_#8B5A10] text-[#0E3326]'
@@ -125,7 +125,7 @@ export function TopicSectionRenderer({ section, lang }: TopicSectionRendererProp
               const body = lang === 'en' ? item.body_en : item.body_te
               const parsed = parseHeading(headingRaw || '')
               return (
-                <li key={i} className="flex items-start gap-3">
+                <li key={item.heading_en ?? item.heading_te ?? i} className="flex items-start gap-3">
                   <span className={`flex-shrink-0 mt-2 w-2 h-2 rounded-full border ${
                     !isDark ? 'bg-primary border-[#A87828]' : 'bg-primary'
                   }`} />
@@ -165,7 +165,7 @@ export function TopicSectionRenderer({ section, lang }: TopicSectionRendererProp
             const body = lang === 'en' ? item.body_en : item.body_te
             const parsed = parseHeading(headingRaw || '')
             return (
-              <div key={i}>
+              <div key={item.heading_en ?? item.heading_te ?? i}>
                 {parsed.text && (
                   <div className="flex flex-wrap items-center gap-1.5 mb-2">
                     {parsed.tag && <TagBadge tag={parsed.tag} />}
@@ -209,7 +209,7 @@ export function TopicSectionRenderer({ section, lang }: TopicSectionRendererProp
               const body = lang === 'en' ? item.body_en : item.body_te
               const parsed = parseHeading(headingRaw || '')
               return (
-                <div key={i} className="space-y-2">
+                <div key={item.heading_en ?? item.heading_te ?? i} className="space-y-2">
                   {parsed.text && (
                     <div className="flex flex-wrap items-center gap-1.5">
                       {parsed.tag && <TagBadge tag={parsed.tag} />}

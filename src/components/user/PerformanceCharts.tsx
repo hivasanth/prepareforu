@@ -45,13 +45,6 @@ const PerformanceCharts: React.FC<ChartProps> = ({
   hasEnoughData = true,
 }) => {
   const { isDark } = useTheme()
-  const [isMounted, setIsMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  if (!isMounted) return null
 
   if (!data || data.length === 0) {
     return (

@@ -62,6 +62,8 @@ export default function SignupPage() {
   const [dynamicExams, setDynamicExams] = useState<{ id: string; name: string }[]>([]);
   const [selectionLoading, setSelectionLoading] = useState(isSelectionOnly);
   const [confirmExamData, setConfirmExamData] = useState<SignupFormData | null>(null);
+  const [localSelected, setLocalSelected] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const id = ++requestId.current;
@@ -95,10 +97,23 @@ export default function SignupPage() {
     })();
   }, []);
 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setFocus,
+    formState: { errors, isSubmitting, touchedFields }
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    mode: 'onChange'
+  });
+
+  const passwordValue = watch('password') || '';
+  const couponValue = watch('couponCode');
+  const { couponStatus, couponMessage } = useCouponValidation(couponValue ?? '');
+
   // ── Logged-in user without exam selection: show selection-only card ──
   if (isSelectionOnly) {
-    const [localSelected, setLocalSelected] = useState('');
-    const [saving, setSaving] = useState(false);
 
     const handleSaveSelection = async () => {
       if (!localSelected || !user) return;
@@ -157,21 +172,6 @@ export default function SignupPage() {
       </ThemeContext.Provider>
     );
   }
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setFocus,
-    formState: { errors, isSubmitting, touchedFields }
-  } = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema),
-    mode: 'onChange'
-  });
-
-  const passwordValue = watch('password') || '';
-  const couponValue = watch('couponCode');
-  const { couponStatus, couponMessage } = useCouponValidation(couponValue ?? '');
 
   const handleSignupSubmit = (data: SignupFormData) => {
     if (!captchaToken) {

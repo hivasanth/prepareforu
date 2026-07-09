@@ -239,7 +239,7 @@ function renderTable(metadata: any) {
             <tr key={ri} className="hover:bg-primary/5 transition-colors even:bg-hover-bg/20">
               {row.map((cell, ci) => (
                 <td key={ci} className="px-4 py-3 text-sm text-text-primary font-medium whitespace-nowrap">
-                  {cell}
+                  {typeof cell === 'object' ? JSON.stringify(cell) : cell}
                 </td>
               ))}
             </tr>

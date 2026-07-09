@@ -1,6 +1,74 @@
 import { supabase } from '../supabase'
 import type { Attempt, AttemptAnswer, SubmitResult, AttemptSource } from '../../types/exam.types'
 
+// ─── Domain row types for subset queries ────────────────────────────────────
+
+type DailyAttemptRow = {
+  started_at: string
+  exam_id: string
+}
+
+type CompletedAttemptRow = {
+  user_id: string
+  score: number
+  accuracy: number
+  duration_seconds: number
+  submitted_at: string
+  users: { full_name: string }[] | null
+}
+
+type AttemptWithUserRow = {
+  id: string
+  user_id: string
+  score: number
+  total_marks: number
+  correct_count: number
+  wrong_count: number
+  skipped_count: number
+  accuracy: number
+  duration_seconds: number
+  submitted_at: string
+  status: string
+  users: { full_name: string; email: string } | null
+}
+
+type AttemptAnswerRow = {
+  question_id: string
+  selected_option: string | null
+  is_correct: boolean | null
+  attempt_id: string
+}
+
+type AttemptWithTeacherExamJoinedRow = Attempt & {
+  teacher_exams: {
+    title: string
+    total_questions: number
+  }
+}
+
+type AttemptWithUserJoinedRow = Attempt & {
+  users: { full_name: string } | null
+}
+
+type PerformanceAttemptRow = {
+  id: string
+  paper_id: string
+  exam_id: string
+  score: number
+  accuracy: number
+  correct_count: number
+  wrong_count: number
+  skipped_count: number
+  submitted_at: string
+  exam_papers: { paper_name: string } | null
+}
+
+type PerformanceAnswerRow = {
+  attempt_id: string
+  is_correct: boolean | null
+  questions: { subject_name: string } | null
+}
+
 // ─── attempts table ──────────────────────────────────────────────────────────
 
 export async function findAttemptById(attemptId: string, userId: string): Promise<Attempt | null> {
@@ -73,7 +141,7 @@ export async function fetchAttemptsByUserId(userId: string, limit = 5000): Promi
 export async function fetchDailyAttempts(
   range: { start: string; end: string },
   resolvedIds: string[]
-): Promise<Record<string, unknown>[] | null> {
+): Promise<DailyAttemptRow[] | null> {
   let query = supabase
     .from('attempts')
     .select('started_at, exam_id')
@@ -91,7 +159,7 @@ export async function fetchCompletedAttemptsByPaper(
   paperId: string | undefined,
   threshold: string | null,
   limit = 2000
-): Promise<Record<string, unknown>[] | null> {
+): Promise<CompletedAttemptRow[] | null> {
   let query = supabase
     .from('attempts')
     .select(`
@@ -109,13 +177,13 @@ export async function fetchCompletedAttemptsByPaper(
   if (threshold) query = query.gte('submitted_at', threshold)
   const { data, error } = await query.limit(limit)
   if (error) throw error
-  return data
+  return data as unknown as CompletedAttemptRow[] | null
 }
 
 export async function fetchCompletedAttemptsByTeacherExam(
   examId: string,
   limit = 200
-): Promise<Record<string, unknown>[] | null> {
+): Promise<CompletedAttemptRow[] | null> {
   const { data, error } = await supabase
     .from('attempts')
     .select(`
@@ -132,13 +200,13 @@ export async function fetchCompletedAttemptsByTeacherExam(
     .order('duration_seconds', { ascending: true })
     .limit(limit)
   if (error) throw error
-  return data
+  return data as unknown as CompletedAttemptRow[] | null
 }
 
 export async function fetchAttemptsWithUsersByTeacherExam(
   examId: string,
   limit = 200
-): Promise<Record<string, unknown>[] | null> {
+): Promise<AttemptWithUserRow[] | null> {
   const { data, error } = await supabase
     .from('attempts')
     .select(`
@@ -160,19 +228,19 @@ export async function fetchAttemptsWithUsersByTeacherExam(
     .order('score', { ascending: false })
     .limit(limit)
   if (error) throw error
-  return data
+  return data as unknown as AttemptWithUserRow[] | null
 }
 
-export async function fetchAttemptAnswersByAttemptIds(attemptIds: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchAttemptAnswersByAttemptIds(attemptIds: string[]): Promise<AttemptAnswerRow[] | null> {
   const { data, error } = await supabase
     .from('attempt_answers')
     .select('question_id, selected_option, is_correct, attempt_id')
     .in('attempt_id', attemptIds)
   if (error) throw error
-  return data
+  return data as unknown as AttemptAnswerRow[] | null
 }
 
-export async function fetchAttemptsByTeacherExamIds(examIds: string[], limit = 50): Promise<Record<string, unknown>[] | null> {
+export async function fetchAttemptsByTeacherExamIds(examIds: string[], limit = 50): Promise<AttemptWithUserJoinedRow[] | null> {
   const { data, error } = await supabase
     .from('attempts')
     .select('*, users(full_name)')
@@ -180,14 +248,14 @@ export async function fetchAttemptsByTeacherExamIds(examIds: string[], limit = 5
     .order('created_at', { ascending: false })
     .limit(limit)
   if (error) throw error
-  return data
+  return data as unknown as AttemptWithUserJoinedRow[] | null
 }
 
 export async function fetchAttemptsForStudents(
   studentIds: string[],
   subAdminId: string,
   limit = 10000
-): Promise<Record<string, unknown>[] | null> {
+): Promise<AttemptWithTeacherExamJoinedRow[] | null> {
   const { data, error } = await supabase
     .from('attempts')
     .select(`
@@ -205,12 +273,12 @@ export async function fetchAttemptsForStudents(
     .eq('teacher_exams.sub_admin_id', subAdminId)
     .limit(limit)
   if (error) throw error
-  return data
+  return data as unknown as AttemptWithTeacherExamJoinedRow[] | null
 }
 
 export async function fetchPerformanceAttempts(
   userId: string
-): Promise<Record<string, unknown>[] | null> {
+): Promise<PerformanceAttemptRow[] | null> {
   const { data, error } = await supabase
     .from('attempts')
     .select(`
@@ -231,13 +299,13 @@ export async function fetchPerformanceAttempts(
     .order('submitted_at', { ascending: true })
     .limit(500)
   if (error) throw error
-  return data
+  return data as unknown as PerformanceAttemptRow[] | null
 }
 
 export async function fetchTeacherExamAttempts(
   examId: string,
   limit = 50
-): Promise<Record<string, unknown>[] | null> {
+): Promise<AttemptWithUserJoinedRow[] | null> {
   const { data, error } = await supabase
     .from('attempts')
     .select('*, users(full_name)')
@@ -247,7 +315,7 @@ export async function fetchTeacherExamAttempts(
     .order('duration_seconds', { ascending: true })
     .limit(limit)
   if (error) throw error
-  return data
+  return data as unknown as AttemptWithUserJoinedRow[] | null
 }
 
 // ─── attempt_answers table ──────────────────────────────────────────────────
@@ -270,7 +338,7 @@ export async function findAnsweredQuestionIds(attemptIds: string[]): Promise<{ q
   return data as { question_id: string }[] | null
 }
 
-export async function fetchPerformanceAnswers(attemptIds: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchPerformanceAnswers(attemptIds: string[]): Promise<PerformanceAnswerRow[] | null> {
   const { data, error } = await supabase
     .from('attempt_answers')
     .select(`
@@ -281,7 +349,7 @@ export async function fetchPerformanceAnswers(attemptIds: string[]): Promise<Rec
     .in('attempt_id', attemptIds)
     .limit(5000)
   if (error) throw error
-  return data
+  return data as unknown as PerformanceAnswerRow[] | null
 }
 
 // ─── RPCs ────────────────────────────────────────────────────────────────────

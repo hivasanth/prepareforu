@@ -253,8 +253,13 @@ function shuffleArray<T>(array: T[]): T[] {
 
 
 export function getCachedSubjects(examSelection: string): string[] {
-  const cached = queryCache.get(`subjects_exam_${examSelection}`) || [];
-  return cached.map((s: any) => typeof s === 'string' ? s : String(s?.subject_name ?? '')).filter(Boolean);
+  const cached: unknown[] = queryCache.get(`subjects_exam_${examSelection}`) || [];
+  const normalized = cached.map((s: unknown) => typeof s === 'string' ? s : String((s as Record<string, unknown>)?.subject_name ?? '')).filter(Boolean);
+  // Normalize cache if it contained objects from previous schema
+  if (normalized.some((_s, i) => typeof cached[i] !== 'string')) {
+    queryCache.set(`subjects_exam_${examSelection}`, normalized);
+  }
+  return normalized;
 }
 
 export function getCachedSubjectCounts(examSelection: string): any {

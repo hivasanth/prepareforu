@@ -118,8 +118,6 @@ interface EvalData {
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function SubAdminExams() {
   const { user, loading: authLoading } = useAuth()
-  if (authLoading) return <GuardLoader />
-  if (!isSubAdmin(user)) return <Navigate to="/unauthorized" replace />
   const { breakpoint } = useBreakpoint()
   const { showSuccess, showError } = useToast()
 
@@ -314,6 +312,9 @@ export default function SubAdminExams() {
   // ── Top / Bottom 5
   const topPerformers    = evalData?.attempts.slice(0, 5) ?? []
   const bottomPerformers = [...(evalData?.attempts ?? [])].reverse().slice(0, 5)
+
+  if (authLoading) return <GuardLoader />
+  if (!isSubAdmin(user)) return <Navigate to="/unauthorized" replace />
 
   // ── Export helpers
   const copyToClipboard = async (text: string, onSuccess: () => void) => {

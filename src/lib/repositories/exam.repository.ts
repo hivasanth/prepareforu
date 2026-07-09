@@ -1,6 +1,48 @@
 import { supabase } from '../supabase'
 import type { ExamConfig, ExamPaper, ExamSubject } from '../../types/exam.types'
 
+// ─── Domain row types for subset queries ────────────────────────────────────
+
+type SubjectNameRow = {
+  subject_name: string
+}
+
+type SubjectCountRow = {
+  subject_name: string
+  count: number
+}
+
+type SubjectWithQuestionCountRow = {
+  paper_id: string
+  subject_name: string
+  question_count: number
+}
+
+type SubjectMetadataRow = {
+  paper_id: string
+  subject_name: string
+}
+
+type QuestionCountByPaperRow = {
+  paper_id: string
+  subject_name: string
+  count: number
+}
+
+type ExamTopicRow = {
+  topic_en: string
+  topic_te: string | null
+  display_order: number | null
+}
+
+type PaperIdAndNameRow = {
+  id: string
+  exam_id: string
+  paper_name: string
+}
+
+
+
 // ─── exam_configs table ──────────────────────────────────────────────────────
 
 export async function fetchActiveExamConfigs(limit = 200): Promise<ExamConfig[]> {
@@ -38,7 +80,7 @@ export async function fetchExamConfigsByIds(ids: string[]): Promise<ExamConfig[]
   return data as ExamConfig[] | null
 }
 
-export async function fetchExamConfigNames(ids: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchExamConfigNames(ids: string[]): Promise<{ exam_id: string; name: string }[] | null> {
   const { data, error } = await supabase
     .from('exam_configs')
     .select('exam_id, name')
@@ -47,7 +89,7 @@ export async function fetchExamConfigNames(ids: string[]): Promise<Record<string
   return data
 }
 
-export async function fetchExamConfigNamesWithSelection(ids: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchExamConfigNamesWithSelection(ids: string[]): Promise<Pick<ExamConfig, 'exam_id' | 'name' | 'exam_selection'>[] | null> {
   const { data, error } = await supabase
     .from('exam_configs')
     .select('exam_id, name, exam_selection')
@@ -57,7 +99,7 @@ export async function fetchExamConfigNamesWithSelection(ids: string[]): Promise<
   return data
 }
 
-export async function fetchMinQuestions(examIds: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchMinQuestions(examIds: string[]): Promise<Pick<ExamConfig, 'min_questions'>[] | null> {
   const { data, error } = await supabase
     .from('exam_configs')
     .select('min_questions')
@@ -121,7 +163,7 @@ export async function syncPapersFromConfig(
   if (error) throw error
 }
 
-export async function fetchPaperIdsAndNames(examIds: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchPaperIdsAndNames(examIds: string[]): Promise<PaperIdAndNameRow[] | null> {
   const { data, error } = await supabase
     .from('exam_papers')
     .select('id, exam_id, paper_name')
@@ -156,7 +198,7 @@ export async function fetchSubjectsByExamId(
   return data as ExamSubject[] | null
 }
 
-export async function fetchSubjectNamesByExam(examIds: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchSubjectNamesByExam(examIds: string[]): Promise<SubjectNameRow[] | null> {
   const { data, error } = await supabase
     .from('exam_subjects')
     .select('subject_name')
@@ -167,7 +209,7 @@ export async function fetchSubjectNamesByExam(examIds: string[]): Promise<Record
   return data
 }
 
-export async function fetchSubjectNamesByPaper(paperId: string): Promise<Record<string, unknown>[] | null> {
+export async function fetchSubjectNamesByPaper(paperId: string): Promise<SubjectNameRow[] | null> {
   const { data, error } = await supabase
     .from('exam_subjects')
     .select('subject_name')
@@ -178,7 +220,7 @@ export async function fetchSubjectNamesByPaper(paperId: string): Promise<Record<
   return data
 }
 
-export async function fetchSubjectCountsByExam(examIds: string[], paperId?: string): Promise<Record<string, unknown>[] | null> {
+export async function fetchSubjectCountsByExam(examIds: string[], paperId?: string): Promise<SubjectCountRow[] | null> {
   let query = supabase
     .from('question_counts')
     .select('subject_name, count')
@@ -190,7 +232,7 @@ export async function fetchSubjectCountsByExam(examIds: string[], paperId?: stri
   return data
 }
 
-export async function fetchSubjectsWithQuestionCount(paperIds: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchSubjectsWithQuestionCount(paperIds: string[]): Promise<SubjectWithQuestionCountRow[] | null> {
   const { data, error } = await supabase
     .from('exam_subjects')
     .select('paper_id, subject_name, question_count')
@@ -199,7 +241,7 @@ export async function fetchSubjectsWithQuestionCount(paperIds: string[]): Promis
   return data
 }
 
-export async function fetchSubjectMetadata(examIds: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchSubjectMetadata(examIds: string[]): Promise<SubjectMetadataRow[] | null> {
   const { data, error } = await supabase
     .from('exam_subjects')
     .select('paper_id, subject_name')
@@ -211,7 +253,7 @@ export async function fetchSubjectMetadata(examIds: string[]): Promise<Record<st
 
 // ─── question_counts view ────────────────────────────────────────────────────
 
-export async function fetchQuestionCountsByPapers(paperIds: string[]): Promise<Record<string, unknown>[] | null> {
+export async function fetchQuestionCountsByPapers(paperIds: string[]): Promise<QuestionCountByPaperRow[] | null> {
   const { data, error } = await supabase
     .from('question_counts')
     .select('paper_id, subject_name, count')
@@ -239,7 +281,7 @@ export async function fetchTopicsBySubject(
   examIds: string[],
   subjectName: string,
   paperId?: string
-): Promise<Record<string, unknown>[] | null> {
+  ): Promise<ExamTopicRow[] | null> {
   let query = supabase
     .from('exam_topics')
     .select('topic_en, topic_te, display_order')

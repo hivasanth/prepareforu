@@ -21,7 +21,7 @@ export async function updateUserExamSelection(userId: string, examSelection: str
   if (error) throw error
 }
 
-export async function fetchUsersByEducatorId(educatorId: string): Promise<Record<string, unknown>[] | null> {
+export async function fetchUsersByEducatorId(educatorId: string): Promise<Pick<UserProfile, 'id' | 'full_name' | 'email' | 'coupon_code' | 'educator_id' | 'created_at'>[] | null> {
   const { data, error } = await supabase
     .from('users')
     .select('id, full_name, email, coupon_code, educator_id, created_at')
@@ -81,10 +81,13 @@ export async function deleteSubAdmin(saId: string): Promise<void> {
 
 // ─── Auth RPCs ────────────────────────────────────────────────────────────────
 
-export async function validateCouponRpc(coupon: string): Promise<Record<string, unknown>> {
+export async function validateCouponRpc(coupon: string): Promise<{
+  valid: boolean
+  sub_admin_name?: string
+}> {
   const { data, error } = await supabase.rpc('validate_coupon', { p_coupon: coupon })
   if (error) throw error
-  return (data as Record<string, unknown>) ?? {}
+  return (data as { valid: boolean; sub_admin_name?: string }) ?? { valid: false }
 }
 
 export async function checkUserExistsRpc(email: string): Promise<boolean> {
@@ -137,7 +140,15 @@ export async function updateSubAdmin(id: string, updates: Record<string, unknown
   if (error) throw error
 }
 
-export async function fetchAllSubAdmins(): Promise<Record<string, unknown>[] | null> {
+export async function fetchAllSubAdmins(): Promise<{
+  id: string
+  full_name: string
+  email: string
+  coupon_code: string | null
+  total_referrals: number
+  status: string
+  created_at: string
+}[] | null> {
   const { data, error } = await supabase
     .from('sub_admins')
     .select('id, full_name, email, coupon_code, total_referrals, status, created_at')
@@ -155,7 +166,11 @@ export async function countUsersByEducatorId(educatorId: string): Promise<number
   return count
 }
 
-export async function fetchStudentsByEducatorId(educatorId: string): Promise<Record<string, unknown>[] | null> {
+export async function fetchStudentsByEducatorId(educatorId: string): Promise<{
+  full_name: string
+  email: string
+  created_at: string
+}[] | null> {
   const { data, error } = await supabase
     .from('users')
     .select('full_name, email, created_at')
@@ -163,6 +178,17 @@ export async function fetchStudentsByEducatorId(educatorId: string): Promise<Rec
     .limit(5000)
   if (error) throw error
   return data
+}
+
+type UserListRow = {
+  id: string
+  full_name: string
+  email: string
+  exam_selection: string
+  is_active: boolean
+  created_at: string
+  streak: number
+  total_exams: number
 }
 
 export async function fetchUsersPaginated(params: {
@@ -173,7 +199,7 @@ export async function fetchUsersPaginated(params: {
   pageSize: number
   sortColumn?: string
   sortAscending?: boolean
-}): Promise<{ rows: Record<string, unknown>[] | null; count: number | null }> {
+}): Promise<{ rows: UserListRow[] | null; count: number | null }> {
   const { activeTab, statusFilter, searchQuery, offset, pageSize, sortColumn, sortAscending } = params
 
   let query = supabase
@@ -202,5 +228,5 @@ export async function fetchUsersPaginated(params: {
     .range(offset, offset + pageSize - 1)
 
   if (res.error) throw res.error
-  return { rows: res.data as Record<string, unknown>[] | null, count: res.count }
+  return { rows: res.data as UserListRow[] | null, count: res.count }
 }

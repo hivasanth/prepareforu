@@ -16,7 +16,7 @@ interface SubjectPortalViewProps {
   selectedPaperId: string | null;
   onExamChange: (id: string) => void;
   onPaperChange: (id: string) => void;
-  subjects: string[];
+  subjects: (string | { subject_name: string })[];
   subjectCounts: Record<string, number>;
   onSubjectClick: (subject: string) => void;
   minQuestions?: number;
@@ -69,19 +69,20 @@ export function SubjectPortalView({
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-              {subjects.map(s => {
-                const count = subjectCounts[s] || 0;
+              {subjects.map(raw => {
+                const subjectKey = typeof raw === 'string' ? raw : String(raw?.subject_name ?? '');
+                const count = subjectCounts[subjectKey] || 0;
                 const hasMinimum = count >= minQuestions;
                 return (
-                  <Card key={s} className="relative !p-5 transition-all text-left flex flex-col gap-4">
+                  <Card key={subjectKey} className="relative !p-5 transition-all text-left flex flex-col gap-4">
                     <div className="flex items-center justify-between w-full">
                       <IconBadge icon={BookOpen} size="xl" shape="rounded" className="rounded-[14px]" />
-                      <TopicInfoButton displayTitle={s} heading="Subject Name" />
+                      <TopicInfoButton displayTitle={subjectKey} heading="Subject Name" />
                     </div>
-                    <span className="text-[14px] font-bold text-text-primary leading-tight truncate uppercase tracking-tight block w-full" title={s}>
-                      {s}
+                    <span className="text-[14px] font-bold text-text-primary leading-tight truncate uppercase tracking-tight block w-full" title={subjectKey}>
+                      {subjectKey}
                     </span>
-                    <StartTestButton hasMinimum={hasMinimum} onClick={() => onSubjectClick(s)} />
+                    <StartTestButton hasMinimum={hasMinimum} onClick={() => onSubjectClick(subjectKey)} />
                   </Card>
                 );
               })}

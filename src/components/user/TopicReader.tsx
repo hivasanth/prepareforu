@@ -126,8 +126,8 @@ export function TopicReader({
               className="space-y-6"
             >
               {sections.length > 0 ? (
-                sections.map((sec, i) => (
-                  <div key={i}>
+                sections.map((sec, _idx) => (
+                  <div key={sec.label_en + sec.type}>
                     <TopicSectionRenderer section={sec} lang={lang} />
                   </div>
                 ))

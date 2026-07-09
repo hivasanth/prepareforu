@@ -1,10 +1,11 @@
 import { supabase } from '../supabase'
+import type { StudyTopic } from '../../types/exam.types'
 
 export async function fetchPublishedTopics(
   examId: string,
   paperId: string,
   subjectName: string
-): Promise<Record<string, unknown>[] | null> {
+): Promise<StudyTopic[] | null> {
   const { data, error } = await supabase
     .from('study_topics')
     .select('*')
@@ -15,14 +16,14 @@ export async function fetchPublishedTopics(
     .order('display_order', { ascending: true })
     .limit(200)
   if (error) throw error
-  return data as Record<string, unknown>[] | null
+  return data as StudyTopic[] | null
 }
 
 export async function fetchAllTopics(
   examId: string,
   paperId: string,
   subjectName: string
-): Promise<Record<string, unknown>[] | null> {
+): Promise<StudyTopic[] | null> {
   const { data, error } = await supabase
     .from('study_topics')
     .select('*')
@@ -31,7 +32,7 @@ export async function fetchAllTopics(
     .eq('subject_name', subjectName)
     .order('display_order', { ascending: true })
   if (error) throw error
-  return data as Record<string, unknown>[] | null
+  return data as StudyTopic[] | null
 }
 
 export async function findMaxDisplayOrder(
@@ -51,17 +52,17 @@ export async function findMaxDisplayOrder(
   return data?.display_order ?? null
 }
 
-export async function insertTopic(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+export async function insertTopic(payload: Record<string, unknown>): Promise<StudyTopic> {
   const { data, error } = await supabase
     .from('study_topics')
     .insert([payload])
     .select()
     .single()
   if (error) throw error
-  return data as Record<string, unknown>
+  return data as StudyTopic
 }
 
-export async function modifyTopic(id: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+export async function modifyTopic(id: string, payload: Record<string, unknown>): Promise<StudyTopic> {
   const { data, error } = await supabase
     .from('study_topics')
     .update(payload)
@@ -69,7 +70,7 @@ export async function modifyTopic(id: string, payload: Record<string, unknown>):
     .select()
     .single()
   if (error) throw error
-  return data as Record<string, unknown>
+  return data as StudyTopic
 }
 
 export async function removeTopic(id: string): Promise<void> {

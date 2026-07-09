@@ -35,10 +35,11 @@ export function QuestionCell({ text }: { text: string }) {
   )
 }
 
-export function SubjectBadge({ subject }: { subject: string }) {
+export function SubjectBadge({ subject }: { subject: string | { subject_name: string } }) {
+  const display = typeof subject === 'string' ? subject : subject?.subject_name ?? 'N/A';
   return (
     <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight whitespace-nowrap border bg-secondary/10 text-secondary border-secondary/20">
-      {subject || 'N/A'}
+      {display}
     </span>
   )
 }

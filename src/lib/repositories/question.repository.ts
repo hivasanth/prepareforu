@@ -9,7 +9,7 @@ export async function fetchQuestionsByPaperAndSubject(
   subjectName: string,
   examIds: string[],
   limit: number
-): Promise<Record<string, unknown>[] | null> {
+): Promise<Partial<Question>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -20,7 +20,7 @@ export async function fetchQuestionsByPaperAndSubject(
   query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data as unknown as Record<string, unknown>[] | null
+  return data as Partial<Question>[] | null
 }
 
 export async function fetchQuestionsByPaperAndSubjectExcluding(
@@ -30,7 +30,7 @@ export async function fetchQuestionsByPaperAndSubjectExcluding(
   examIds: string[],
   excludeIds: string[],
   limit: number
-): Promise<Record<string, unknown>[] | null> {
+): Promise<Partial<Question>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -44,7 +44,7 @@ export async function fetchQuestionsByPaperAndSubjectExcluding(
   query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data as unknown as Record<string, unknown>[] | null
+  return data as Partial<Question>[] | null
 }
 
 export async function fetchQuestionsByPaperAndSubjectIncluding(
@@ -54,7 +54,7 @@ export async function fetchQuestionsByPaperAndSubjectIncluding(
   examIds: string[],
   includeIds: string[],
   limit: number
-): Promise<Record<string, unknown>[] | null> {
+): Promise<Partial<Question>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -66,7 +66,7 @@ export async function fetchQuestionsByPaperAndSubjectIncluding(
     .limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data as unknown as Record<string, unknown>[] | null
+  return data as Partial<Question>[] | null
 }
 
 export async function fetchQuestionsBySubject(
@@ -76,7 +76,7 @@ export async function fetchQuestionsBySubject(
   paperId: string | undefined,
   excludeIds: string[],
   limit: number
-): Promise<Record<string, unknown>[] | null> {
+): Promise<Partial<Question>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -90,7 +90,7 @@ export async function fetchQuestionsBySubject(
   query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data as unknown as Record<string, unknown>[] | null
+  return data as Partial<Question>[] | null
 }
 
 export async function fetchQuestionsBySubjectIncluding(
@@ -100,7 +100,7 @@ export async function fetchQuestionsBySubjectIncluding(
   paperId: string | undefined,
   includeIds: string[],
   limit: number
-): Promise<Record<string, unknown>[] | null> {
+): Promise<Partial<Question>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -112,7 +112,7 @@ export async function fetchQuestionsBySubjectIncluding(
   query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data as unknown as Record<string, unknown>[] | null
+  return data as Partial<Question>[] | null
 }
 
 export async function fetchQuestionsByTopic(
@@ -122,7 +122,7 @@ export async function fetchQuestionsByTopic(
   examIds: string[],
   paperId: string | undefined,
   limit: number
-): Promise<Record<string, unknown>[] | null> {
+): Promise<Partial<Question>[] | null> {
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -134,14 +134,14 @@ export async function fetchQuestionsByTopic(
   query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
-  return data as unknown as Record<string, unknown>[] | null
+  return data as Partial<Question>[] | null
 }
 
 export async function fetchDistinctTopics(
   examIds: string[],
   subjectName: string,
   paperId?: string
-): Promise<Record<string, unknown>[] | null> {
+): Promise<{ topic_en: string; topic_te: string | null }[] | null> {
   let query = supabase
     .from('questions')
     .select('topic_en, topic_te')
@@ -160,7 +160,7 @@ export async function fetchTopicCounts(
   examIds: string[],
   subjectName: string,
   paperId?: string
-): Promise<Record<string, unknown>[] | null> {
+): Promise<{ topic_en: string }[] | null> {
   let query = supabase
     .from('questions')
     .select('topic_en')
@@ -249,12 +249,24 @@ export async function countQuestionsByFilter(params: {
   return count
 }
 
-export async function fetchQuestionMeta(id: string): Promise<Record<string, unknown>> {
+export async function fetchQuestionMeta(id: string): Promise<{
+  exam_id: string
+  paper_id: string
+  subject_name: string
+  topic_en: string | null
+  topic_te: string | null
+}> {
   const { data, error } = await supabase
     .from('questions')
     .select('exam_id, paper_id, subject_name, topic_en, topic_te')
     .eq('id', id)
     .single()
   if (error) throw error
-  return data as Record<string, unknown>
+  return data as {
+    exam_id: string
+    paper_id: string
+    subject_name: string
+    topic_en: string | null
+    topic_te: string | null
+  }
 }

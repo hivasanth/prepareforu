@@ -1,9 +1,41 @@
 import { supabase } from '../supabase'
 
+type TeacherExamRow = Record<string, unknown> & {
+  title: string
+  total_questions: number
+  total_marks: number
+  created_at: string
+  attempts?: Array<{
+    status: string
+    id: string
+    score: number
+    accuracy: number
+  }>
+}
+
+type TeacherExamFullRow = {
+  id: string
+  title: string
+  total_questions: number
+  total_marks: number
+  marks_per_question: number
+  start_time: string
+  end_time: string
+  created_at: string
+  status: string
+}
+
+type TeacherExamSummaryRow = {
+  title: string
+  total_questions: number
+  total_marks: number
+  created_at: string
+}
+
 export async function fetchTeacherExamsWithAttempts(
   subAdminId: string,
   userId: string
-): Promise<Record<string, unknown>[] | null> {
+): Promise<TeacherExamRow[] | null> {
   const { data, error } = await supabase
     .from('teacher_exams')
     .select(`
@@ -20,14 +52,14 @@ export async function fetchTeacherExamsWithAttempts(
   return data
 }
 
-export async function findTeacherExamById(examId: string): Promise<Record<string, unknown>> {
+export async function findTeacherExamById(examId: string): Promise<{ sub_admin_id: string }> {
   const { data, error } = await supabase
     .from('teacher_exams')
     .select('sub_admin_id')
     .eq('id', examId)
     .single()
   if (error) throw error
-  return data as Record<string, unknown>
+  return data as { sub_admin_id: string }
 }
 
 export async function deleteTeacherExamById(examId: string): Promise<void> {
@@ -45,7 +77,7 @@ export async function fetchTeacherExamQuestions(examId: string): Promise<Record<
   return data
 }
 
-export async function fetchTeacherExamsBySubAdminId(subAdminId: string): Promise<Record<string, unknown>[] | null> {
+export async function fetchTeacherExamsBySubAdminId(subAdminId: string): Promise<TeacherExamSummaryRow[] | null> {
   const { data, error } = await supabase
     .from('teacher_exams')
     .select('title, total_questions, total_marks, created_at')
@@ -55,7 +87,7 @@ export async function fetchTeacherExamsBySubAdminId(subAdminId: string): Promise
   return data
 }
 
-export async function fetchTeacherExamsWithFullFields(subAdminId: string, limit = 100): Promise<Record<string, unknown>[] | null> {
+export async function fetchTeacherExamsWithFullFields(subAdminId: string, limit = 100): Promise<TeacherExamFullRow[] | null> {
   const { data, error } = await supabase
     .from('teacher_exams')
     .select('id, title, total_questions, total_marks, marks_per_question, start_time, end_time, created_at, status')

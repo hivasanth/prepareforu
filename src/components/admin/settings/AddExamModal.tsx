@@ -238,7 +238,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
 
                 <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 form-scrollbar">
                   {modalSubjects.map((sub, idx) => (
-                    <div key={idx} className="p-4 rounded-xl border flex flex-col md:flex-row items-center gap-4 transition-all bg-hover-bg/10 border-border-subtle/30">
+                    <div key={sub.subject_name || idx} className="p-4 rounded-xl border flex flex-col md:flex-row items-center gap-4 transition-all bg-hover-bg/10 border-border-subtle/30">
                       <div className="flex-1 w-full">
                         <Stack gap="xs">
                           <Label>Subject Name</Label>
