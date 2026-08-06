@@ -1,11 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { FocusTrap } from 'focus-trap-react';
+import { useState, useEffect, useCallback } from 'react';
 
-import { Trophy, X } from 'lucide-react';
+import { Trophy, Medal } from 'lucide-react';
 import { fetchTeacherExamLeaderboard } from '../../services/teacherExamService';
 import { LoadingSkeleton, ErrorState, EmptyState } from '../common/SharedComponents';
-import { Card, Button, DataGrid } from '../common/AntigravityUI';
+import { Button, Badge, DataGrid } from '../common/AntigravityUI';
+import { Body } from '../common/AntigravityTypography';
+import { IconBadge } from '../common/IconBadge';
+import { AdminModal } from '../common/AdminModal';
+import { useStableFetch } from '../../hooks/useStableFetch';
 import type { UserProfile } from '../../types/auth.types';
+import type { TeacherExamLeaderboardEntry } from '../../types/exam.types';
 
 interface TeacherLeaderboardModalProps {
   exam: { id: string; title: string };
@@ -13,28 +17,39 @@ interface TeacherLeaderboardModalProps {
   onClose: () => void;
 }
 
+function getRankBadge(rank: number) {
+  if (rank === 1) return <Badge variant="primary" size="sm"><Medal size={12} className="mr-1" />1ST</Badge>;
+  if (rank === 2) return <Badge variant="secondary" size="sm"><Medal size={12} className="mr-1" />2ND</Badge>;
+  if (rank === 3) return <Badge variant="warning" size="sm"><Medal size={12} className="mr-1" />3RD</Badge>;
+  return <Badge variant="default" size="sm">#{rank}</Badge>;
+}
+
+function getAccuracyVariant(accuracy: number) {
+  if (accuracy >= 80) return 'success' as const;
+  if (accuracy >= 60) return 'warning' as const;
+  return 'danger' as const;
+}
+
 export function TeacherLeaderboardModal({ exam, user, onClose }: TeacherLeaderboardModalProps) {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<TeacherExamLeaderboardEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const requestId = useRef(0);
-  const mountedRef = useRef(true);
-  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; } }, []);
+  const { nextId, isStale } = useStableFetch();
 
   const loadLeaderboard = useCallback(async (force = false) => {
-    const id = ++requestId.current;
+    const id = nextId();
     setError(null);
-    if (mountedRef.current) setLoading(true);
+    setLoading(true);
     try {
       const rankings = await fetchTeacherExamLeaderboard({ user }, exam.id, force);
-      if (id !== requestId.current || !mountedRef.current) return;
+      if (isStale(id)) return;
       setData(rankings);
-    } catch (err: any) {
-      if (id !== requestId.current || !mountedRef.current) return;
-      setError(err.message);
+    } catch (err: unknown) {
+      if (isStale(id)) return;
+      setError(err instanceof Error ? err.message : 'Failed to load leaderboard data.');
     } finally {
-      if (id === requestId.current && mountedRef.current) setLoading(false);
+      if (!isStale(id)) setLoading(false);
     }
   }, [exam.id, user]);
 
@@ -42,95 +57,94 @@ export function TeacherLeaderboardModal({ exam, user, onClose }: TeacherLeaderbo
     loadLeaderboard();
   }, [loadLeaderboard]);
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') onClose();
-  }, [onClose]);
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [handleKeyDown]);
-
-  const modalId = `leaderboard-modal-${exam.id}`;
-  const titleId = `${modalId}-title`;
-
   return (
-    <FocusTrap focusTrapOptions={{ escapeDeactivates: true, clickOutsideDeactivates: true, initialFocus: false }}>
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <AdminModal
+      isOpen={true}
+      onClose={onClose}
+      title={exam.title}
+      description="Live Leaderboard"
+      headerBadge={<IconBadge icon={Trophy} size="md" shape="rounded" status="primary" />}
+      maxWidth="sm:max-w-3xl"
+      footer={
+        <Button variant="secondary" onClick={onClose} className="px-6">
+          Close
+        </Button>
+      }
     >
-      <Card className="w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl rounded-[24px] border-primary/20"
-        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}
-      >
-        <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-card-bg">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <Trophy size={20} />
-            </div>
-            <div className="min-w-0">
-              <h2 id={titleId} className="text-[18px] font-black text-text-primary uppercase tracking-tight m-0 truncate">{exam.title}</h2>
-              <p className="text-[12px] text-text-secondary font-bold uppercase tracking-widest opacity-40 m-0">Live Leaderboard</p>
-            </div>
+      <div className="min-h-[200px] sm:min-h-[300px]">
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map(i => <LoadingSkeleton key={i} height={50} borderRadius={12} />)}
           </div>
-          <button
-            onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-hover-bg flex items-center justify-center text-text-secondary transition-colors shrink-0"
-            aria-label="Close leaderboard"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-0 min-h-[200px] sm:min-h-[300px]">
-          {loading ? (
-            <div className="p-12 space-y-4">
-              {[1, 2, 3, 4, 5].map(i => <LoadingSkeleton key={i} height={50} borderRadius={12} />)}
-            </div>
-          ) : error ? (
-            <div className="p-12">
-              <ErrorState message={error} onRetry={() => loadLeaderboard(true)} />
-            </div>
-          ) : data.length === 0 ? (
-            <div className="p-12 text-center">
-              <EmptyState
-                title="No Data Yet"
-                subtitle="Once participants complete the exam, the rankings will appear here."
-              />
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <DataGrid
-                rowKey="rank"
-                columns={[
-                  { key: 'rank', label: 'RANK', align: 'center', render: (val) => (
-                    <span className={`font-black ${val <= 3 ? 'text-primary scale-110' : 'text-text-secondary opacity-40'}`}>
-                      #{val}
-                    </span>
-                  )},
-                  { key: 'name', label: 'PARTICIPANT', render: (val) => <span className="font-bold text-text-primary uppercase">{val}</span> },
-                  { key: 'score', label: 'SCORE', align: 'center', render: (val) => <span className="font-black text-primary">{val}</span> },
-                  { key: 'accuracy', label: 'ACCURACY', align: 'center', render: (val) => <span className="font-bold text-success">{val}%</span> },
-                  { key: 'time', label: 'TIME', align: 'right', render: (val) => <span className="font-medium text-text-secondary opacity-60 tabular-nums">{val}</span> },
-                ]}
-                rows={data}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 bg-hover-bg/30 border-t border-border-subtle flex justify-end">
-          <Button variant="secondary" onClick={onClose}>Close Portal</Button>
-        </div>
-      </Card>
-    </div>
-    </FocusTrap>
+        ) : error ? (
+          <ErrorState message={error} onRetry={() => loadLeaderboard(true)} />
+        ) : data.length === 0 ? (
+          <EmptyState
+            icon="🏆"
+            title="No Rankings Yet"
+            subtitle="Once participants complete the exam, the rankings will appear here."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <DataGrid
+              rowKey="rank"
+              columns={[
+                {
+                  key: 'rank',
+                  label: 'RANK',
+                  align: 'center',
+                  headerClassName: 'w-20',
+                  cellClassName: 'w-20',
+                  render: (val) => getRankBadge(val),
+                },
+                {
+                  key: 'name',
+                  label: 'PARTICIPANT',
+                  render: (val) => (
+                    <Body className="font-bold text-text-primary uppercase m-0">{val}</Body>
+                  ),
+                },
+                {
+                  key: 'score',
+                  label: 'SCORE',
+                  align: 'center',
+                  headerClassName: 'w-24',
+                  cellClassName: 'w-24',
+                  render: (val) => (
+                    <span className="text-[14px] font-black text-primary tabular-nums">{val}</span>
+                  ),
+                },
+                {
+                  key: 'accuracy',
+                  label: 'ACCURACY',
+                  align: 'center',
+                  headerClassName: 'w-28',
+                  cellClassName: 'w-28',
+                  render: (val) => {
+                    const numVal = typeof val === 'number' ? val : parseFloat(val);
+                    return (
+                      <Badge variant={getAccuracyVariant(numVal)} size="sm">
+                        {val}%
+                      </Badge>
+                    );
+                  },
+                },
+                {
+                  key: 'time',
+                  label: 'TIME',
+                  align: 'right',
+                  headerClassName: 'w-24',
+                  cellClassName: 'w-24',
+                  render: (val) => (
+                    <Body className="text-text-muted tabular-nums m-0">{val}</Body>
+                  ),
+                },
+              ]}
+              rows={data}
+            />
+          </div>
+        )}
+      </div>
+    </AdminModal>
   );
 }

@@ -4,8 +4,8 @@ import * as questionRepo from '../lib/repositories/question.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 import { assertValidEnFields } from '../utils/languageUtils';
-import { logWarn } from '../utils/logger';
-import type { Question } from '../types/exam.types';
+import { logDebug, logWarn } from '../utils/logger';
+import type { Question, ExamPaper, QuestionVisual } from '../types/exam.types';
 
 export interface SubjectQuestion {
   id: string;
@@ -25,7 +25,7 @@ export interface SubjectQuestion {
   correct_option: number;
   explanation_en?: string | null;
   explanation_te?: string | null;
-  diagram?: any;
+  diagram?: QuestionVisual | null;
   subject_name: string;
 }
 
@@ -67,7 +67,7 @@ export async function fetchSubjectCounts(examSelection: string, paperId?: string
     const data = await examRepo.fetchSubjectCountsByExam(allowedIds, paperId);
 
     const counts: Record<string, number> = {};
-    (data as any[])?.forEach((q: any) => {
+    (data ?? []).forEach((q) => {
       if (q.subject_name) {
         counts[q.subject_name] = (counts[q.subject_name] || 0) + (q.count || 0);
       }
@@ -97,7 +97,16 @@ export async function fetchSubjectTestQuestions(params: {
       const answeredQuestions = await attemptRepo.findAnsweredQuestionIds(attemptIds);
       
       if (answeredQuestions) {
-        attemptedQuestionIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
+        const rawIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
+        attemptedQuestionIds = [...new Set(rawIds)];
+
+        logDebug('subjectTest.exclusionMetrics', {
+          subjectName: params.subjectName,
+          rawCount: rawIds.length,
+          uniqueCount: attemptedQuestionIds.length,
+          duplicatesRemoved: rawIds.length - attemptedQuestionIds.length,
+          attemptCount: userAttempts.length,
+        });
       }
     }
   }
@@ -119,7 +128,7 @@ export async function fetchSubjectTestQuestions(params: {
   const poolLimit = Math.max(count * 3, 100);
 
   // 1. Fetch unattempted questions from a larger pool
-  let finalPool: any[];
+  let finalPool: Record<string, unknown>[];
 
   if (attemptedQuestionIds.length > 0) {
     finalPool = (await questionRepo.fetchQuestionsBySubject(
@@ -145,7 +154,7 @@ export async function fetchSubjectTestQuestions(params: {
     );
 
     if (fallbackPoolData) {
-      const shuffledFallback = (fallbackPoolData as any[])
+      const shuffledFallback = (fallbackPoolData as Record<string, unknown>[])
         .sort(() => Math.random() - 0.5);
       selectedQuestions.push(...shuffledFallback.slice(0, remainingNeeded));
     }
@@ -160,7 +169,26 @@ export async function fetchSubjectTestQuestions(params: {
   assertValidEnFields(selectedQuestions, 'fetchSubjectTestQuestions');
 
   // 2. Map and Transform
-  const mappedQuestions = (selectedQuestions as any[]).map((q: any) => {
+  type RawQuestionRow = Record<string, unknown> & {
+    id: string;
+    option_a_en?: string | null;
+    option_b_en?: string | null;
+    option_c_en?: string | null;
+    option_d_en?: string | null;
+    option_a_te?: string | null;
+    option_b_te?: string | null;
+    option_c_te?: string | null;
+    option_d_te?: string | null;
+    correct_option: string | number;
+    question_text_en?: string | null;
+    question_text_te?: string | null;
+    explanation_en?: string | null;
+    explanation_te?: string | null;
+    visual?: QuestionVisual | null;
+    subject_name?: string;
+  };
+
+  const mappedQuestions = (selectedQuestions as RawQuestionRow[]).map((q) => {
     const options_en = [
       q.option_a_en?.trim() || '',
       q.option_b_en?.trim() || '',
@@ -180,7 +208,7 @@ export async function fetchSubjectTestQuestions(params: {
     if (typeof q.correct_option === 'string') {
       correctIndex = q.correct_option.charCodeAt(0) - 65;
     } else {
-      correctIndex = parseInt(q.correct_option) || 0;
+      correctIndex = parseInt(String(q.correct_option)) || 0;
     }
 
     return {
@@ -193,9 +221,8 @@ export async function fetchSubjectTestQuestions(params: {
       correct_option: correctIndex,
       explanation_en: q.explanation_en,
       explanation_te: q.explanation_te,
-      diagram: q.visual,
-      visual: q.visual,
-      subject_name: q.subject_name
+      diagram: q.visual ?? null,
+      subject_name: q.subject_name ?? ''
     };
   });
 
@@ -212,7 +239,7 @@ export async function fetchSubjectTestQuestions(params: {
  */
 export function mapToQuestion(q: SubjectQuestion): Question {
   const optionKeys = ['a', 'b', 'c', 'd'] as const;
-  const question: any = {
+  const question: Question = {
     id: q.id,
     exam_id: '',
     paper_id: '',
@@ -220,8 +247,8 @@ export function mapToQuestion(q: SubjectQuestion): Question {
     correct_option: (String.fromCharCode(65 + (q.correct_option || 0))) as 'A' | 'B' | 'C' | 'D',
     difficulty: 'medium' as const,
     negative_marks: 0,
-    visual: (q as any).visual || q.diagram || null,
-    diagram: q.diagram || (q as any).visual || null,
+    visual: q.diagram ?? undefined,
+    diagram: null,
     question_text_en: q.question_text_en || '',
     question_text_te: q.question_text_te || '',
     explanation_en: q.explanation_en || '',
@@ -231,8 +258,10 @@ export function mapToQuestion(q: SubjectQuestion): Question {
   };
 
   optionKeys.forEach((key, idx) => {
-    question[`option_${key}_en`] = q.options_en?.[idx] || q[`option_${key}_en` as keyof SubjectQuestion] || '';
-    question[`option_${key}_te`] = q.options_te?.[idx] || q[`option_${key}_te` as keyof SubjectQuestion] || '';
+    const enKey = `option_${key}_en` as keyof SubjectQuestion;
+    const teKey = `option_${key}_te` as keyof SubjectQuestion;
+    question[`option_${key}_en`] = (q.options_en?.[idx] as string) || (q[enKey] as string) || '';
+    question[`option_${key}_te`] = (q.options_te?.[idx] as string) || (q[teKey] as string) || '';
   });
 
   return question as Question;
@@ -242,7 +271,7 @@ export function mapQuestionsToStandard(raw: SubjectQuestion[]): Question[] {
   return raw.map(mapToQuestion);
 }
 
-function shuffleArray<T>(array: T[]): T[] {
+export function shuffleArray<T>(array: T[]): T[] {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -262,11 +291,11 @@ export function getCachedSubjects(examSelection: string): string[] {
   return normalized;
 }
 
-export function getCachedSubjectCounts(examSelection: string): any {
+export function getCachedSubjectCounts(examSelection: string): Record<string, number> {
   return queryCache.get(`subject_counts_${examSelection}_all`) || {};
 }
 
-export function getCachedPapers(examSelection: string): any[] {
+export function getCachedPapers(examSelection: string): ExamPaper[] {
   return queryCache.get(`appsc_papers_${examSelection}`) || [];
 }
 

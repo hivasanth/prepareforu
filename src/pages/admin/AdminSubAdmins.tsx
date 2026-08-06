@@ -1,20 +1,22 @@
-import { useState, useCallback } from 'react'
-import { Navigate } from 'react-router-dom'
-import { isAdmin } from '../../utils/authUtils'
+import { useState, useCallback, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useSupabaseQuery } from '../../hooks/useSupabaseQuery'
 import { useToast, ToastContainer } from '../../hooks/useToast'
 import {
-  PageContainer
+  PageContainer,
+  H1,
 } from '../../components/common/AntigravityUI'
-import { GuardLoader } from '../../guards/Guards'
 import { fetchAllSubAdmins, onboardSubAdmin, removeSubAdmin } from '../../services/userService'
 import type { SubAdminRow } from '../../types/subAdmin.types'
+import { subAdminOnboardSchema } from '../../validations/authSchemas'
 import { AdminSubAdminsView } from '../../components/admin/sub-admins/AdminSubAdminsView'
 
+type AddSubAdminFieldErrors = Partial<Record<'name' | 'email' | 'couponCode', string>>
+
 export default function AdminSubAdmins() {
-  const { user, loading: authLoading } = useAuth()
-  const { toasts, showSuccess, showError } = useToast()
+  const { user } = useAuth()
+  const { toasts, showSuccess } = useToast()
+  const [error, setError] = useState<string | null>(null)
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showRemoveModal, setShowRemoveModal] = useState(false)
@@ -26,6 +28,8 @@ export default function AdminSubAdmins() {
   const [newSACoupon, setNewSACoupon] = useState('')
   const [addingSa, setAddingSa] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<AddSubAdminFieldErrors>({})
+  const submittedRef = useRef(false)
 
   const { data, loading, error: queryError, refetch } = useSupabaseQuery(async () => {
     const rows = await fetchAllSubAdmins()
@@ -38,32 +42,57 @@ export default function AdminSubAdmins() {
     sa.coupon_code.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleAddSubAdmin = useCallback(async () => {
-    if (!newSAName || !newSAEmail || !newSACoupon) return
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(newSAEmail)) {
-      showError('Please enter a valid email address.')
-      return
+  const runValidation = useCallback(() => {
+    const result = subAdminOnboardSchema.safeParse({
+      name: newSAName,
+      email: newSAEmail,
+      couponCode: newSACoupon,
+    })
+    const nextFieldErrors: AddSubAdminFieldErrors = {}
+    if (!result.success) {
+      result.error.issues.forEach(issue => {
+        const field = issue.path[0] as keyof AddSubAdminFieldErrors | undefined
+        if (field) nextFieldErrors[field] = issue.message
+      })
     }
+    return { result, fieldErrors: nextFieldErrors }
+  }, [newSAName, newSAEmail, newSACoupon])
+
+  const handleAddSubAdmin = useCallback(async () => {
+    submittedRef.current = true
+    const { result, fieldErrors } = runValidation()
+    setFieldErrors(fieldErrors)
+    if (!result.success) return
+
     setAddingSa(true)
+    setError(null)
     try {
-      await onboardSubAdmin(newSAEmail, newSAName, newSACoupon.trim().toUpperCase())
+      await onboardSubAdmin(result.data.email, result.data.name, result.data.couponCode.trim().toUpperCase())
       showSuccess('Invitation sent to educator successfully!')
       setShowAddModal(false)
+      setFieldErrors({})
+      submittedRef.current = false
       setNewSAName('')
       setNewSAEmail('')
       setNewSACoupon('')
       refetch()
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to onboard educator.')
+      setError(err instanceof Error ? err.message : 'Failed to onboard educator.')
     } finally {
       setAddingSa(false)
     }
-  }, [newSAName, newSAEmail, newSACoupon, refetch, showSuccess, showError])
+  }, [runValidation, refetch, showSuccess])
+
+  const handleFieldBlur = useCallback((field: keyof AddSubAdminFieldErrors) => {
+    if (!submittedRef.current) return
+    const { fieldErrors } = runValidation()
+    setFieldErrors(prev => ({ ...prev, [field]: fieldErrors[field] }))
+  }, [runValidation])
 
   const handleRemoveSubAdmin = useCallback(async () => {
     if (!saToRemove) return
     setRemovingSa(saToRemove.id)
+    setError(null)
     try {
       const result = await removeSubAdmin({ user, requestId: `rem_${Date.now()}` }, saToRemove.id)
       if (!result.success) throw new Error(result.error?.message)
@@ -72,24 +101,22 @@ export default function AdminSubAdmins() {
       setShowRemoveModal(false)
       setSaToRemove(null)
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to remove educator.')
+      setError(err instanceof Error ? err.message : 'Failed to remove educator.')
     } finally {
       setRemovingSa(null)
     }
-  }, [saToRemove, user, refetch, showSuccess, showError])
-
-  if (authLoading) return <GuardLoader />
-  if (!isAdmin(user)) return <Navigate to="/unauthorized" replace />
+  }, [saToRemove, user, refetch, showSuccess])
 
   return (
     <PageContainer>
       <ToastContainer toasts={toasts} />
-      <h1 className="sr-only">Manage Educators</h1>
+      <H1 className="sr-only">Manage Educators</H1>
 
       <AdminSubAdminsView
         filteredSAs={filteredSAs}
         loading={loading}
         error={queryError}
+        actionError={error}
         searchQuery={searchQuery}
         showAddModal={showAddModal}
         showRemoveModal={showRemoveModal}
@@ -99,13 +126,15 @@ export default function AdminSubAdmins() {
         newSAEmail={newSAEmail}
         newSACoupon={newSACoupon}
         addingSa={addingSa}
+        fieldErrors={fieldErrors}
+        onFieldBlur={handleFieldBlur}
         onSearchChange={setSearchQuery}
-        onAddOpen={() => setShowAddModal(true)}
-        onAddClose={() => setShowAddModal(false)}
+        onAddOpen={() => { setError(null); setShowAddModal(true) }}
+        onAddClose={() => { setError(null); setShowAddModal(false); setFieldErrors({}); submittedRef.current = false }}
         onAddSubmit={handleAddSubAdmin}
-        onRemoveRequest={(sa) => { setSaToRemove(sa); setShowRemoveModal(true) }}
+        onRemoveRequest={(sa) => { setError(null); setSaToRemove(sa); setShowRemoveModal(true) }}
         onRemoveConfirm={handleRemoveSubAdmin}
-        onRemoveCancel={() => { setShowRemoveModal(false); setSaToRemove(null) }}
+        onRemoveCancel={() => { setError(null); setShowRemoveModal(false); setSaToRemove(null) }}
         onNewSANameChange={setNewSAName}
         onNewSAEmailChange={setNewSAEmail}
         onNewSACouponChange={setNewSACoupon}

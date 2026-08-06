@@ -1,0 +1,197 @@
+import { useState, useCallback, useRef } from 'react';
+
+import { useAuth } from '../../context/AuthContext';
+import { useStableFetch } from '../../hooks/useStableFetch';
+import { usePageError } from '../../hooks/usePageError';
+import * as authService from '../../services/authService';
+import { useToast } from '../../hooks/useToast';
+import {
+  passwordChangeSchema,
+  hasMinLength,
+  hasUppercase,
+  hasNumber,
+  hasSpecial,
+} from '../../validations/securitySchemas';
+
+export function useProfile() {
+  const { user, loading: authLoading, logout } = useAuth();
+  const { toasts, showSuccess } = useToast();
+  const { captureServerError } = usePageError();
+  const { nextId, isStale } = useStableFetch();
+
+  const [error, setError] = useState<string | null>(null);
+  const [currentPass, setCurrentPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ currentPass?: string; newPass?: string; confirmPass?: string }>({});
+  const submittedRef = useRef(false);
+
+  const passwordMatch = newPass && confirmPass ? newPass === confirmPass : null;
+  const minLength = hasMinLength(newPass);
+  const uppercase = hasUppercase(newPass);
+  const number = hasNumber(newPass);
+  const special = hasSpecial(newPass);
+  const passwordValid = minLength && uppercase && number && special;
+
+  const validateAll = useCallback((): { currentPass?: string; newPass?: string; confirmPass?: string } => {
+    const result = passwordChangeSchema.safeParse({ currentPass, newPass, confirmPass });
+    if (result.success) return {};
+    const issues = result.error.issues;
+    return {
+      currentPass: issues.find(i => i.path[0] === 'currentPass')?.message,
+      newPass: issues.find(i => i.path[0] === 'newPass')?.message,
+      confirmPass: issues.find(i => i.path[0] === 'confirmPass')?.message,
+    };
+  }, [currentPass, newPass, confirmPass]);
+
+  const memberSince = user
+    ? new Date(user.created_at).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+      })
+    : '';
+
+  const getReadableExam = (exam: string) => {
+    if (!exam) return 'Not Selected';
+    return exam.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  };
+
+  const handleVerify = useCallback(async () => {
+    submittedRef.current = true;
+    if (!currentPass) {
+      setFieldErrors(prev => ({ ...prev, currentPass: 'Current password is required' }));
+      return;
+    }
+
+    const id = nextId();
+    setLoading(true);
+    try {
+      const { error } = await authService.reauthenticate(user?.email || '', currentPass);
+
+      if (isStale(id)) return;
+      if (error) {
+        setShowForgot(true);
+        return setError('Verification failed. Incorrect password.');
+      }
+
+      setError(null);
+      setIsVerified(true);
+      showSuccess('Password verified! Now set your new password.');
+    } catch (err: unknown) {
+      if (!isStale(id)) {
+        setError('Verification failed. Please try again.');
+        captureServerError(err, { retryFn: handleVerify });
+      }
+    } finally {
+      if (!isStale(id)) setLoading(false);
+    }
+  }, [currentPass, user?.email]);
+
+  const handleForgotPassword = useCallback(async () => {
+    if (!user?.email) return;
+    const id = nextId();
+    setLoading(true);
+    try {
+      const { error } = await authService.sendPasswordResetWithRedirect(
+        user.email,
+        `${window.location.origin}/login?type=recovery`
+      );
+      if (isStale(id)) return;
+      if (error) throw error;
+      showSuccess('Password reset link has been sent to your email.');
+    } catch (err: unknown) {
+      if (!isStale(id)) {
+        captureServerError(err, { retryFn: handleForgotPassword });
+      }
+    } finally {
+      if (!isStale(id)) setLoading(false);
+    }
+  }, [user?.email]);
+
+  const handlePasswordUpdate = useCallback(async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    submittedRef.current = true;
+
+    const errors = validateAll();
+    if (errors.currentPass || errors.newPass || errors.confirmPass) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+    setError(null);
+
+    const id = nextId();
+    setLoading(true);
+    try {
+      const result = await authService.updatePassword(newPass);
+      if (isStale(id)) return;
+      if (!result.success) throw new Error(result.error?.message);
+
+      showSuccess('Password updated successfully! Logging out for security...');
+
+      setTimeout(async () => {
+        if (!isStale(id)) {
+          await logout();
+        }
+      }, 2000);
+    } catch (err: unknown) {
+      if (!isStale(id)) {
+        setError(err instanceof Error ? err.message : 'Password update failed. Please try again.');
+        captureServerError(err, { retryFn: handlePasswordUpdate });
+      }
+    } finally {
+      if (!isStale(id)) setLoading(false);
+    }
+  }, [validateAll, newPass]);
+
+  const revalidateField = useCallback((name: 'currentPass' | 'newPass' | 'confirmPass') => {
+    if (!submittedRef.current) return;
+    setFieldErrors(prev => ({ ...prev, [name]: validateAll()[name] }));
+  }, [validateAll]);
+
+  const resetVerification = useCallback(() => {
+    setIsVerified(false);
+    setCurrentPass('');
+    setFieldErrors({});
+  }, []);
+
+  const handleCurrentPassChange = useCallback((value: string) => {
+    setError(null);
+    setCurrentPass(value);
+  }, []);
+
+  return {
+    user,
+    authLoading,
+    error,
+    currentPass, setCurrentPass, handleCurrentPassChange,
+    newPass, setNewPass,
+    confirmPass, setConfirmPass,
+    loading,
+    showCurrent, setShowCurrent,
+    showNew, setShowNew,
+    showConfirm, setShowConfirm,
+    isVerified, setIsVerified,
+    showForgot,
+    fieldErrors,
+    onCurrentPassBlur: () => revalidateField('currentPass'),
+    onNewPassBlur: () => revalidateField('newPass'),
+    onConfirmPassBlur: () => revalidateField('confirmPass'),
+    passwordMatch,
+    hasMinLength: minLength, hasUppercase: uppercase, hasNumber: number, hasSpecial: special,
+    passwordValid,
+    memberSince,
+    getReadableExam,
+    toasts, showSuccess,
+    handleVerify,
+    handleForgotPassword,
+    handlePasswordUpdate,
+    resetVerification,
+  };
+}

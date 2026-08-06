@@ -256,7 +256,7 @@ export function getCachedTeacherExams(
     requestId: ctx.requestId,
     resourceOwnerId: subAdminId
   });
-  return queryCache.get(`teacher_exams_${subAdminId}`) || [];
+  return queryCache.get(`teacher_exams_${subAdminId}_${ctx.user?.id ?? 'anon'}`) || [];
 }
 
 export async function createTeacherExamAtomic(

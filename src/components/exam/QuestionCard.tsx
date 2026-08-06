@@ -1,6 +1,7 @@
 import type { FC, ReactNode } from 'react';
 import { Globe } from 'lucide-react';
 import type { Question } from '../../types/exam.types';
+import { Card } from '../common/AntigravityCard';
 import { QuestionOptions } from './QuestionOptions';
 import { QuestionActions } from './QuestionActions';
 
@@ -32,14 +33,18 @@ export const QuestionCard: FC<QuestionCardProps> = ({
   diagramNode,
 }) => {
   return (
-    <div className="bg-card-bg border border-border-subtle shadow-xl rounded-[24px] relative overflow-hidden">
+    <Card
+      variant="elevated"
+      padding={0}
+      className="relative overflow-hidden hover:translate-y-0 hover:shadow-elevation-3"
+    >
       <div className="p-4 md:p-6 border-b border-border-subtle/50 bg-hover-bg/30 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-lg bg-primary text-white shadow-primary/20">
             {index + 1}
           </div>
           <div>
-            <span className="text-[11px] font-black text-text-secondary uppercase tracking-widest">Question</span>
+            <span className="text-[11px] font-bold text-text-muted uppercase tracking-widest">Question</span>
             <div className="text-sm font-black text-text-primary uppercase">of {total}</div>
           </div>
         </div>
@@ -52,7 +57,7 @@ export const QuestionCard: FC<QuestionCardProps> = ({
         />
 
         <div className={`
-          px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border shrink-0
+          px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest border shrink-0
           ${question.difficulty === 'easy' ? 'bg-success/10 text-success border-success/20' :
             question.difficulty === 'medium' ? 'bg-warning/10 text-warning border-warning/20' :
             'bg-danger/10 text-danger border-danger/20'}
@@ -89,34 +94,6 @@ export const QuestionCard: FC<QuestionCardProps> = ({
           onSelect={onSelectOption}
         />
       </div>
-    </div>
-  );
-};
-
-export const QuestionInfoHeader: FC<{
-  index: number;
-  total: number;
-  subjectName: string;
-  difficulty: string;
-}> = ({ index, total, subjectName, difficulty }) => {
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-primary/10 text-primary border border-primary/20">
-          Q{index + 1}
-        </div>
-        <div>
-          <span className="text-[10px] font-black text-primary uppercase tracking-widest block">{subjectName}</span>
-          <span className="text-[9px] font-bold text-text-secondary uppercase tracking-widest">of {total}</span>
-        </div>
-      </div>
-      <span className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest border ${
-        difficulty === 'easy' ? 'bg-success/10 text-success border-success/20' :
-        difficulty === 'medium' ? 'bg-warning/10 text-warning border-warning/20' :
-        'bg-danger/10 text-danger border-danger/20'
-      }`}>
-        {difficulty}
-      </span>
-    </div>
+    </Card>
   );
 };

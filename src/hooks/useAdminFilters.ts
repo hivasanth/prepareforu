@@ -3,7 +3,11 @@ import { useSearchParams } from 'react-router-dom'
 
 function sanitizeParam(value: string | null, maxLen = 100): string {
   if (!value) return 'all'
-  const sanitized = value.slice(0, maxLen).replace(/[^A-Za-z0-9_\-\s]/g, '')
+  // Preserve characters that legitimately appear in exam/paper/subject names
+  // (e.g. "Computer & IT", "Economic & Social Issues", "Maths (Optional)").
+  // These survive the URL round-trip (router encodes/decodes them) and are used
+  // only in parameterized queries, so stripping them would break selection matching.
+  const sanitized = value.slice(0, maxLen).replace(/[^A-Za-z0-9_\-\s&/().,+:'’]/g, '')
   return sanitized || 'all'
 }
 

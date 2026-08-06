@@ -44,3 +44,17 @@ export function useTheme() {
   }
   return context;
 }
+
+/* DS-006 Theme capability — Auth visual-language provider.
+   Additive Foundation mechanism that lets every auth page declare the SAME
+   light-forced theme mode through one reusable unit, instead of hand-rolling
+   <ThemeContext.Provider value={{isDark:false}}> + <div className="light">.
+   Renders a `.light` wrapper so the existing CSS light-first overrides apply.
+   Does NOT modify the global ThemeProvider or useTheme behaviour. */
+export function AuthThemeProvider({ children }: { children: ReactNode }) {
+  return (
+    <ThemeContext.Provider value={{ isDark: false, toggleTheme: () => {} }}>
+      <div className="light">{children}</div>
+    </ThemeContext.Provider>
+  );
+}

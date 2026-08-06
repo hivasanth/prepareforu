@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Wand2 } from 'lucide-react'
-import { Button, Input, Label, Stack } from '../../common/AntigravityUI'
+import { Alert, Button, Input, Label, Stack, TextArea } from '../../common/AntigravityUI'
 import { FORMAT_HINT, FORMAT_HINT_TE } from '../../../constants/topicFormatHints'
 import { ParsedPreview } from './ParsedPreview'
 import type { TopicSection } from '../../../types/exam.types'
@@ -14,6 +14,8 @@ interface LangInputPanelProps {
   parsed: TopicSection[] | null
   onParse: () => void
   onCopyPrompt: () => void
+  fieldErrors?: Partial<Record<'title_en' | 'content_en' | 'title_te' | 'content_te', string>>
+  onFieldBlur?: (field: 'title_en' | 'content_en' | 'title_te' | 'content_te') => void
 }
 
 export function LangInputPanel({
@@ -25,56 +27,69 @@ export function LangInputPanel({
   parsed,
   onParse,
   onCopyPrompt,
+  fieldErrors = {},
+  onFieldBlur,
 }: LangInputPanelProps) {
   const isEn = lang === 'en'
-
-  const taClass = 'w-full text-sm rounded-2xl px-4 py-3 border resize-none outline-none transition-colors leading-relaxed bg-hover-bg border-border-subtle text-text-primary focus:border-primary placeholder-text-secondary'
+  const titleError = isEn ? fieldErrors.title_en : fieldErrors.title_te
+  const contentError = isEn ? fieldErrors.content_en : fieldErrors.content_te
+  const titleField = (isEn ? 'title_en' : 'title_te') as 'title_en' | 'title_te'
+  const contentField = (isEn ? 'content_en' : 'content_te') as 'content_en' | 'content_te'
 
   return (
     <div className="space-y-4">
       {/* Title field */}
       <Stack gap="sm">
-        <Label>{isEn ? '🇬🇧 Topic Title (English)' : '🇮🇳 Topic Title (Telugu)'}</Label>
+        <Label htmlFor={`topic-title-${lang}`}>{isEn ? '🇬🇧 Topic Title (English)' : '🇮🇳 Topic Title (Telugu)'}</Label>
         <Input
+          id={`topic-title-${lang}`}
           placeholder={isEn ? 'e.g. Indus Valley Civilization' : 'e.g. సింధు నాగరికత'}
           value={title}
           onChange={e => onTitleChange(e.target.value)}
+          onBlur={() => onFieldBlur?.(titleField)}
+          aria-invalid={!!titleError}
+          aria-describedby={titleError ? `topic-title-${lang}-error` : undefined}
         />
+        {titleError && (
+          <span id={`topic-title-${lang}-error`} aria-live="polite" className="text-xs font-bold text-danger mt-1">{titleError}</span>
+        )}
       </Stack>
 
       {/* Content textarea */}
       <Stack gap="sm">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <Label>{isEn ? 'Content (Structured Outline)' : 'Content (నిర్మాణాత్మక రూపరేఖ)'}</Label>
+          <Label htmlFor={`topic-content-${lang}`}>{isEn ? 'Content (Structured Outline)' : 'Content (నిర్మాణాత్మక రూపరేఖ)'}</Label>
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="soft"
+              size="xs"
               onClick={onCopyPrompt}
-              className="text-[10px] font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all shadow-sm border-primary/30 text-primary hover:bg-primary/10 bg-hover-bg/30"
               title="Copy the AI Structured Prompt Template to easily generate complete topics"
             >
               <Wand2 size={11} className="animate-pulse" />
               {isEn ? 'AI Prompt Helper' : 'AI ప్రాంప్ట్ సహాయకం'}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="xs"
               onClick={() => { onTextChange(isEn ? FORMAT_HINT : FORMAT_HINT_TE); }}
-              className="text-[10px] font-bold px-2 py-1 rounded-lg transition-colors text-primary hover:bg-primary/10"
             >
               {isEn ? 'Load Example' : 'ఉదాహరణను లోడ్ చేయి'}
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Format hint box */}
         <div className="text-[11px] leading-relaxed px-3 py-2.5 rounded-xl border space-y-1.5 bg-primary/5 border-primary/20 text-text-secondary">
           <p>
-            <span className="font-black">{isEn ? 'Structure: ' : 'నిర్మాణం: '}</span>
+            <span className="font-bold">{isEn ? 'Structure: ' : 'నిర్మాణం: '}</span>
             {isEn
               ? <><code className="font-mono">1.</code> headings · <code className="font-mono">1.1</code> <code className="font-mono">1.2</code> sub-headings (each = one card) · body text on next line</>
               : <><code className="font-mono">1.</code> శీర్షికలు · <code className="font-mono">1.1</code> ఉపశీర్షికలు (ఒక్కో కార్డ్) · తదుపరి లైన్‌లో కంటెంట్</>
             }
           </p>
           <p>
-            <span className="font-black">{isEn ? 'Rich content: ' : 'రిచ్ కంటెంట్: '}</span>
+            <span className="font-bold">{isEn ? 'Rich content: ' : 'రిచ్ కంటెంట్: '}</span>
             {isEn
               ? <>Use <code className="font-mono">- bullet</code> lists · <code className="font-mono">| col | col |</code> tables · tags: <code className="font-mono">[IMP]</code> <code className="font-mono">[TIP]</code> <code className="font-mono">[ALERT]</code> <code className="font-mono">[KEY]</code> <code className="font-mono">[NOTE]</code> <code className="font-mono">[INFO]</code> before a heading title</>
               : <>బుల్లెట్లు: <code className="font-mono">- అంశం</code> · పట్టికలు: <code className="font-mono">| col | col |</code> · ట్యాగ్లు: <code className="font-mono">[IMP]</code> <code className="font-mono">[TIP]</code> <code className="font-mono">[ALERT]</code> <code className="font-mono">[KEY]</code> శీర్షిక ముందు</>
@@ -82,13 +97,19 @@ export function LangInputPanel({
           </p>
         </div>
 
-        <textarea
-          className={taClass}
+        <TextArea
+          id={`topic-content-${lang}`}
           rows={14}
           placeholder={isEn ? FORMAT_HINT : FORMAT_HINT_TE}
           value={rawText}
           onChange={e => { onTextChange(e.target.value) }}
+          onBlur={() => onFieldBlur?.(contentField)}
+          aria-invalid={!!contentError}
+          aria-describedby={contentError ? `topic-content-${lang}-error` : undefined}
         />
+        {contentError && (
+          <span id={`topic-content-${lang}-error`} aria-live="polite" className="text-xs font-bold text-danger mt-1">{contentError}</span>
+        )}
       </Stack>
 
       {/* Parse button */}
@@ -104,13 +125,15 @@ export function LangInputPanel({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="p-4 rounded-2xl text-sm text-center border bg-danger/10 text-danger border-danger/20"
+              className="w-full"
             >
-              {isEn ? (
-                <>Nothing parsed. Check your format — use <code>1.</code> for headings and <code>1.1</code> for sub-headings.</>
-              ) : (
-                <>ఏమీ పార్స్ కాలేదు. మీ ఆకృతిని తనిఖీ చేయండి — శీర్షికల కోసం <code>1.</code> మరియు ఉపశీర్షికల కోసం <code>1.1</code> ఉపయోగించండి.</>
-              )}
+              <Alert variant="error">
+                {isEn ? (
+                  <>Nothing parsed. Check your format — use <code>1.</code> for headings and <code>1.1</code> for sub-headings.</>
+                ) : (
+                  <>ఏమీ పార్స్ కాలేదు. మీ ఆకృతిని తనిఖీ చేయండి — శీర్షికల కోసం <code>1.</code> మరియు ఉపశీర్షికల కోసం <code>1.1</code> ఉపయోగించండి.</>
+                )}
+              </Alert>
             </motion.div>
           ) : (
             <ParsedPreview sections={parsed} lang={lang} />

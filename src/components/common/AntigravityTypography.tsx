@@ -1,35 +1,70 @@
 import React from 'react'
 
-export const spacing = {
-  xs: '4px',
-  sm: '8px',
-  md: '16px',
-  lg: '24px',
-  xl: '32px',
-  xxl: '48px',
-  section: '32px',
+interface TypographyProps {
+  children: React.ReactNode
+  className?: string
 }
 
-export const H1: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <h1 className={`text-[22px] md:text-[26px] lg:text-[30px] font-black text-text-primary tracking-tight m-0 ${className}`}>
+export const H1: React.FC<TypographyProps> = ({ children, className = '' }) => (
+  <h1
+    className={`text-text-title m-0 ${className}`}
+    style={{
+      fontSize: 'var(--text-h1)',
+      lineHeight: 'var(--lh-h1)',
+      fontWeight: 'var(--fw-h1)',
+      letterSpacing: 'var(--ls-h1, -0.025em)',
+    }}
+  >
     {children}
   </h1>
 )
 
-export const H2: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <h2 className={`text-[18px] md:text-[20px] font-bold text-text-primary tracking-tight m-0 ${className}`}>
+interface H2Props extends TypographyProps {
+  id?: string
+}
+
+export const H2: React.FC<H2Props> = ({ children, className = '', id }) => (
+  <h2
+    id={id}
+    className={`text-text-primary m-0 ${className}`}
+    style={{
+      fontSize: 'var(--text-h2)',
+      lineHeight: 'var(--lh-h2)',
+      fontWeight: 'var(--fw-h2)',
+      letterSpacing: 'var(--ls-h2, -0.025em)',
+    }}
+  >
     {children}
   </h2>
 )
 
-export const H3: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <h3 className={`text-[14px] md:text-[15px] font-semibold text-text-primary tracking-tight m-0 ${className}`}>
+export const H3: React.FC<TypographyProps> = ({ children, className = '' }) => (
+  <h3
+    className={`text-text-primary m-0 ${className}`}
+    style={{
+      fontSize: 'var(--text-h3)',
+      lineHeight: 'var(--lh-h3)',
+      fontWeight: 'var(--fw-h3)',
+      letterSpacing: 'var(--ls-h3, -0.025em)',
+    }}
+  >
     {children}
   </h3>
 )
 
-export const Body: React.FC<{ children: React.ReactNode; className?: string; secondary?: boolean }> = ({ children, className = '', secondary = false }) => (
-  <p className={`text-[13px] md:text-[14px] font-medium leading-relaxed m-0 ${secondary ? 'text-text-secondary opacity-70' : 'text-text-primary'} ${className}`}>
+interface BodyProps extends TypographyProps {
+  secondary?: boolean
+}
+
+export const Body: React.FC<BodyProps> = ({ children, className = '', secondary = false }) => (
+  <p
+    className={`m-0 ${secondary ? 'text-text-secondary' : 'text-text-primary'} ${className}`}
+    style={{
+      fontSize: 'var(--text-body)',
+      lineHeight: 'var(--lh-body)',
+      fontWeight: 'var(--fw-body)',
+    }}
+  >
     {children}
   </p>
 )
@@ -41,10 +76,81 @@ interface LabelProps {
   htmlFor?: string
 }
 
-export const Label: React.FC<LabelProps> = ({ children, className = '', error = false, htmlFor }) => {
+export const Label: React.FC<LabelProps> = ({ children, className = '', error = false, htmlFor }) => (
+  <label
+    htmlFor={htmlFor}
+    className={`${error ? 'text-danger' : 'text-text-muted'} ${className}`}
+    style={{
+      fontSize: 'var(--text-label)',
+      lineHeight: 'var(--lh-label)',
+      fontWeight: 'var(--fw-label)',
+      letterSpacing: 'var(--ls-label)',
+      textTransform: 'var(--tt-label)',
+    }}
+  >
+    {children}
+  </label>
+)
+
+export const Display: React.FC<TypographyProps> = ({ children, className = '' }) => (
+  <h1
+    className={`text-text-title m-0 ${className}`}
+    style={{
+      fontSize: 'var(--text-display)',
+      lineHeight: 'var(--lh-display)',
+      fontWeight: 'var(--fw-display)',
+      letterSpacing: 'var(--ls-display)',
+    }}
+  >
+    {children}
+  </h1>
+)
+
+export const Caption: React.FC<TypographyProps> = ({ children, className = '' }) => (
+  <p
+    className={`text-text-secondary m-0 ${className}`}
+    style={{
+      fontSize: 'var(--text-caption)',
+      lineHeight: 'var(--lh-caption)',
+      fontWeight: 'var(--fw-caption)',
+    }}
+  >
+    {children}
+  </p>
+)
+
+/* DS-006 Typography capability — Brand/Display title.
+   Additive Foundation primitive for brand/gradient headings (Splash Cinzel
+   gold-gradient title, VerifyEmail custom display sizes). Reuses existing
+   Semantic utilities (font-cinzel, gradient clip) and accepts an arbitrary
+   `size` token so callers reproduce custom display sizes pixel-identically. */
+type BrandTitleVariant = 'plain' | 'gradient'
+
+interface BrandTitleProps {
+  children: React.ReactNode
+  variant?: BrandTitleVariant
+  /** Arbitrary size token, e.g. 'text-[22px]' or 'text-3xl'. Defaults to a
+   *  display size matching the prior H1 scale. */
+  size?: string
+  as?: 'h1' | 'h2' | 'h3' | 'p' | 'span'
+  className?: string
+}
+
+export const BrandTitle: React.FC<BrandTitleProps> = ({
+  children,
+  variant = 'plain',
+  size = 'text-[26px] md:text-[30px] lg:text-[34px]',
+  as = 'h1',
+  className = '',
+}) => {
+  const Tag: React.ElementType = as
+  const variantCls =
+    variant === 'gradient'
+      ? 'font-cinzel text-transparent bg-clip-text bg-gradient-to-b from-[#f5e0be] to-[#b88c3a] drop-shadow-md'
+      : 'font-cinzel'
   return (
-    <label htmlFor={htmlFor} className={`text-[10px] font-bold uppercase tracking-widest ${error ? 'text-danger' : 'text-text-secondary opacity-60'} ${className}`}>
+    <Tag className={`font-black uppercase tracking-[0.2em] pl-[0.2em] m-0 ${size} ${variantCls} ${className}`}>
       {children}
-    </label>
+    </Tag>
   )
 }

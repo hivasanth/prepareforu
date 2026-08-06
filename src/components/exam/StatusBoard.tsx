@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import { Layers, AlertCircle } from 'lucide-react';
-import { IconBadge } from '../common/AntigravityUI';
+import { IconBadge, H3 } from '../common/AntigravityUI';
 import { QuestionPalette } from './QuestionPalette';
 import type { Question } from '../../types/exam.types';
 import type { ExamStatistics } from '../../utils/examStateCalculator';
@@ -30,7 +30,7 @@ export const StatusBoard: FC<StatusBoardProps> = ({
     <aside className="w-[27%] min-w-[220px] max-w-[340px] border-l border-border-subtle bg-card-bg pl-5 pr-4 py-6 overflow-y-auto hidden lg:block custom-scrollbar transition-colors duration-300 flex-shrink-0">
       <div className="flex items-center gap-3 mb-6">
         <IconBadge icon={Layers} size="lg" className="shadow-sm" />
-        <h3 className="m-0 text-sm font-black text-text-primary tracking-tight uppercase">Status Board</h3>
+        <H3 className="text-sm font-bold uppercase">Status Board</H3>
       </div>
 
       <QuestionPalette
@@ -43,7 +43,7 @@ export const StatusBoard: FC<StatusBoardProps> = ({
       />
 
       <div className="mt-8 p-4 rounded-2xl bg-app-bg border border-border-subtle transition-colors">
-        <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-widest mb-4 opacity-60">Indicator Legend</h4>
+        <h4 className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-4">Indicator Legend</h4>
         <div className="flex flex-col gap-3">
           <LegendItem color="bg-success" label={`Current${stats ? ` (1)` : ''}`} />
           <LegendItem color="bg-warning" label={`Answered${stats ? ` (${stats.answered})` : ''}`} />
@@ -54,10 +54,10 @@ export const StatusBoard: FC<StatusBoardProps> = ({
       </div>
 
       {fullscreenViolations > 0 && (
-        <div className="mt-6 p-4 bg-warning/5 border border-warning/10 rounded-xl flex items-start gap-3">
+        <div role="alert" className="mt-6 p-4 bg-warning/5 border border-warning/10 rounded-xl flex items-start gap-3">
           <AlertCircle size={18} className="text-warning flex-shrink-0 mt-0.5" />
           <div className="flex flex-col gap-1">
-            <p className="m-0 text-[10px] font-black text-warning uppercase tracking-widest">Security Status</p>
+            <p className="m-0 text-[10px] font-bold text-warning uppercase tracking-widest">Security Status</p>
             <p className="m-0 text-[10px] font-bold text-warning/70 leading-relaxed">
               Fullscreen exits recorded: {fullscreenViolations}. Please maintain fullscreen for exam integrity.
             </p>
@@ -76,7 +76,7 @@ const LegendItem: FC<{ color: string; label: string }> = ({ color, label }) => (
 );
 
 const LegendItemNotVisited: FC<{ label: string }> = ({ label }) => (
-  <div className="flex items-center gap-3 text-xs font-bold text-text-secondary uppercase tracking-widest">
+  <div className="flex items-center gap-3 text-xs font-bold text-text-muted uppercase tracking-widest">
     <div className="w-3.5 h-3.5 rounded-md border border-border-subtle bg-transparent" />
     {label}
   </div>

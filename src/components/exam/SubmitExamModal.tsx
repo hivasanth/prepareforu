@@ -1,7 +1,7 @@
-import type { FC, ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import type { FC } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { FocusTrap } from 'focus-trap-react';
+import { Button, IconBadge } from '../common/AntigravityUI';
+import { AdminModal } from '../common/AdminModal';
 
 interface SubmitExamModalProps {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface SubmitExamModalProps {
   onConfirm: () => void;
   answeredCount: number;
   notVisitedCount?: number;
+  markedCount?: number;
   totalCount: number;
   isAutoSubmit?: boolean;
 }
@@ -17,84 +18,91 @@ export const SubmitExamModal: FC<SubmitExamModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  answeredCount,
+  markedCount,
+  totalCount,
   isAutoSubmit = false,
 }) => {
-  const titleId = 'submit-exam-title';
+  if (isAutoSubmit) {
+    return (
+      <AdminModal
+        isOpen={isOpen}
+        onClose={() => {}}
+        title="Time's Up!"
+        maxWidth="sm:max-w-sm"
+        showCloseButton={false}
+      >
+        <div className="text-center">
+          <IconBadge icon={AlertCircle} size="4xl" shape="circle" status="danger" className="mx-auto mb-6" />
+          <p className="font-bold mb-8 text-text-secondary">
+            Your time is over. Your responses are being saved automatically.
+          </p>
+          <div className="flex items-center justify-center gap-3 text-danger font-bold italic animate-bounce">
+            <span className="w-2 h-2 rounded-full bg-danger" />
+            Submitting...
+          </div>
+        </div>
+      </AdminModal>
+    );
+  }
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <FocusTrap focusTrapOptions={{
-          escapeDeactivates: !isAutoSubmit,
-          clickOutsideDeactivates: !isAutoSubmit,
-          initialFocus: false,
-        }}>
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-md"
-              onClick={isAutoSubmit ? undefined : onClose}
-            />
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-sm overflow-hidden p-8 text-center bg-card-bg border border-border-subtle rounded-[24px] shadow-2xl"
+    <AdminModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Submit Exam"
+      description="Review your progress before submitting."
+      maxWidth="sm:max-w-sm"
+      footer={
+        <div className="flex flex-col gap-3 w-full">
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={onConfirm}
+            className="py-4 text-lg"
           >
-            {isAutoSubmit ? (
-              <>
-                <IconWrapper autoSubmit>
-                  <AlertCircle size={32} className="text-danger" />
-                </IconWrapper>
-                <h2 id={titleId} className="text-2xl font-black mb-2 text-text-primary">Time's Up!</h2>
-                <p className="font-bold mb-8 text-text-secondary">
-                  Your time is over. Your responses are being saved automatically.
-                </p>
-                <div className="flex items-center justify-center gap-3 text-danger font-black italic animate-bounce">
-                  <span className="w-2 h-2 rounded-full bg-danger" />
-                  Submitting...
-                </div>
-              </>
-            ) : (
-              <>
-                <IconWrapper>
-                  <CheckCircle2 size={32} className="text-primary" />
-                </IconWrapper>
-                <h2 id={titleId} className="text-2xl font-black mb-2 text-text-primary">Submit Exam</h2>
-                <p className="font-bold mb-8 text-text-secondary">
-                  Are you sure you want to submit your exam?
-                </p>
-                <div className="flex flex-col gap-4">
-                  <button
-                    onClick={onConfirm}
-                    className="w-full py-4 rounded-2xl font-black text-lg transition-all active:scale-[0.97] bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
-                  >
-                    Submit & Review
-                  </button>
-                  <button
-                    onClick={onClose}
-                    className="w-full py-4 rounded-2xl font-black text-base transition-all active:scale-[0.97] bg-hover-bg hover:bg-hover-bg/80 text-text-secondary"
-                  >
-                    Back to Test
-                  </button>
-                </div>
-              </>
-            )}
-          </motion.div>
+            Submit & Review
+          </Button>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={onClose}
+            className="py-4 text-base"
+          >
+            Back to Test
+          </Button>
         </div>
-        </FocusTrap>
-      )}
-    </AnimatePresence>
+      }
+    >
+      <div className="text-center">
+        <IconBadge icon={CheckCircle2} size="4xl" shape="circle" status="primary" className="mx-auto mb-6" />
+        <p className="font-bold text-text-secondary">
+          Are you sure you want to submit your exam?
+        </p>
+        <div
+          role="status"
+          className="mt-6 rounded-2xl border border-border-subtle bg-hover-bg divide-y divide-border-subtle text-left"
+        >
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Total Questions</span>
+            <span className="font-black text-text-primary tabular-nums">{totalCount}</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Answered</span>
+            <span className="font-black text-text-primary tabular-nums">{answeredCount}</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Unanswered</span>
+            <span className="font-black text-text-primary tabular-nums">{Math.max(0, totalCount - answeredCount)}</span>
+          </div>
+          {markedCount !== undefined && (
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Marked for Review</span>
+              <span className="font-black text-text-primary tabular-nums">{markedCount}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </AdminModal>
   );
 };
-
-const IconWrapper: FC<{ children: ReactNode; autoSubmit?: boolean }> = ({ children, autoSubmit }) => (
-  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
-    autoSubmit ? 'bg-danger/10' : 'bg-primary/10'
-  }`}>
-    {children}
-  </div>
-);

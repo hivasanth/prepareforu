@@ -1,6 +1,24 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { AlertCircle } from 'lucide-react'
+import { useAsyncOperation } from '../../hooks/useAsyncOperation'
 import { useNavigate } from 'react-router-dom'
 import { updatePassword as apiUpdatePassword } from '../../services/authService'
+import {
+  H1,
+  Body,
+  Button,
+  IconButton,
+  Input,
+  Label,
+  Alert,
+  Spinner,
+  Card,
+  PageContainer,
+  Stack,
+  AuthThemeProvider,
+} from '../../components/common/AntigravityUI'
+import { LogoSVG } from '../../components/Logo'
+import { passwordCreateSchema } from '../../validations/securitySchemas'
 
 export default function UpdatePasswordPage() {
   const navigate      = useNavigate()
@@ -8,115 +26,144 @@ export default function UpdatePasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPw, setShowPw]                   = useState(false)
   const [showConfirmPw, setShowConfirmPw]     = useState(false)
-  const [loading, setLoading]                 = useState(false)
-  const [error, setError]                     = useState('')
+  const { loading, execute } = useAsyncOperation()
+  const [fieldErrors, setFieldErrors]         = useState<{ password?: string; confirmPassword?: string }>({})
+  const [apiError, setApiError]               = useState('')
   const [done, setDone]                       = useState(false)
+  const submittedRef                          = useRef(false)
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!password || !confirmPassword) { setError('Both fields are required.'); return }
-    if (password !== confirmPassword) { setError('Passwords do not match.'); return }
-    if (password.length < 8) { setError('Password must be 8+ characters.'); return }
-
-    setLoading(true); setError('')
-    try {
-      const result = await apiUpdatePassword(password)
-      if (!result.success) { 
-        setError(result.error?.message || 'Update failed.')
-        return 
-      }
-      setDone(true)
-      setTimeout(() => navigate('/login', { replace: true }), 3000)
-    } finally {
-      setLoading(false)
+  const validateAll = () => {
+    const result = passwordCreateSchema.safeParse({ password, confirmPassword })
+    if (result.success) return { password: undefined, confirmPassword: undefined }
+    const issues = result.error.issues
+    return {
+      password: issues.find(i => i.path[0] === 'password')?.message,
+      confirmPassword: issues.find(i => i.path[0] === 'confirmPassword')?.message,
     }
   }
 
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    submittedRef.current = true
+
+    const errors = validateAll()
+    if (errors.password || errors.confirmPassword) {
+      setFieldErrors(errors)
+      setApiError('')
+      return
+    }
+
+    setFieldErrors({})
+    setApiError('')
+    try {
+      await execute(async () => {
+        const result = await apiUpdatePassword(password)
+        if (!result.success) { 
+          setApiError(result.error?.message || 'Update failed.')
+          return 
+        }
+        setDone(true)
+        setTimeout(() => navigate('/login', { replace: true }), 3000)
+      })
+    } catch {
+      setApiError('Update failed. Please try again.')
+    }
+  }
+
+  const handleBlur = (name: 'password' | 'confirmPassword') => () => {
+    if (!submittedRef.current) return
+    setFieldErrors(prev => ({ ...prev, [name]: validateAll()[name] }))
+  }
+
   return (
-    <div className="min-h-screen bg-[#fafbff] text-slate-900 flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Gradients */}
-      <div className="absolute pointer-events-none" style={{width:600,height:600,borderRadius:'50%',background:'radial-gradient(circle,rgba(124,58,237,0.04) 0%,transparent 70%)',top:-150,left:-150}}/>
-      <div className="absolute pointer-events-none" style={{width:400,height:400,borderRadius:'50%',background:'radial-gradient(circle,rgba(167,139,250,0.03) 0%,transparent 70%)',bottom:-100,right:-100}}/>
-
-      <div className="w-full max-w-[460px] bg-white p-12 rounded-[28px] border border-slate-100 relative z-[1] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)]">
-        <div className="p-8">
-          {done ? (
-            <div className="text-center" style={{animation:'fi .4s ease'}}>
-              <span className="text-[64px] mb-6 block">🛡️</span>
-              <h2 className="text-[32px] font-black mb-3 text-slate-900 tracking-[-1px]">Password Secured</h2>
-              <p className="text-slate-500 text-base leading-[1.6] mb-8 font-medium">Your password has been successfully updated. Redirecting you to login...</p>
-              <div className="mx-auto" style={{width:28,height:28,border:'3px solid rgba(124,58,237,0.1)',borderTopColor:'#7c3aed',borderRadius:'50%',animation:'spin .8s linear infinite'}}/>
+    <AuthThemeProvider>
+    <PageContainer centered>
+      <Card variant="auth-light" className="w-full max-w-[460px]">
+        {done ? (
+          <Stack gap="lg" align="center" className="text-center">
+            <span className="text-[64px] mb-2 block">🛡️</span>
+            <H1>Password Secured</H1>
+            <Body secondary>Your password has been successfully updated. Redirecting you to login...</Body>
+            <Spinner size="lg" />
+          </Stack>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-10">
+              <LogoSVG size={42} className="rounded-full shadow-lg shadow-primary/25" />
+              <span className="font-black text-2xl tracking-tight">PrepareForU</span>
             </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-3 mb-10">
-                <div className="w-[42px] h-[42px] bg-gradient-to-br from-violet-600 to-violet-400 rounded-[12px] flex items-center justify-center text-white font-black text-lg shadow-[0_8px_20px_rgba(124,58,237,0.25)]">P</div>
-                <span className="font-black text-[22px] tracking-[-0.5px]">PrepareForU</span>
-              </div>
 
-              <h2 className="text-[36px] font-black mb-2 tracking-[-1.5px]">Reset Password</h2>
-              <p className="text-slate-500 text-base mb-8 font-medium">Create a new, strong password for your account.</p>
-              
-              {error && (
-                <div className="text-red-500 bg-red-50 p-4 rounded-[16px] text-sm mb-6 border border-red-100 flex gap-2.5 items-center font-semibold">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  {error}
-                </div>
-              )}
+            <H1 className="mb-2">Reset Password</H1>
+            <Body secondary className="mb-8 font-medium">Create a new, strong password for your account.</Body>
+            
+            {apiError && (
+              <Alert variant="error" icon={AlertCircle} title="Action failed" className="w-full mb-6">
+                {apiError}
+              </Alert>
+            )}
 
-              <form onSubmit={handleUpdate} noValidate>
-                <div className="mb-6">
-                  <label className="block text-xs font-extrabold text-slate-900 mb-3 uppercase tracking-[1.5px] opacity-70">New Password</label>
+            <form onSubmit={handleUpdate} noValidate>
+              <Stack gap="lg">
+                <Stack gap="xs">
+                  <Label htmlFor="new-password">New Password</Label>
                   <div className="relative">
-                    <input
+                    <Input
                       type={showPw ? 'text' : 'password'}
                       autoFocus
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[16px] text-slate-900 text-base outline-none transition-all duration-250 font-medium focus:border-violet-600 focus:shadow-[0_0_0_4px_rgba(124,58,237,0.08)] focus:bg-white"
                       value={password} onChange={e=>setPassword(e.target.value)} placeholder="Min 8 characters"
+                      id="new-password"
+                      aria-invalid={fieldErrors.password ? true : undefined}
+                      aria-describedby={fieldErrors.password ? "new-password-error" : undefined}
+                      onBlur={handleBlur('password')}
                     />
-                    <button type="button" onClick={()=>setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-0 text-slate-500 cursor-pointer p-2 flex items-center rounded-[10px] transition-all duration-200">
+                    <IconButton type="button" variant="ghost" size="sm" onClick={()=>setShowPw(!showPw)} aria-label={showPw ? "Hide password" : "Show password"}>
                       {showPw 
                         ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                         : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                       }
-                    </button>
+                    </IconButton>
                   </div>
-                </div>
+                  {fieldErrors.password && (
+                    <span id="new-password-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
+                      {fieldErrors.password}
+                    </span>
+                  )}
+                </Stack>
 
-                <div className="mb-10">
-                  <label className="block text-xs font-extrabold text-slate-900 mb-3 uppercase tracking-[1.5px] opacity-70">Confirm New Password</label>
+                <Stack gap="xs">
+                  <Label htmlFor="confirm-password">Confirm New Password</Label>
                   <div className="relative">
-                    <input
+                    <Input
                       type={showConfirmPw ? 'text' : 'password'}
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[16px] text-slate-900 text-base outline-none transition-all duration-250 font-medium focus:border-violet-600 focus:shadow-[0_0_0_4px_rgba(124,58,237,0.08)] focus:bg-white"
                       value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Repeat password"
+                      id="confirm-password"
+                      aria-invalid={fieldErrors.confirmPassword ? true : undefined}
+                      aria-describedby={fieldErrors.confirmPassword ? "confirm-password-error" : undefined}
+                      onBlur={handleBlur('confirmPassword')}
                     />
-                    <button type="button" onClick={()=>setShowConfirmPw(!showConfirmPw)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-0 text-slate-500 cursor-pointer p-2 flex items-center rounded-[10px] transition-all duration-200">
+                    <IconButton type="button" variant="ghost" size="sm" onClick={()=>setShowConfirmPw(!showConfirmPw)} aria-label={showConfirmPw ? "Hide password" : "Show password"}>
                       {showConfirmPw 
                         ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                         : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                       }
-                    </button>
+                    </IconButton>
                   </div>
-                </div>
+                  {fieldErrors.confirmPassword && (
+                    <span id="confirm-password-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
+                      {fieldErrors.confirmPassword}
+                    </span>
+                  )}
+                </Stack>
 
-                <button disabled={loading} className="w-full py-5 bg-gradient-to-br from-violet-600 to-violet-800 border-0 rounded-[18px] text-white font-black cursor-pointer shadow-[0_12px_24px_rgba(124,58,237,0.3)] transition-all duration-300 uppercase tracking-[1.5px] hover:-translate-y-1 hover:brightness-105 active:translate-y-0 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
-                  {loading ? (
-                    <div className="flex items-center justify-center gap-3">
-                      <div style={{width:20,height:20,border:'3px solid rgba(255,255,255,0.3)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin .8s linear infinite'}}/>
-                      <span>Securing...</span>
-                    </div>
-                  ) : 'Reset Password'}
-                </button>
-              </form>
-            </>
-          )}
-        </div>
-      </div>
-      <style>{`
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-      `}</style>
-    </div>
+                <Button type="submit" fullWidth loading={loading}>
+                  {loading ? 'Securing...' : 'Reset Password'}
+                </Button>
+              </Stack>
+            </form>
+          </>
+        )}
+      </Card>
+    </PageContainer>
+    </AuthThemeProvider>
   )
 }

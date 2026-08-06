@@ -1,5 +1,6 @@
+import { memo } from 'react'
 import { CheckCircle2, AlertTriangle } from 'lucide-react'
-import { IconBadge } from '../../common/AntigravityUI'
+import { Alert, IconBadge, Button } from '../../common/AntigravityUI'
 
 interface UploadProgressOverlayProps {
   uploadProgress: {
@@ -14,7 +15,7 @@ interface UploadProgressOverlayProps {
   onRetry?: () => void
 }
 
-export function UploadProgressOverlay({ uploadProgress, errors, examLabel, paperLabel, subjectName, onRetry }: UploadProgressOverlayProps) {
+export const UploadProgressOverlay = memo(function UploadProgressOverlay({ uploadProgress, errors, examLabel, paperLabel, subjectName, onRetry }: UploadProgressOverlayProps) {
   if (uploadProgress.status === 'idle') return null
 
   const percentage = uploadProgress.total > 0
@@ -22,9 +23,9 @@ export function UploadProgressOverlay({ uploadProgress, errors, examLabel, paper
     : 0
 
   return (
-    <div className="absolute inset-0 z-50 bg-card-bg/95 backdrop-blur-md rounded-[28px] flex flex-col items-center justify-center p-8 text-center">
+    <div className="absolute inset-0 z-50 bg-card-bg/95 backdrop-blur-md rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-center" role="status">
       {uploadProgress.status === 'running' && (
-        <div className="relative w-24 h-24 mb-6">
+        <div className="relative w-24 h-24 mb-6" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percentage} aria-label="Upload progress">
           <svg className="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
             <circle cx="48" cy="48" r="42" fill="none" stroke="currentColor" className="text-border-subtle" strokeWidth="6" />
             <circle cx="48" cy="48" r="42" fill="none" stroke="currentColor" className="text-primary" strokeWidth="6"
@@ -43,8 +44,8 @@ export function UploadProgressOverlay({ uploadProgress, errors, examLabel, paper
           icon={CheckCircle2}
           size="6xl"
           shape="circle"
-          className="bg-success/10 text-success mb-6"
-          darkClassName="rounded-full bg-success/10 text-success"
+          status="success"
+          className="mb-6"
         />
       )}
 
@@ -53,12 +54,12 @@ export function UploadProgressOverlay({ uploadProgress, errors, examLabel, paper
           icon={AlertTriangle}
           size="6xl"
           shape="circle"
-          className="bg-danger/10 text-danger mb-6"
-          darkClassName="rounded-full bg-danger/10 text-danger"
+          status="danger"
+          className="mb-6"
         />
       )}
 
-      <h3 className="text-lg font-black uppercase tracking-widest mb-2 text-text-primary">
+      <h3 className="text-lg font-bold uppercase tracking-widest mb-2 text-text-primary">
         {uploadProgress.status === 'running' && 'Syncing Questions...'}
         {uploadProgress.status === 'success' && 'Upload Complete!'}
         {uploadProgress.status === 'error' && 'Upload Failed'}
@@ -80,17 +81,18 @@ export function UploadProgressOverlay({ uploadProgress, errors, examLabel, paper
       )}
 
       {uploadProgress.status === 'error' && errors.length > 0 && (
-        <div className="mt-4 p-3 rounded-xl bg-danger/5 border border-danger/20 max-w-md text-left">
-          <p className="text-[10px] font-bold text-danger uppercase tracking-wider mb-1">Error Details</p>
-          <p className="text-xs text-text-secondary">{errors[errors.length - 1]?.message}</p>
+        <div className="mt-4 max-w-md text-left">
+          <Alert variant="error" title="Error Details">
+            {errors[errors.length - 1]?.message}
+          </Alert>
         </div>
       )}
 
       {uploadProgress.status === 'error' && onRetry && (
-        <button onClick={onRetry} aria-label="Retry upload" className="mt-6 px-8 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all bg-primary text-white">
+        <Button onClick={onRetry} aria-label="Retry upload" className="mt-6">
           Try Again
-        </button>
+        </Button>
       )}
     </div>
   )
-}
+})

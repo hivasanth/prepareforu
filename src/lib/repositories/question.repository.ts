@@ -1,5 +1,7 @@
 import { supabase } from '../supabase'
 import type { Question } from '../../types/exam.types'
+import { SingleQuestionSchema } from '../../validations/questionSchema'
+import { validateOrThrow } from '../utils/validateOrThrow'
 
 // ─── questions table ─────────────────────────────────────────────────────────
 
@@ -39,7 +41,7 @@ export async function fetchQuestionsByPaperAndSubjectExcluding(
     .eq('subject_name', subjectName)
     .in('exam_id', examIds)
   if (excludeIds.length > 0) {
-    query = query.not('id', 'in', excludeIds)
+    query = query.notIn('id', excludeIds)
   }
   query = query.limit(limit)
   const { data, error } = await query
@@ -55,6 +57,7 @@ export async function fetchQuestionsByPaperAndSubjectIncluding(
   includeIds: string[],
   limit: number
 ): Promise<Partial<Question>[] | null> {
+  const uniqueIncludeIds = [...new Set(includeIds)]
   let query = supabase
     .from('questions')
     .select(selectFields)
@@ -62,7 +65,7 @@ export async function fetchQuestionsByPaperAndSubjectIncluding(
     .eq('paper_id', paperId)
     .eq('subject_name', subjectName)
     .in('exam_id', examIds)
-    .in('id', includeIds)
+    .in('id', uniqueIncludeIds)
     .limit(limit)
   const { data, error } = await query
   if (error) throw error
@@ -85,7 +88,7 @@ export async function fetchQuestionsBySubject(
     .in('exam_id', examIds)
   if (paperId) query = query.eq('paper_id', paperId)
   if (excludeIds.length > 0) {
-    query = query.not('id', 'in', excludeIds)
+    query = query.notIn('id', excludeIds)
   }
   query = query.limit(limit)
   const { data, error } = await query
@@ -101,13 +104,14 @@ export async function fetchQuestionsBySubjectIncluding(
   includeIds: string[],
   limit: number
 ): Promise<Partial<Question>[] | null> {
+  const uniqueIncludeIds = [...new Set(includeIds)]
   let query = supabase
     .from('questions')
     .select(selectFields)
     .eq('is_active', true)
     .eq('subject_name', subjectName)
     .in('exam_id', examIds)
-    .in('id', includeIds)
+    .in('id', uniqueIncludeIds)
   if (paperId) query = query.eq('paper_id', paperId)
   query = query.limit(limit)
   const { data, error } = await query
@@ -206,6 +210,7 @@ export async function listQuestions(params: {
 }
 
 export async function upsertQuestion(payload: Record<string, unknown>): Promise<void> {
+  validateOrThrow(SingleQuestionSchema, payload, 'upsertQuestion')
   const { error } = await supabase
     .from('questions')
     .upsert([payload], { onConflict: 'content_hash', ignoreDuplicates: true })
@@ -228,6 +233,7 @@ export async function bulkDeleteQuestions(ids: string[]): Promise<void> {
 }
 
 export async function upsertQuestionNoIgnore(payload: Record<string, unknown>): Promise<void> {
+  validateOrThrow(SingleQuestionSchema, payload, 'upsertQuestionNoIgnore')
   const { error } = await supabase
     .from('questions')
     .upsert(payload, { onConflict: 'content_hash' })

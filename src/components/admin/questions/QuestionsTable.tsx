@@ -1,10 +1,9 @@
-import { Eye, PenSquare, Trash2 } from 'lucide-react'
+import { memo } from 'react'
 import type { Question } from '../../../types/exam.types'
-import { DataGrid, IconButton } from '../../common/AntigravityUI'
+import { CollectionCard, CollectionHeader, Pagination, PremiumIconContainer, SelectionCheckbox } from '../../common/AntigravityUI'
 import { DifficultyBadge } from '../common/DifficultyBadge'
 import { GridSkeleton } from '../../common/SharedComponents'
-import { AdminPagination } from './AdminPagination'
-import { SelectionCheckbox, SrNumber, QuestionCell, SubjectBadge, ActionsCell } from './QuestionsTableComponents'
+import { ActionsCell } from './QuestionsTableComponents'
 
 interface QuestionsTableProps {
   questions: Question[]
@@ -22,7 +21,7 @@ interface QuestionsTableProps {
   onDelete: (q: Question) => void
 }
 
-export function QuestionsTable({
+export const QuestionsTable = memo(function QuestionsTable({
   questions,
   isLoading,
   page,
@@ -49,167 +48,75 @@ export function QuestionsTable({
   };
 
   if (isLoading && questions.length === 0) {
-    return <GridSkeleton count={5} height={80} columns="grid-cols-1" />
+    return <GridSkeleton count={5} height={56} columns="grid-cols-1" />
   }
 
   if (!isLoading && questions.length === 0) {
     return null;
   }
 
+  const rangeStart = page * pageSize + 1;
+  const rangeEnd = Math.min((page + 1) * pageSize, totalCount);
+
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* DESKTOP TABLE VIEW (lg+) */}
-      <div className='hidden lg:block border rounded-3xl overflow-hidden shadow-2xl relative bg-card-bg border-border-subtle'>
-        <DataGrid
-          rowKey="id"
-          rows={questions}
-          columns={[
-            {
-              key: 'selection',
-              label: <SelectionCheckbox checked={allOnPageSelected} onChange={toggleSelectAll} label="Select all on this page" />,
-              headerClassName: 'px-6 py-4 w-12',
-              render: (_: any, q: Question) => (
-                <SelectionCheckbox checked={selectedIds.includes(q.id)} onChange={() => onSelect(q.id)} label="Select this question" />
-              )
-            },
-            {
-              key: 'sr',
-              label: 'SR.',
-              headerClassName: 'px-4 py-4 w-12 text-center',
-              cellClassName: 'px-4 py-4 text-center',
-              render: (_, q) => {
-                const idx = questions.findIndex(item => item.id === q.id);
-                return <SrNumber num={page * pageSize + idx + 1} />;
-              }
-            },
-            {
-              key: 'question_text_en',
-              label: 'Question',
-              headerClassName: 'px-6 py-4 w-[40%]',
-              cellClassName: 'px-6 py-4',
-              render: (_: any, q: Question) => (
-                <QuestionCell text={q.question_text_en?.trim() || ''} />
-              )
-            },
-            {
-              key: 'subject_name',
-              label: 'Subject',
-              headerClassName: 'px-6 py-4',
-              cellClassName: 'px-6 py-4',
-              render: (val) => <SubjectBadge subject={val || ''} />
-            },
-            {
-              key: 'difficulty',
-              label: 'Difficulty',
-              headerClassName: 'px-6 py-4',
-              cellClassName: 'px-6 py-4',
-              render: (val) => <DifficultyBadge difficulty={val || 'medium'} />
-            },
-            {
-              key: 'actions',
-              label: 'Actions',
-              align: 'center',
-              headerClassName: 'px-6 py-4 text-center w-40',
-              cellClassName: 'px-6 py-4 w-40',
-              render: (_, q) => <ActionsCell q={q} onView={onView} onEdit={onEdit} onDelete={onDelete} />
-            }
-          ]}
-          renderRow={(q, idx) => {
-            const isSelected = selectedIds.includes(q.id);
-            const colDefs = [
-              { key: 'selection', render: () => <SelectionCheckbox checked={isSelected} onChange={() => onSelect(q.id)} label="Select this question" /> },
-              { key: 'sr', render: () => <SrNumber num={page * pageSize + idx + 1} /> },
-              { key: 'question_text_en', render: () => <QuestionCell text={q.question_text_en?.trim() || ''} /> },
-              { key: 'subject_name', render: () => <SubjectBadge subject={q.subject_name || ''} /> },
-              { key: 'difficulty', render: () => <DifficultyBadge difficulty={q.difficulty || 'medium'} /> },
-              { key: 'actions', render: () => <ActionsCell q={q} onView={onView} onEdit={onEdit} onDelete={onDelete} /> }
-            ];
+    <div className="flex flex-col gap-6 animate-in">
+      {/* Select-all + range (shared Foundation CollectionHeader) */}
+      <CollectionHeader
+        checked={allOnPageSelected}
+        onToggleSelectAll={toggleSelectAll}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        totalCount={totalCount}
+      />
 
-            return (
-              <tr key={q.id} className="transition-colors group border-b border-border-subtle/50 ancient-3d-lift">
-                {colDefs.map(col => (
-                  <td key={col.key} className="px-6 py-4">
-                    {col.render()}
-                  </td>
-                ))}
-              </tr>
-            );
-          }}
-        />
-      </div>
-
-      <div className="lg:hidden flex flex-col gap-4">
+      {/* Premium Question Library — one compact management CollectionCard per question */}
+      <div className="flex flex-col gap-3">
         {questions.map((q, idx) => {
           const isSelected = selectedIds.includes(q.id);
+          const sr = page * pageSize + idx + 1;
+          const questionText = q.question_text_en?.trim() || '';
           return (
-            <div key={q.id} className={`border rounded-2xl p-4 shadow-sm flex flex-col gap-3 group transition-colors ancient-3d-lift ${isSelected ? 'border-primary bg-primary/5' : 'bg-card-bg border-border-subtle'}`}>
-              <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <SelectionCheckbox checked={isSelected} onChange={() => onSelect(q.id)} label="Select this question" />
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/10">
-                      <span className="text-[10px] font-black text-primary">{page * pageSize + idx + 1}</span>
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-tighter text-text-secondary opacity-50">
-                      ID: {q.id.slice(0, 8)}...
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <IconButton
-                      onClick={() => onView(q)}
-                      size="sm"
-                      aria-label="View question"
-                      className="p-1.5 active:scale-95 transition-all !w-auto !h-auto !bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-text-secondary hover:text-primary"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => onEdit(q)}
-                      size="sm"
-                      aria-label="Edit question"
-                      className="p-1.5 active:scale-95 transition-all !w-auto !h-auto !bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-text-secondary hover:text-secondary"
-                    >
-                      <PenSquare className="w-4 h-4" />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => onDelete(q)}
-                      size="sm"
-                      aria-label="Delete question"
-                      className="p-1.5 active:scale-95 transition-all !w-auto !h-auto !bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-text-secondary hover:text-red-500"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </IconButton>
-                  </div>
+            <CollectionCard
+              key={q.id}
+              layout="row"
+              variant="premium"
+              padding={16}
+              selected={isSelected}
+              titleAs="h3"
+              leading={
+                <div className="flex items-center gap-2">
+                  <SelectionCheckbox checked={isSelected} onChange={() => onSelect(q.id)} label="Select this question" />
+                  <PremiumIconContainer
+                    iconSize={12}
+                    className="w-7 h-7 rounded-lg font-black text-[11px]"
+                    darkClassName="bg-hover-bg text-text-secondary"
+                  >
+                    {sr}
+                  </PremiumIconContainer>
                 </div>
-
-
-              <div className="text-[13px] font-bold line-clamp-2 md:line-clamp-3 leading-snug text-text-primary">
-                {/* Phase 5: English exclusively from _en fields */}
-                {q.question_text_en?.trim() || 'Untitled Question'}
-              </div>
-
-              <div className="pt-2 border-t border-border-subtle/40 flex flex-col gap-1.5">
-                <div className="flex justify-between items-center text-[10px] sm:text-[11px]">
-                  <span className="font-bold text-text-secondary opacity-60 uppercase tracking-wider">Subject</span>
-                  <SubjectBadge subject={q.subject_name || ''} />
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] sm:text-[11px] font-bold text-text-secondary opacity-60 uppercase tracking-wider">Difficulty</span>
-                  <DifficultyBadge difficulty={q.difficulty || 'medium'} />
-                </div>
-              </div>
-            </div>
+              }
+              title={
+                <span className="line-clamp-2" title={questionText}>
+                  {questionText || 'Untitled Question'}
+                </span>
+              }
+              trailing={<DifficultyBadge difficulty={q.difficulty || 'medium'} />}
+              actions={
+                <ActionsCell q={q} onView={onView} onEdit={onEdit} onDelete={onDelete} />
+              }
+            />
           );
         })}
       </div>
 
-      <AdminPagination
+      <Pagination
         page={page}
-        setPage={setPage}
+        onPageChange={setPage}
         hasMore={hasMore}
         totalCount={totalCount}
         pageSize={pageSize}
+        label="questions"
       />
     </div>
-
   )
-}
+})

@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { Sparkles } from 'lucide-react'
-import { AdminModal } from '../../common/AdminModal'
-import { Button, Tabs } from '../../../common/AntigravityUI'
+import { AdminModal } from '../../../common/AdminModal'
+import { Badge, Button, Tabs } from '../../../common/AntigravityUI'
 import { BulkUploadPanel, type BulkUploadPanelHandle } from '../BulkUploadPanel'
-import type { ParsedDataItem } from '../../../../hooks/useBulkUpload'
+import type { ParsedDataItem } from '../useBulkUpload'
 
 interface BulkUploadModalProps {
   isOpen: boolean
@@ -59,14 +59,12 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       title={dynamicInstruction}
       titleClassName="!text-sm sm:!text-base !font-bold !tracking-wide opacity-90"
       headerBadge={(
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
-          <Sparkles className="w-3 h-3 text-primary" />
-          <span className="text-[10px] font-black text-primary uppercase tracking-widest">AI Powered</span>
-        </div>
+        <Badge variant="primary" icon={Sparkles}>AI Powered</Badge>
       )}
       subHeader={(
         <div className="mt-6">
           <Tabs
+            ariaLabel="Bulk upload steps"
             options={[
               { id: 'instructions', label: '1. Instructions' },
               { id: 'generate', label: '2. Generate' },
@@ -80,19 +78,19 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       )}
       footer={(
         <>
-          <Button variant="secondary" onClick={onClose} className="!h-auto !shadow-none">Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
           {activeTab === 'instructions' && (
-            <Button onClick={() => setActiveTab('generate')} className="!h-auto">
+            <Button onClick={() => setActiveTab('generate')}>
               Continue to Generate
             </Button>
           )}
           {activeTab === 'generate' && (
-            <Button onClick={() => setActiveTab('json')} className="!h-auto">
+            <Button onClick={() => setActiveTab('json')}>
               Continue to Upload
             </Button>
           )}
           {activeTab === 'json' && (
-            <Button variant="secondary" onClick={() => setActiveTab('instructions')} className="!h-auto !shadow-none">
+            <Button variant="secondary" onClick={() => setActiveTab('instructions')}>
               Back to Instructions
             </Button>
           )}
@@ -106,7 +104,6 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                 disabled={itemsToSync.length === 0 || isUploading}
                 loading={isUploading}
                 variant={allSynced ? "secondary" : "primary"}
-                className="!h-auto shadow-xl shadow-primary/20"
               >
                 {isUploading ? 'Syncing...' : 
                  allSynced ? 'All Questions Synced' :

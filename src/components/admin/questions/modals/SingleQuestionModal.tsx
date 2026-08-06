@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
-import { ChevronRight, Save, PenSquare, AlertTriangle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ChevronRight, Save, PenSquare, AlertCircle } from 'lucide-react'
 import { BilingualToggle } from '../../../common/BilingualToggle'
-import { Button } from '../../../common/AntigravityUI'
+import { Button, Badge, Alert } from '../../../common/AntigravityUI'
 import type { Question, QuestionVisual, VisualType } from '../../../../types/exam.types'
 import { adminQuestionService } from '../../../../services/adminQuestionService'
 import { useAuth } from '../../../../context/AuthContext'
 import { SingleQuestionSchema } from '../../../../validations/questionSchema'
 import { isAdmin } from '../../../../utils/authUtils'
-import { AdminModal } from '../../common/AdminModal'
+import { AdminModal } from '../../../common/AdminModal'
 import { generateRequestId } from '../../../../utils/logger'
 import { QuestionForm } from '../QuestionForm'
 
@@ -27,6 +27,15 @@ interface SingleQuestionModalProps {
   onModeChange?: (mode: ModalMode) => void
 }
 
+type SingleQuestionFieldErrors = Partial<Record<
+  'question_text_en' | 'option_a_en' | 'option_b_en' | 'option_c_en' | 'option_d_en',
+  string
+>>
+
+const FIELD_ERROR_KEYS: (keyof SingleQuestionFieldErrors)[] = [
+  'question_text_en', 'option_a_en', 'option_b_en', 'option_c_en', 'option_d_en',
+]
+
 export function SingleQuestionModal({
   isOpen, onClose, mode, question, examId, examLabel, paperId, paperLabel, subjectName, onSuccess, onModeChange
 }: SingleQuestionModalProps) {
@@ -35,7 +44,9 @@ export function SingleQuestionModal({
   const [formData, setFormData] = useState<Partial<Question>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<SingleQuestionFieldErrors>({})
   const [displayLang, setDisplayLang] = useState<'en' | 'te'>('en')
+  const submittedRef = useRef(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -86,11 +97,31 @@ export function SingleQuestionModal({
         })
       }
       setError(null)
+      setFieldErrors({})
+      submittedRef.current = false
     }
   }, [isOpen, mode, question, examId, paperId, subjectName])
 
   if (!isOpen) return null
   const isReadOnly = mode === 'view'
+
+  const extractFieldErrors = (result: { success: boolean; error?: { issues: Array<{ path: PropertyKey[]; message: string }> } }): SingleQuestionFieldErrors => {
+    const next: SingleQuestionFieldErrors = {}
+    if (!result.success) {
+      result.error?.issues.forEach(issue => {
+        const field = issue.path[0] as keyof SingleQuestionFieldErrors
+        if (FIELD_ERROR_KEYS.includes(field)) next[field] = issue.message
+      })
+    }
+    return next
+  }
+
+  const handleFieldBlur = (field: keyof SingleQuestionFieldErrors) => {
+    if (!submittedRef.current) return
+    const result = SingleQuestionSchema.safeParse(formData)
+    const next = extractFieldErrors(result as Parameters<typeof extractFieldErrors>[0])
+    setFieldErrors(prev => ({ ...prev, [field]: next[field] }))
+  }
 
   const handleSubmit = async () => {
     try {
@@ -98,15 +129,16 @@ export function SingleQuestionModal({
       
       setIsSubmitting(true)
       setError(null)
-      const requestId = generateRequestId(mode === 'add' ? 'create_q' : 'update_q')
 
       // Zod Validation
       const validationResult = SingleQuestionSchema.safeParse(formData)
       if (!validationResult.success) {
-        throw new Error(validationResult.error.issues[0].message)
+        setFieldErrors(extractFieldErrors(validationResult))
+        return
       }
       
       const validated = validationResult.data
+      const requestId = generateRequestId(mode === 'add' ? 'create_q' : 'update_q')
 
       // Nullify empty Telugu strings for clean DB storage
       const teluguNullified = {
@@ -151,12 +183,12 @@ export function SingleQuestionModal({
       onClose={onClose}
       title={isReadOnly ? (
         <div className="flex flex-col gap-1.5 mt-2">
-          <div className="flex items-center gap-1.5 text-[10px] font-black text-text-secondary uppercase tracking-[0.15em]">
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-text-muted uppercase tracking-wide">
             <span className="truncate max-w-[200px]">{examLabel || formData.exam_id}</span>
             <ChevronRight className="w-2.5 h-2.5 opacity-40" />
             <span className="truncate max-w-[200px]">{paperLabel || formData.paper_id}</span>
           </div>
-          <div className="text-sm font-black text-text-primary uppercase tracking-tighter">
+            <div className="text-sm font-bold text-text-primary uppercase tracking-tighter">
             {formData.subject_name}
           </div>
         </div>
@@ -164,12 +196,9 @@ export function SingleQuestionModal({
         mode === 'edit' ? 'Edit Question' : 'Create Question'
       )}
       headerBadge={(
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
-          {isReadOnly ? <ChevronRight className="w-3 h-3 text-primary" /> : <PenSquare className="w-3 h-3 text-primary" />}
-          <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-            {isReadOnly ? 'Review Mode' : mode === 'edit' ? 'Editor' : 'New Entry'}
-          </span>
-        </div>
+        <Badge variant="primary" size="md" icon={isReadOnly ? ChevronRight : PenSquare}>
+          {isReadOnly ? 'Review Mode' : mode === 'edit' ? 'Editor' : 'New Entry'}
+        </Badge>
       )}
       headerActions={isReadOnly && (
         <BilingualToggle
@@ -184,7 +213,6 @@ export function SingleQuestionModal({
             variant="secondary"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-6 py-3 rounded-2xl font-black text-xs sm:text-sm text-text-secondary hover:text-text-primary hover:bg-hover-bg transition-colors tracking-widest uppercase !h-auto !shadow-none"
           >
             {isReadOnly ? 'Close' : 'Cancel'}
           </Button>
@@ -193,7 +221,6 @@ export function SingleQuestionModal({
             <Button
               variant="secondary"
               onClick={() => onModeChange?.('edit')}
-              className="px-6 py-3 rounded-2xl font-black text-xs sm:text-sm text-white bg-secondary hover:bg-secondary-hover shadow-lg shadow-secondary/20 transition-all flex items-center gap-2 active:scale-95 !h-auto"
             >
               <PenSquare className="w-4 h-4" />
               <span className="uppercase tracking-widest">Edit Question</span>
@@ -203,7 +230,6 @@ export function SingleQuestionModal({
               onClick={handleSubmit}
               loading={isSubmitting}
               disabled={!formData.exam_id || !formData.paper_id || !formData.subject_name}
-              className="px-8 py-3 rounded-2xl font-black text-xs sm:text-sm text-white bg-primary hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 !h-auto"
             >
               <Save className="w-4 h-4" />
               <span className="uppercase tracking-widest">Save Changes</span>
@@ -214,10 +240,9 @@ export function SingleQuestionModal({
     >
       <div className="space-y-6 sm:space-y-8">
         {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold rounded-2xl flex items-center gap-3 animate-in shake duration-300">
-            <AlertTriangle className="w-5 h-5" />
+          <Alert variant="error" icon={AlertCircle} title="Unable to save question" className="w-full">
             {error}
-          </div>
+          </Alert>
         )}
 
         <QuestionForm
@@ -225,6 +250,8 @@ export function SingleQuestionModal({
           setFormData={setFormData}
           isReadOnly={isReadOnly}
           displayLang={displayLang}
+          fieldErrors={fieldErrors}
+          onFieldBlur={handleFieldBlur}
         />
       </div>
     </AdminModal>

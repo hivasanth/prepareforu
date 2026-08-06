@@ -14,6 +14,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+import { questionEnFieldsSchema } from '../validations/questionSchema';
+
 export type SupportedLanguage = 'en' | 'te';
 export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
 
@@ -161,12 +163,10 @@ export interface QuestionDisplay {
 export function assertValidEnFields(questions: BilingualQuestion[], context = 'unknown'): void {
   for (const q of questions) {
     const id = (q as any).id ?? '(no id)';
-    if (!q.question_text_en?.trim()) {
-      throw new Error(`[${context}] Question id=${id} is missing question_text_en. Check DB integrity.`);
-    }
-    if (!q.option_a_en?.trim() || !q.option_b_en?.trim() ||
-        !q.option_c_en?.trim() || !q.option_d_en?.trim()) {
-      throw new Error(`[${context}] Question id=${id} has one or more missing option_*_en fields.`);
+    const result = questionEnFieldsSchema.safeParse(q);
+    if (!result.success) {
+      const missing = result.error.issues.map(i => i.path.join('.')).join(', ');
+      throw new Error(`[${context}] Question id=${id} has invalid or missing English fields: ${missing}. Check DB integrity.`);
     }
   }
 }

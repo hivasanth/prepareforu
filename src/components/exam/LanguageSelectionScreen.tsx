@@ -33,13 +33,13 @@ export function LanguageSelectionScreen({
           className="w-full max-w-md"
         >
         {/* Card */}
-        <div className="bg-card-bg rounded-[28px] border border-border-subtle shadow-2xl overflow-hidden">
+        <div className="bg-card-bg rounded-[28px] border border-border-subtle shadow-2xl overflow-hidden ancient-overlay">
 
           {/* Header */}
           <div className="bg-primary/5 border-b border-border-subtle/50 p-6 flex items-center gap-4">
             <IconBadge icon={Globe} size="2xl" className="rounded-2xl flex-shrink-0" />
             <div className="min-w-0">
-              <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Choose Language</p>
+              <p className="text-[9px] font-bold text-text-muted uppercase tracking-wide mb-1">Choose Language</p>
               <h2 id={titleId} className="text-[13px] font-black text-text-primary uppercase tracking-tight truncate">{paperName}</h2>
             </div>
           </div>
@@ -66,7 +66,7 @@ export function LanguageSelectionScreen({
                   <span className="text-xl">🇬🇧</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-black text-text-primary uppercase tracking-widest">English</p>
+                  <p className="text-[12px] font-bold text-text-primary uppercase tracking-widest">English</p>
                   <p className="text-[10px] text-text-muted mt-0.5">Default — All questions available</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-text-muted group-hover:text-primary transition-colors flex-shrink-0" />
@@ -89,9 +89,9 @@ export function LanguageSelectionScreen({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-[12px] font-black text-text-primary uppercase tracking-widest">తెలుగు</p>
+                    <p className="text-[12px] font-bold text-text-primary uppercase tracking-widest">తెలుగు</p>
                     {teluguAvailable && (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-500 text-[8px] font-black uppercase tracking-widest border border-amber-400/30">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-500 text-[8px] font-bold uppercase tracking-widest border border-amber-400/30">
                         Available
                       </span>
                     )}

@@ -4,6 +4,8 @@ import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
 import { assertValidEnFields } from '../utils/languageUtils';
 import { logWarn } from '../utils/logger';
+import { shuffleArray } from './subjectTestService';
+import type { SubjectQuestion } from './subjectTestService';
 
 export {
   fetchSubjectsByExam,
@@ -12,32 +14,9 @@ export {
   fetchSubjectCounts,
   mapToQuestion,
   mapQuestionsToStandard,
-  type SubjectQuestion as SubjectTestQuestion,
+  shuffleArray,
+  type SubjectQuestion,
 } from './subjectTestService';
-
-export interface SubjectQuestion {
-  id: string;
-  question_text_en?: string | null;
-  question_text_te?: string | null;
-  options_en: string[];
-  options_te: string[];
-  options: string[];
-  option_a_en?: string | null;
-  option_a_te?: string | null;
-  option_b_en?: string | null;
-  option_b_te?: string | null;
-  option_c_en?: string | null;
-  option_c_te?: string | null;
-  option_d_en?: string | null;
-  option_d_te?: string | null;
-  correct_option: number;
-  explanation_en?: string | null;
-  explanation_te?: string | null;
-  diagram?: any;
-  subject_name: string;
-  topic_en?: string | null;
-  topic_te?: string | null;
-}
 
 export interface TopicItem {
   topic_en: string;
@@ -203,15 +182,6 @@ export async function fetchTopicTestQuestions(params: {
   });
 
   return shuffleArray(mappedQuestions);
-}
-
-function shuffleArray<T>(array: T[]): T[] {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
 }
 
 export async function clearTopicTestCache(examSelection: string) {

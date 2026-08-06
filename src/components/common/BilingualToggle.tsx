@@ -19,7 +19,7 @@ export function BilingualToggle({
 }: BilingualToggleProps) {
   return (
     <div
-      className={`flex items-center gap-1 p-1 rounded-xl transition-all bg-hover-bg/30 ${className}`}
+      className={`flex items-center gap-1 p-1 rounded-xl transition-colors bg-hover-bg/30 ${className}`}
       role="radiogroup"
       aria-label="Language"
     >
@@ -29,7 +29,7 @@ export function BilingualToggle({
           <button
             key={l}
             onClick={() => onChange(l)}
-            className={`flex items-center gap-1 px-3 py-2.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+            className={`flex items-center gap-1 px-3 py-3 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
               isActive
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-text-secondary lg:hover:text-text-primary'

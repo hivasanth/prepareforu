@@ -1,12 +1,19 @@
 import { z } from 'zod'
 
-export const SingleQuestionSchema = z.object({
-  // ── Modern Bilingual Fields (Required) ────────────────────
+export const SELECTED_OPTIONS = ['A', 'B', 'C', 'D'] as const
+
+export const selectedOptionSchema = z.enum(SELECTED_OPTIONS)
+
+export const questionEnFieldsSchema = z.object({
   question_text_en: z.string().trim().min(1, "English question is required"),
   option_a_en: z.string().trim().min(1, "English Option A is required"),
   option_b_en: z.string().trim().min(1, "English Option B is required"),
   option_c_en: z.string().trim().min(1, "English Option C is required"),
   option_d_en: z.string().trim().min(1, "English Option D is required"),
+})
+
+export const SingleQuestionSchema = questionEnFieldsSchema.extend({
+  // ── Modern Bilingual Fields (Required, via questionEnFieldsSchema) ─────────
   explanation_en: z.string().optional().default(''),
 
   correct_option: z.enum(['A', 'B', 'C', 'D'], { 
@@ -89,11 +96,8 @@ export const BulkQuestionSchema = z.pipe(z.transform((arg: any) => {
     explanation_te: arg.explanation_te || null,
   }
 }), z.object({
-  question_text_en: z.string().min(1, "English question is required"),
-  option_a_en: z.string().min(1, "English Option A is required"),
-  option_b_en: z.string().min(1, "English Option B is required"),
-  option_c_en: z.string().min(1, "English Option C is required"),
-  option_d_en: z.string().min(1, "English Option D is required"),
+  // EN fields derive from the shared questionEnFieldsSchema (single rule owner)
+  ...questionEnFieldsSchema.shape,
 
   correct_option: z.enum(['A', 'B', 'C', 'D'], { 
     message: "Correct option is required." 

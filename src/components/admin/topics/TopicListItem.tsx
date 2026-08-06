@@ -1,9 +1,8 @@
 import React from 'react'
-import { motion } from 'framer-motion'
 import {
   ChevronDown, ChevronUp, Eye, EyeOff, GripVertical, BookOpen, Pencil, Trash2, Youtube
 } from 'lucide-react'
-import { Badge } from '../../common/AntigravityUI'
+import { Badge, IconButton, Card, PremiumIconContainer } from '../../common/AntigravityUI'
 import type { StudyTopic } from '../../../types/exam.types'
 
 interface TopicListItemProps {
@@ -32,16 +31,21 @@ export const TopicListItem = React.memo(function TopicListItem({
   isLast,
 }: TopicListItemProps) {
   return (
-    <motion.div
+    <Card
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="group flex items-center gap-3 p-4 rounded-2xl border transition-all bg-card-bg/50 border-border-subtle/40 hover:border-primary/30"
+      variant="default"
+      className="group flex items-center gap-3 p-4 hover:border-primary/30"
     >
-      <div className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black bg-primary/20 text-primary">
+      <PremiumIconContainer
+        iconSize={14}
+        className="w-8 h-8 rounded-xl font-black text-xs"
+        darkClassName="bg-primary/20 text-primary"
+      >
         {index + 1}
-      </div>
+      </PremiumIconContainer>
 
       <GripVertical size={14} className="text-text-secondary opacity-30 flex-shrink-0" />
 
@@ -50,7 +54,7 @@ export const TopicListItem = React.memo(function TopicListItem({
           {topic.title_en || 'Untitled Topic'}
         </p>
         {topic.title_te && (
-          <p className="text-xs text-text-secondary truncate opacity-70">{topic.title_te}</p>
+          <p className="text-xs text-text-secondary truncate">{topic.title_te}</p>
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           {topic.youtube_url && (
@@ -58,11 +62,11 @@ export const TopicListItem = React.memo(function TopicListItem({
               <Youtube size={8} /> Video
             </Badge>
           )}
-          <span className="text-[10px] text-text-secondary">
+          <span className="text-[10px] text-text-muted">
             EN: {topic.content_en?.length ?? 0} sections
           </span>
           {(topic.content_te?.length ?? 0) > 0 && (
-            <span className="text-[10px] text-text-secondary">
+            <span className="text-[10px] text-text-muted">
               · TE: {topic.content_te?.length} sections
             </span>
           )}
@@ -70,54 +74,72 @@ export const TopicListItem = React.memo(function TopicListItem({
       </div>
 
       <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-        <button
+        <IconButton
+          variant="ghost"
+          size="sm"
+          focusRing
           onClick={e => { e.stopPropagation(); onMoveUp() }}
           disabled={isFirst}
+          disabledOpacity={30}
           aria-label="Move topic up"
-          className="p-1.5 rounded-lg hover:bg-hover-bg/30 disabled:opacity-20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="!w-8 !h-8"
         >
           <ChevronUp size={14} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          focusRing
           onClick={e => { e.stopPropagation(); onMoveDown() }}
           disabled={isLast}
+          disabledOpacity={30}
           aria-label="Move topic down"
-          className="p-1.5 rounded-lg hover:bg-hover-bg/30 disabled:opacity-20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="!w-8 !h-8"
         >
           <ChevronDown size={14} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          focusRing
           onClick={e => { e.stopPropagation(); onTogglePublish() }}
           aria-label={topic.is_published ? 'Unpublish topic' : 'Publish topic'}
-          className={`p-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-            topic.is_published ? 'text-success hover:bg-success/10' : 'text-text-secondary hover:bg-hover-bg/30'
-          }`}
+          className={`!w-8 !h-8 ${topic.is_published ? '!text-success hover:!bg-success/10' : '!text-text-secondary'}`}
         >
           {topic.is_published ? <Eye size={14} /> : <EyeOff size={14} />}
-        </button>
-        <button
+        </IconButton>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          focusRing
           onClick={e => { e.stopPropagation(); onPreview() }}
           aria-label="Preview topic"
-          className="p-1.5 rounded-lg hover:bg-primary/10 text-teal-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           title="Preview Topic"
+          className="!w-8 !h-8 !text-primary hover:!bg-primary/10"
         >
           <BookOpen size={14} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          focusRing
           onClick={e => { e.stopPropagation(); onEdit() }}
           aria-label="Edit topic"
-          className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="!w-8 !h-8 !text-primary hover:!bg-primary/10"
         >
           <Pencil size={14} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          focusRing
           onClick={e => { e.stopPropagation(); onDelete() }}
           aria-label="Delete topic"
-          className="p-1.5 rounded-lg hover:bg-danger/10 text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="!w-8 !h-8 !text-danger hover:!bg-danger/10"
         >
           <Trash2 size={14} />
-        </button>
+        </IconButton>
       </div>
-    </motion.div>
+    </Card>
   )
 })

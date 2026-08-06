@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { CheckCircle2, XCircle } from 'lucide-react'
 
 interface Toast {
   id: number
@@ -10,13 +11,13 @@ export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([])
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') => {
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning', duration = 3000) => {
     const id = Date.now()
     setToasts(prev => [...prev, { id, message, type }])
     const timerId = setTimeout(() => {
       timersRef.current = timersRef.current.filter(t => t !== timerId)
       setToasts(prev => prev.filter(t => t.id !== id))
-    }, 3000)
+    }, duration)
     timersRef.current.push(timerId)
   }, [])
 
@@ -34,32 +35,30 @@ export function useToast() {
 }
 
 // ─── Toast Container Component ───────────────────────────────────────────────
-export function ToastContainer({ toasts }: { toasts: Toast[] }) {
+// Status-family presentation: Surface panel (card surface) + Status hue
+// (border + icon). Animation lives in index.css (toast-slide-in) so no
+// component injects keyframes (P1 A-4).
+// Phase 3.9 (D-144): additive `variant` prop — `premium` (default, unchanged)
+// renders the card/parchment panel; `management` renders the neutral Management
+// Surface Family panel. Status hues (success/danger border + icon) are unchanged
+// in both. No behavioural change; no error-language redesign.
+export function ToastContainer({ toasts, variant = 'premium' }: { toasts: Toast[]; variant?: 'premium' | 'management' }) {
+  const panelSurface = variant === 'management' ? 'bg-[var(--management-surface)]' : 'bg-card-bg'
   return (
     <div
       id="toast-container"
+      role="status"
+      aria-live="polite"
       className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 flex flex-col gap-2.5 z-[99999] pointer-events-none"
     >
-      <style>{`
-        @keyframes slideIn {
-          from { transform: translateX(100%) scale(0.9); opacity: 0; }
-          to { transform: translateX(0) scale(1); opacity: 1; }
-        }
-      `}</style>
       {toasts.map(t => (
         <div
           key={t.id}
-          className="min-w-[300px] px-6 py-4 rounded-2xl font-bold text-sm flex items-center gap-3 pointer-events-auto shadow-2xl backdrop-blur-md"
-          style={{
-            background: 'var(--card-bg, #1f2937)',
-            color: 'var(--text-primary, #fff)',
-            borderColor: t.type === 'success' ? 'var(--success, #22c55e)' : 'var(--danger, #f87171)',
-            borderWidth: 2,
-            borderStyle: 'solid',
-            animation: 'slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-          }}
+          className={`min-w-[300px] px-6 py-4 rounded-2xl font-bold text-sm flex items-center gap-3 pointer-events-auto shadow-2xl backdrop-blur-md border-2 border-solid ${panelSurface} text-text-primary toast-slide-in ${t.type === 'success' ? 'border-success' : 'border-danger'}`}
         >
-          <span className="text-xl">{t.type === 'success' ? '✅' : '❌'}</span>
+          {t.type === 'success'
+            ? <CheckCircle2 size={20} className="text-success shrink-0" aria-hidden />
+            : <XCircle size={20} className="text-danger shrink-0" aria-hidden />}
           <span>{t.message}</span>
         </div>
       ))}

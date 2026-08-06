@@ -31,12 +31,14 @@ export async function fetchUsersByEducatorId(educatorId: string): Promise<Pick<U
   return data
 }
 
-export async function updateUser(id: string, updates: Record<string, unknown>): Promise<void> {
-  const { error } = await supabase
+export async function updateUser(id: string, updates: Record<string, unknown>): Promise<number> {
+  const { data, error } = await supabase
     .from('users')
     .update(updates)
     .eq('id', id)
+    .select('id')
   if (error) throw error
+  return Array.isArray(data) ? data.length : 0
 }
 
 // ─── sub_admins table ────────────────────────────────────────────────────────

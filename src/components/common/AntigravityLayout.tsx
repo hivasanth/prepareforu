@@ -1,21 +1,64 @@
 import React from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { ChevronDown } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { PremiumSelect } from './PremiumSelect'
+import { AdminIconWrap } from './AdminIconWrap'
+import { AdminText } from './AdminText'
+import { PREMIUM_SURFACE, PREMIUM_SURFACE_HOVER, PREMIUM_LIGHT_OVERRIDES, MANAGEMENT_SURFACE, MANAGEMENT_SURFACE_HOVER } from './AntigravityCard'
 
-export const PageContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => {
+const PX_TO_SPACE: Record<number, string> = {
+  0: 'var(--space-0)',
+  4: 'var(--space-1)',
+  8: 'var(--space-2)',
+  12: 'var(--space-3)',
+  16: 'var(--space-4)',
+  20: 'var(--space-5)',
+  24: 'var(--space-6)',
+  32: 'var(--space-8)',
+  40: 'var(--space-10)',
+  48: 'var(--space-12)',
+  64: 'var(--space-16)',
+  80: 'var(--space-20)',
+  96: 'var(--space-24)',
+}
+
+export const PageContainer: React.FC<{
+  children: React.ReactNode
+  className?: string
+  centered?: boolean
+  fullHeight?: boolean
+  padded?: boolean
+}> = ({ children, className = '', centered = false, fullHeight = false, padded = true }) => {
+  const base = centered
+    ? `min-h-screen flex items-center justify-center bg-app-bg ${padded ? 'p-4 md:p-6' : ''}`
+    : fullHeight
+      ? `min-h-screen bg-app-bg ${padded ? 'px-2 sm:px-4 md:px-5 lg:px-6 xl:px-8 py-6 md:py-10' : ''}`
+      : `px-2 sm:px-4 md:px-5 lg:px-6 xl:px-8 py-6 md:py-10`
+  const width = centered ? 'w-full' : 'max-w-[1280px] mx-auto'
   return (
-    <div className={`max-w-[1280px] mx-auto px-2 sm:px-4 md:px-5 lg:px-6 xl:px-8 py-6 md:py-10 ${className}`}>
+    <div className={`${base} ${width} ${className}`}>
       {children}
     </div>
   )
 }
 
-export const SectionBlock: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`space-y-[12px] ${className}`}>
-    {children}
-  </div>
-)
+export const SelectionContainer: React.FC<{ children: React.ReactNode; className?: string; variant?: 'premium' | 'management' }> = ({
+  children,
+  className = '',
+  variant = 'premium',
+}) => {
+  /* Phase 3.9 (D-144) — additive Management variant. Default ('premium') render is
+     byte-identical (gold selection surface + premium border + premium shadow).
+     Management renders the neutral family (no gold); Navigation-family consumers
+     are untouched. Gold remains the active-state accent for the premium path. */
+  const surface = variant === 'management'
+    ? 'bg-[var(--management-surface)] border-[1.8px] border-[var(--management-border-strong)] shadow-[var(--management-shadow)]'
+    : 'shadow-card-premium selection-surface border-[1.8px] border-card-premium-border'
+  return (
+    <div className={`rounded-2xl ${surface} -translate-y-0.5 p-3 ${className}`}>
+      {children}
+    </div>
+  )
+}
 
 export const PageHeader: React.FC<{
   title: string
@@ -35,11 +78,11 @@ export const PageHeader: React.FC<{
     <div className="space-y-[4px] min-w-0">
       <div className="flex items-center gap-[8px]">
         {Icon && <Icon size={18} className="text-primary shrink-0" />}
-        <h1 className="text-[20px] md:text-[24px] font-bold text-text-primary tracking-tight m-0 truncate">
+        <h1 className="text-[20px] md:text-[24px] font-bold text-text-title tracking-tight m-0 truncate">
           {title}
         </h1>
       </div>
-      {subtitle && <p className="text-[12px] md:text-[13px] text-text-secondary opacity-70 leading-relaxed m-0">{subtitle}</p>}
+      {subtitle && <p className="text-[12px] md:text-[13px] text-text-secondary leading-relaxed m-0">{subtitle}</p>}
     </div>
     {actions && (
       <div className="flex items-center gap-2 shrink-0">
@@ -47,12 +90,6 @@ export const PageHeader: React.FC<{
       </div>
     )}
   </header>
-)
-
-export const SectionWrapper: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`space-y-[14px] ${className}`}>
-    {children}
-  </div>
 )
 
 type GapKey = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | 'section'
@@ -75,16 +112,16 @@ export const Stack: React.FC<{
   const alignMap = { start: 'items-start', center: 'items-center', end: 'items-end', stretch: 'items-stretch' }
   const justifyMap = { start: 'justify-start', center: 'justify-center', end: 'justify-end', between: 'justify-between' }
   const spacingMap: Record<GapKey, string> = {
-    xs: 'gap-[4px]',
-    sm: 'gap-[8px]',
-    md: 'gap-[16px]',
-    lg: 'gap-[24px]',
-    xl: 'gap-[32px]',
-    xxl: 'gap-[48px]',
-    section: 'gap-[32px]',
+    xs: 'gap-[var(--space-1)]',
+    sm: 'gap-[var(--space-2)]',
+    md: 'gap-[var(--space-4)]',
+    lg: 'gap-[var(--space-6)]',
+    xl: 'gap-[var(--space-8)]',
+    xxl: 'gap-[var(--space-12)]',
+    section: 'gap-[var(--space-8)]',
   }
-  const gapClass = typeof gap === 'number' ? '' : (spacingMap[gap] ?? 'gap-[12px]')
-  const gapStyle = typeof gap === 'number' ? { gap: `${gap}px` } : undefined
+  const gapClass = typeof gap === 'number' ? '' : (spacingMap[gap] ?? 'gap-[var(--space-3)]')
+  const gapStyle = typeof gap === 'number' ? { gap: PX_TO_SPACE[gap] ?? `${gap}px` } : undefined
   return (
     <div
       className={`flex flex-${direction} ${alignMap[align]} ${justifyMap[justify]} ${gapClass} ${className}`}
@@ -119,7 +156,7 @@ export const Grid: React.FC<{
         4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
       } as Record<number, string>)[cols]
   const gapClass = gap !== undefined ? '' : 'gap-4 md:gap-5 lg:gap-6'
-  const gapStyle = gap !== undefined ? { gap: `${gap}px` } : undefined
+  const gapStyle = gap !== undefined ? { gap: PX_TO_SPACE[gap] ?? `${gap}px` } : undefined
   return (
     <div className={`grid ${finalColClass} ${gapClass} ${className}`} style={gapStyle}>
       {children}
@@ -129,28 +166,62 @@ export const Grid: React.FC<{
 
 export const SectionHeader: React.FC<{
   title: string
+  subtitle?: string
+  icon?: LucideIcon
+  badge?: React.ReactNode
   action?: React.ReactNode
   className?: string
-}> = ({ title, action, className = '' }) => {
+}> = ({ title, subtitle, icon: Icon, badge, action, className = '' }) => {
   return (
     <div className={`flex items-center justify-between ${className}`}>
-      <h2 className="text-[16px] sm:text-[18px] lg:text-[20px] font-semibold tracking-tight m-0">
-        {title}
-      </h2>
-      {action && (
-        <div className="h-8 flex items-center">
-          {action}
+      <div className="flex items-center gap-3 min-w-0">
+        {Icon && (
+          <AdminIconWrap size="sm" rounded="lg" className="shadow-sm scale-90 shrink-0">
+            <Icon size={18} />
+          </AdminIconWrap>
+        )}
+        <div className="min-w-0">
+          <AdminText as="span" variant="cinzel">{title}</AdminText>
+          {subtitle && (
+            <p className="text-[11px] text-text-muted uppercase tracking-widest mt-0.5 m-0">{subtitle}</p>
+          )}
         </div>
-      )}
+      </div>
+      <div className="flex items-center gap-2 shrink-0 ml-4">
+        {badge}
+        {action}
+      </div>
     </div>
   )
 }
 
-export const FilterBar: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-3 md:p-4 rounded-[14px] bg-card-bg/50 border border-border-subtle ${className}`}>
-    {children}
-  </div>
-)
+/**
+ * CollectionToolbar — Foundation action container for collection pages
+ * (Questions, Users, Topics, Exams, Students). Surface is pixel-identical to
+ * the premium `CollectionCard`/`Card` surface (same bg, border, radius, shadow
+ * and elevation) so the toolbar reads as one surface family with the cards it
+ * drives. Density (p-3/p-4) matches management CollectionCard rows (padding 16).
+ */
+export const CollectionToolbar: React.FC<{ children: React.ReactNode; className?: string; variant?: 'premium' | 'management' }> = ({
+  children,
+  className = '',
+  variant = 'premium',
+}) => {
+  /* Phase 3.9 (D-144) — additive `variant` prop. Default ('premium') render is
+     byte-identical (premium surface + gold light override). Management renders
+     the neutral Management Surface Family with NO PREMIUM_LIGHT_OVERRIDES. */
+  const surface = variant === 'management'
+    ? `${MANAGEMENT_SURFACE} ${MANAGEMENT_SURFACE_HOVER}`
+    : `${PREMIUM_SURFACE} transition-[box-shadow,border-color] duration-200 ${PREMIUM_SURFACE_HOVER} ${PREMIUM_LIGHT_OVERRIDES}`
+  return (
+    <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-3 md:p-4 rounded-2xl ${surface} ${className}`}>
+      {children}
+    </div>
+  )
+}
+
+/** @deprecated Use `CollectionToolbar` — retained as an alias for existing consumers. */
+export const FilterBar = CollectionToolbar
 
 interface SelectOption {
   id: string
@@ -169,88 +240,23 @@ interface SelectProps {
 }
 
 export const FilterSelect: React.FC<SelectProps> = ({
-  icon: Icon,
+  icon,
   value,
   onChange,
   options,
   placeholder,
   disabled = false,
   className = '',
-}) => {
-  const [isOpen, setIsOpen] = React.useState(false)
-  const dropdownRef = React.useRef<HTMLDivElement>(null)
-  const isActive = value !== 'all' && value !== ''
-
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const selectedOption = options.find(o => String(o.id) === String(value)) || (placeholder ? { id: 'all', name: placeholder } : options[0])
-
-  return (
-    <div ref={dropdownRef} className={`relative w-full md:w-auto ${isOpen ? 'z-[110]' : 'z-auto'} ${disabled ? 'opacity-40 pointer-events-none' : ''} ${className}`}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`
-          w-full h-[44px] md:h-[48px] rounded-[12px] transition-all flex items-center justify-between px-4 md:px-3.5 gap-2
-          text-[11px] font-black uppercase tracking-widest focus:outline-none border
-          ${isActive ? 'bg-primary/10 text-primary border-primary/20' : 'bg-hover-bg/60 text-text-primary border-border-subtle opacity-70 hover:opacity-100'}
-        `}
-      >
-        <div className="flex items-center gap-2 overflow-hidden">
-          {Icon && <Icon size={16} className={`shrink-0 ${isActive ? 'text-primary' : 'text-text-secondary'}`} />}
-          <span className="truncate">{selectedOption?.name}</span>
-        </div>
-        <ChevronDown size={14} className={`transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''} ${isActive ? 'text-primary' : 'text-text-secondary opacity-40'}`} />
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 5, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className={'absolute top-full left-0 right-0 z-[1000] border rounded-xl overflow-hidden shadow-2xl min-w-[200px] bg-card-bg border-border-subtle'}
-          >
-            <div className="py-1">
-              {placeholder && (
-                <button
-                  type="button"
-                  onClick={() => { onChange('all'); setIsOpen(false); }}
-                  className={`w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
-                    value === 'all' 
-                      ? 'bg-primary/20 text-primary' 
-                      : 'text-text-primary hover:bg-white/5'
-                  }`}
-                >
-                  {placeholder}
-                </button>
-              )}
-              {options.map((opt, idx) => (
-                <button
-                  key={`${opt.id}-${idx}`}
-                  type="button"
-                  onClick={() => { onChange(String(opt.id)); setIsOpen(false); }}
-                  className={`w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors border-t border-border-subtle/5 first:border-t-0 ${
-                    String(value) === String(opt.id)
-                      ? 'bg-primary/20 text-primary' 
-                      : 'text-text-primary hover:bg-white/5'
-                  }`}
-                >
-                  {opt.name}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
+  label,
+}) => (
+  <PremiumSelect
+    icon={icon}
+    value={value}
+    onChange={onChange}
+    options={options}
+    placeholder={placeholder}
+    label={label}
+    disabled={disabled}
+    className={`w-full md:w-auto ${className}`}
+  />
+)

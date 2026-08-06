@@ -1,3 +1,15 @@
+// ─── Diagram Types (canonical definition) ─────────────────────────────────────
+
+export type DiagramData =
+  | { type: "pie_chart"; metadata: { labels: string[]; values: number[] } }
+  | { type: "bar_chart"; metadata: { x: string[]; y: number[] } }
+  | { type: "line_graph"; metadata: { x: string[]; y: number[] } }
+  | { type: "table"; metadata: { columns: string[]; rows: unknown[][] } }
+  | { type: "venn_diagram"; metadata: { sets: string[]; intersections: Record<string, unknown[]> } }
+  | null;
+
+// ─── Question ─────────────────────────────────────────────────────────────────
+
 export interface Question {
   id: string
   exam_id: string
@@ -8,7 +20,7 @@ export interface Question {
   difficulty: 'easy' | 'medium' | 'hard'
   negative_marks: number
   visual?: QuestionVisual
-  diagram?: any
+  diagram?: DiagramData
 
   // ── Bilingual fields (optional, service-layer populated) ──
   question_text_en?: string | null
@@ -32,7 +44,7 @@ export type VisualType = 'venn' | 'chart' | 'geometry' | 'table' | 'mermaid' | '
 export interface QuestionVisual {
   type: VisualType;
   title?: string;
-  data: any; 
+  data: Record<string, unknown>; 
 }
 
 export interface ExamConfig {

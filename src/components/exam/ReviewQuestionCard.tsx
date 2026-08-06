@@ -57,7 +57,7 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
       </div>
 
       <div className="flex gap-2 sm:pl-16">
-        <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
+        <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
           status === 'correct' ? 'bg-success/10 text-success' :
           status === 'wrong' ? 'bg-danger/10 text-danger' :
           status === 'skipped' ? 'bg-warning/10 text-warning' :
@@ -87,13 +87,26 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
           else if (isUserChoice && !isCorrect) stateClass = 'bg-danger/10 border-danger/20 text-danger font-bold';
 
           return (
-            <div key={label} className={`p-4 rounded-[14px] border-2 flex items-center justify-between text-[14px] ${stateClass}`}>
+            <div
+              key={label}
+              className={`p-4 rounded-[14px] border-2 flex items-center justify-between text-[14px] ${stateClass}`}
+            >
               <span
                 className="line-clamp-2 leading-relaxed flex-1"
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(optionText) }}
               />
-              {isRealCorrect && <Check size={16} strokeWidth={3} className="ml-2 flex-shrink-0" />}
-              {isUserChoice && !isCorrect && <X size={16} strokeWidth={3} className="ml-2 flex-shrink-0" />}
+              {isRealCorrect && (
+                <span className="flex items-center gap-1 ml-2 flex-shrink-0">
+                  <span className="sr-only">Correct answer</span>
+                  <Check size={16} strokeWidth={3} aria-hidden="true" />
+                </span>
+              )}
+              {isUserChoice && !isCorrect && (
+                <span className="flex items-center gap-1 ml-2 flex-shrink-0">
+                  <span className="sr-only">Your answer - incorrect</span>
+                  <X size={16} strokeWidth={3} aria-hidden="true" />
+                </span>
+              )}
             </div>
           );
         })}
@@ -103,7 +116,7 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
         <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
         <div className="flex items-center gap-3 mb-2">
           <Brain size={18} className="text-primary" />
-          <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Technical Rationale</span>
+          <span className="text-[10px] font-bold text-primary uppercase tracking-wide">Technical Rationale</span>
         </div>
         <p className="text-[clamp(13px,1.5vw,15px)] text-text-primary/90 leading-relaxed italic m-0">
           {displayLang === 'en'

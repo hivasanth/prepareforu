@@ -154,7 +154,33 @@ export async function toggleUserStatus(
   });
 
   try {
-    await userRepo.updateUser(targetUserId, { is_active: isActive });
+    // S-1: reject self-target — an admin must never toggle their own status.
+    if (user && user.id === targetUserId) {
+      logWarn('userService.toggleUserStatus.forbidden', { requestId, targetUserId, reason: 'self_target' });
+      return { success: false, error: { source: 'auth', code: 'ACTION_FORBIDDEN', message: 'You cannot change your own account status.' } };
+    }
+
+    // S-1: the target must exist and be a regular student account. Admin and
+    // sub-admin rows are administrative identities and are never toggled here.
+    const target = await userRepo.findUserById(targetUserId);
+    if (!target) {
+      logWarn('userService.toggleUserStatus.notFound', { requestId, targetUserId });
+      return { success: false, error: { source: 'db', code: 'USER_NOT_FOUND', message: 'User not found.' } };
+    }
+    if (target.role !== 'user') {
+      logWarn('userService.toggleUserStatus.forbidden', { requestId, targetUserId, role: target.role });
+      return { success: false, error: { source: 'auth', code: 'ACTION_FORBIDDEN', message: 'Only student accounts can be deactivated or activated.' } };
+    }
+
+    // R-1: an update that matches 0 rows silently did nothing — treat as failure.
+    const affected = await userRepo.updateUser(targetUserId, { is_active: isActive });
+    if (affected === 0) {
+      logWarn('userService.toggleUserStatus.noRows', { requestId, targetUserId, isActive });
+      return { success: false, error: { source: 'db', code: 'UPDATE_FAILED', message: 'Failed to update user status.' } };
+    }
+
+    // S-2: log the successful mutation with target + requestId.
+    logInfo('userService.toggleUserStatus.success', { requestId, targetUserId, isActive });
     return { success: true, data: null };
   } catch (error: any) {
     logError('userService.toggleUserStatus.error', { message: error.message });
@@ -329,13 +355,25 @@ export async function countUsersByEducatorId(educatorId: string): Promise<number
   }
 }
 
-export async function fetchUsersPaginated(params: {
-  activeTab: string
-  statusFilter: string
-  searchQuery: string
-  page: number
-  pageSize: number
-}): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+export async function fetchUsersPaginated(
+  ctx: { user: UserProfile | null | undefined; requestId?: string },
+  params: {
+    activeTab: string
+    statusFilter: string
+    searchQuery: string
+    page: number
+    pageSize: number
+  }
+): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+  const { user, requestId } = ctx
+
+  ensureRole({
+    user,
+    allowedRoles: ['admin'],
+    operation: 'fetchUsersPaginated',
+    requestId
+  })
+
   try {
     const offset = (params.page - 1) * params.pageSize
     const result = await userRepo.fetchUsersPaginated({

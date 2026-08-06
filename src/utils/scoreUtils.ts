@@ -1,11 +1,3 @@
-export interface SubjectStat {
-  subject: string;
-  accuracy: number;
-  correct: number;
-  total: number;
-  status: 'Strong' | 'Average' | 'Weak';
-}
-
 export interface DistributionItem {
   name: string;
   value: number;
@@ -47,35 +39,6 @@ export function calculatePercentage(score: number, total: number): number {
 export function calculateAccuracy(correct: number, total: number): number {
   if (total <= 0) return 0;
   return Math.round((correct / total) * 100);
-}
-
-export function classifyPerformance(accuracy: number): 'Strong' | 'Average' | 'Weak' {
-  if (accuracy >= 70) return 'Strong';
-  if (accuracy <= 50) return 'Weak';
-  return 'Average';
-}
-
-export function computeSubjectStats(
-  answers: { subject_name: string; is_correct: boolean }[]
-): SubjectStat[] {
-  const subjects: Record<string, { correct: number; total: number }> = {};
-  answers.forEach(ans => {
-    if (!subjects[ans.subject_name]) subjects[ans.subject_name] = { correct: 0, total: 0 };
-    subjects[ans.subject_name].total += 1;
-    if (ans.is_correct) subjects[ans.subject_name].correct += 1;
-  });
-  return Object.entries(subjects)
-    .map(([name, data]) => {
-      const accuracy = calculateAccuracy(data.correct, data.total);
-      return {
-        subject: name,
-        accuracy,
-        correct: data.correct,
-        total: data.total,
-        status: classifyPerformance(accuracy),
-      };
-    })
-    .sort((a, b) => b.accuracy - a.accuracy);
 }
 
 export function computeDistribution(

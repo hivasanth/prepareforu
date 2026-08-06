@@ -1,121 +1,142 @@
-import { useState, useCallback } from 'react'
-import { useSearchParams, Navigate } from 'react-router-dom'
-import { isAdmin } from '../../utils/authUtils'
-import { KNOWN_EXAM_IDS } from '../../lib/examUtils'
-import { useAuth } from '../../context/AuthContext'
-import { useSupabaseQuery } from '../../hooks/useSupabaseQuery'
-import { useToast, ToastContainer } from '../../hooks/useToast'
-import {
-  PageContainer, Stack
-} from '../../components/common/AntigravityUI'
-import { ConfirmModal } from '../../components/common/SharedComponents'
-import { GuardLoader } from '../../guards/Guards'
-import { toggleUserStatus, fetchUsersPaginated } from '../../services/userService'
-import type { UserRow } from '../../types/user.types'
-import { AdminUsersView } from '../../components/admin/users/AdminUsersView'
+import { useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { AlertCircle, Search } from 'lucide-react'
+import { H1, PageContainer, Stack, SectionReveal, Alert, Label } from '../../components/common/AntigravityUI'
+import { AdminText } from '../../components/common/AdminText'
+import { ToastContainer } from '../../hooks/useToast'
+import { ConfirmModal, EmptyState } from '../../components/common/SharedComponents'
+import { AdminSelectionTabs } from '../../components/admin/shared/AdminSelectionTabs'
+import { EXAM_TABS } from '../../components/admin/shared/examPresets'
+import { UsersActions } from '../../components/admin/users/UsersActions'
+import { UsersTable } from '../../components/admin/users/UsersTable'
+import { useAdminUsers } from '../../components/admin/users/useAdminUsers'
 
 export default function AdminUsers() {
-  const { user, loading: authLoading } = useAuth()
-  const { toasts, showSuccess, showError } = useToast()
-  const [searchParams] = useSearchParams()
-  const activeTab = searchParams.get('exam') || 'all'
+  const h = useAdminUsers()
+  const { handleTabChange } = h
+  const [, setSearchParams] = useSearchParams()
 
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('active')
-  const [page, setPage] = useState(1)
-  const [optimisticStatus, setOptimisticStatus] = useState<Record<string, boolean>>({})
-  const [confirmToggle, setConfirmToggle] = useState<{ id: string; currentStatus: boolean } | null>(null)
-  const PAGE_SIZE = 20
-
-  const { data, loading: isUsersLoading, error: usersError, refetch } = useSupabaseQuery(async () => {
-    if (activeTab !== 'all' && !KNOWN_EXAM_IDS.includes(activeTab)) {
-      return { data: { rows: [], total: 0 }, error: null }
-    }
-
-    try {
-      const result = await fetchUsersPaginated({
-        activeTab,
-        statusFilter,
-        searchQuery,
-        page,
-        pageSize: PAGE_SIZE,
-      })
-      return { data: { rows: result.rows as unknown as UserRow[], total: result.total }, error: null }
-    } catch (error: any) {
-      return { data: null, error: error.message || 'Failed to load users.' }
-    }
-  }, [activeTab, statusFilter, searchQuery, page])
-
-  const users = (data?.rows || []).map(u => ({
-    ...u,
-    is_active: u.id in optimisticStatus ? optimisticStatus[u.id] : u.is_active
-  }))
-  const totalUsers = data?.total || 0
-  const totalPages = Math.ceil(totalUsers / PAGE_SIZE)
-
-  const handleToggleStatus = useCallback(async () => {
-    if (!confirmToggle) return
-    const { id, currentStatus } = confirmToggle
-    const newStatus = !currentStatus
-
-    setOptimisticStatus(prev => ({ ...prev, [id]: newStatus }))
-    setConfirmToggle(null)
-
-    try {
-      const result = await toggleUserStatus(
-        { user, requestId: `user_toggle_${Date.now()}` },
-        id,
-        newStatus
-      )
-      if (!result.success) throw new Error(result.error?.message)
-      showSuccess(`User ${newStatus ? 'activated' : 'deactivated'} successfully.`)
-      refetch()
-    } catch (err: unknown) {
-      setOptimisticStatus(prev => {
-        const next = { ...prev }
-        delete next[id]
-        return next
-      })
-      showError(err instanceof Error ? err.message : 'Failed to update user status.')
-    }
-  }, [confirmToggle, user, refetch, showSuccess, showError])
-
-  if (authLoading) return <GuardLoader />
-  if (!isAdmin(user)) return <Navigate to="/unauthorized" replace />
+  const setActiveTab = useCallback((val: string) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (val === 'all') next.delete('exam')
+      else next.set('exam', val)
+      return next
+    }, { replace: true })
+    handleTabChange(val)
+  }, [setSearchParams, handleTabChange])
 
   return (
     <PageContainer>
-      <ToastContainer toasts={toasts} />
-      <h1 className="sr-only">Manage Users</h1>
+      <H1 className="sr-only">Manage Users</H1>
 
       <Stack gap="lg">
-        <AdminUsersView
-          users={users}
-          totalUsers={totalUsers}
-          loading={isUsersLoading}
-          error={usersError}
-          searchQuery={searchQuery}
-          statusFilter={statusFilter}
-          page={page}
-          totalPages={totalPages}
-          activeTab={activeTab}
-          onSearchChange={(val) => { setSearchQuery(val); setPage(1) }}
-          onStatusFilterChange={(val) => { setStatusFilter(val); setPage(1) }}
-          onTabChange={() => setPage(1)}
-          onPageChange={setPage}
-          onToggleRequest={(id, currentStatus) => setConfirmToggle({ id, currentStatus })}
-        />
+        <SectionReveal className="w-full">
+          <div className="w-full relative">
+            <AdminSelectionTabs
+              selectedExam={h.activeTab}
+              setSelectedExam={setActiveTab}
+              customExamTabs={EXAM_TABS}
+              showPapers={false}
+              showSubjects={false}
+            />
+          </div>
+        </SectionReveal>
+
+        {h.actionError && (
+          <SectionReveal>
+            <Alert variant="error" icon={AlertCircle} title="Action failed" className="w-full">
+              {h.actionError}
+            </Alert>
+          </SectionReveal>
+        )}
+
+        {h.usersError && (
+          <SectionReveal>
+            <Alert variant="error" icon={AlertCircle} title="Failed to load users" className="w-full">
+              {h.usersError}
+            </Alert>
+          </SectionReveal>
+        )}
+
+        <SectionReveal>
+          <UsersActions
+            searchQuery={h.searchQuery}
+            onSearchChange={h.handleSearchChange}
+            statusFilter={h.statusFilter}
+            onStatusFilterChange={h.handleStatusFilterChange}
+          />
+        </SectionReveal>
+
+        <SectionReveal delay={0.1}>
+          <div aria-live="polite" aria-label="Users list">
+            <UsersTable
+              users={h.users}
+              totalUsers={h.totalUsers}
+              loading={h.isUsersLoading}
+              page={h.page}
+              totalPages={h.totalPages}
+              onPageChange={h.handlePageChange}
+              togglingId={h.togglingId}
+              onToggleRequest={h.handleToggleRequest}
+            />
+
+            {!h.isUsersLoading && h.users.length === 0 && (
+              <EmptyState
+                variant="management"
+                icon={<Search size={48} />}
+                title="No Students Found"
+                subtitle="No students match your current filter criteria."
+                actionLabel={h.usersError ? 'Try Again' : undefined}
+                onAction={h.usersError ? h.handleRetry : undefined}
+              />
+            )}
+          </div>
+        </SectionReveal>
       </Stack>
 
       <ConfirmModal
-        open={!!confirmToggle}
-        title={confirmToggle?.currentStatus ? 'Deactivate User' : 'Activate User'}
-        message={`Are you sure you want to ${confirmToggle?.currentStatus ? 'deactivate' : 'activate'} this user account?`}
-        confirmLabel={confirmToggle?.currentStatus ? 'Deactivate' : 'Activate'}
-        danger={confirmToggle?.currentStatus}
-        onConfirm={handleToggleStatus}
-        onCancel={() => setConfirmToggle(null)}
+        open={!!h.confirmToggle}
+        title={h.confirmToggle?.is_active ? 'Deactivate User' : 'Activate User'}
+        message={
+          h.confirmToggle && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <Label>User</Label>
+                <AdminText as="span" variant="sans" size="body" className="font-semibold text-text-primary">
+                  {h.confirmToggle.full_name || 'Unnamed user'}
+                </AdminText>
+                <AdminText as="span" variant="sans" size="metadata" className="text-text-muted">
+                  {h.confirmToggle.email}
+                </AdminText>
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label>Current Status</Label>
+                <AdminText as="span" variant="sans" size="metadata" className="font-semibold text-text-primary">
+                  {h.confirmToggle.is_active ? 'Active' : 'Banned'}
+                </AdminText>
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label>Action</Label>
+                <AdminText as="span" variant="sans" size="metadata" className="font-semibold text-text-primary">
+                  {h.confirmToggle.is_active ? 'Deactivate' : 'Activate'}
+                </AdminText>
+              </div>
+              <p>
+                {h.confirmToggle.is_active
+                  ? 'This user will no longer be able to access the platform until reactivated. The account can be reactivated at any time.'
+                  : 'This user will regain access to the platform immediately.'}
+              </p>
+            </div>
+          )
+        }
+        confirmLabel={h.confirmToggle?.is_active ? 'Deactivate' : 'Activate'}
+        danger={h.confirmToggle?.is_active}
+        busy={h.isToggling}
+        onConfirm={h.handleConfirmToggle}
+        onCancel={() => h.setConfirmToggle(null)}
       />
+      <ToastContainer toasts={h.toasts} variant="management" />
     </PageContainer>
   )
 }

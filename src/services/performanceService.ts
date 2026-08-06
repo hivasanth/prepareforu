@@ -2,6 +2,7 @@ import * as attemptRepo from '../lib/repositories/attempt.repository';
 import * as examRepo from '../lib/repositories/exam.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
+import type { AttemptWithRelations } from '../types/exam.types';
 
 export const PERF_ATTEMPTS_PREFIX = 'perf_attempts_';
 export const PERF_METADATA_PREFIX = 'perf_metadata_';
@@ -27,10 +28,19 @@ export interface PerformanceMetadata {
   subjects: { paper_id: string; name: string }[];
 }
 
+export interface SubjectStat {
+  subject: string;
+  accuracy: number;
+  correct: number;
+  total: number;
+  status: 'Strong' | 'Average' | 'Weak';
+  color: string;
+}
+
 /**
  * Fetches all completed exam attempts for the current user.
  */
-export async function fetchPerformanceAttempts(userId: string, force = false): Promise<any[]> {
+export async function fetchPerformanceAttempts(userId: string, force = false): Promise<AttemptWithRelations[]> {
   const cacheKey = `perf_attempts_${userId}`;
   
   return queryCache.fetchWithDedup(cacheKey, async () => {
@@ -38,12 +48,12 @@ export async function fetchPerformanceAttempts(userId: string, force = false): P
 
     if (!attempts || attempts.length === 0) return [];
 
-    const uniqueExamIds = Array.from(new Set((attempts as any[]).map((a: any) => a.exam_id)));
+    const uniqueExamIds = Array.from(new Set(attempts.map(a => a.exam_id)));
     const configs = await examRepo.fetchExamConfigNames(uniqueExamIds);
 
-    const configMap = new Map((configs as any[])?.map((c: any) => [c.exam_id, c.name]) || []);
+    const configMap = new Map((configs ?? []).map(c => [c.exam_id, c.name]));
 
-    return (attempts as any[]).map((attempt: any) => ({
+    return attempts.map((attempt) => ({
       ...attempt,
       exam_configs: { name: configMap.get(attempt.exam_id) || attempt.exam_id }
     }));
@@ -54,14 +64,19 @@ export async function fetchPerformanceAttempts(userId: string, force = false): P
  * Fetches answers for a set of attempts to enable subject-wise analysis.
  * Uses a limited selection of fields to optimize data transfer.
  */
-export async function fetchPerformanceAnswers(attemptIds: string[]): Promise<any[]> {
+export async function fetchPerformanceAnswers(attemptIds: string[]): Promise<AttemptAnswerSummary[]> {
   if (attemptIds.length === 0) return [];
 
   const cacheKey = `perf_answers_${JSON.stringify(attemptIds.sort())}`;
   
   return queryCache.fetchWithDedup(cacheKey, async () => {
     const data = await attemptRepo.fetchPerformanceAnswers(attemptIds);
-    return data;
+    if (!data) return [];
+    return data.map(row => ({
+      attempt_id: row.attempt_id,
+      subject_name: row.questions?.subject_name ?? '',
+      is_correct: row.is_correct ?? false,
+    }));
   }, 300000); // 5 min TTL
 }
 
@@ -82,15 +97,15 @@ export async function fetchPerformanceMetadata(examSelection: string): Promise<P
     ]);
 
     return {
-      exams: (exams as any[] || [])
-        .filter((e: any) => e.exam_id && e.name)
-        .map((e: any) => ({ id: e.exam_id, name: e.name, selection: e.exam_selection })),
-      papers: (papers as any[] || [])
-        .filter((p: any) => p.id && p.paper_name)
-        .map((p: any) => ({ id: p.id, exam_id: p.exam_id, name: p.paper_name })),
-      subjects: (subjects as any[] || [])
-        .filter((s: any) => s.paper_id && s.subject_name)
-        .map((s: any) => ({ paper_id: s.paper_id, name: s.subject_name }))
+      exams: (exams ?? [])
+        .filter((e) => e.exam_id && e.name)
+        .map((e) => ({ id: e.exam_id, name: e.name, selection: e.exam_selection })),
+      papers: (papers ?? [])
+        .filter((p) => p.id && p.paper_name)
+        .map((p) => ({ id: p.id, exam_id: p.exam_id, name: p.paper_name })),
+      subjects: (subjects ?? [])
+        .filter((s) => s.paper_id && s.subject_name)
+        .map((s) => ({ paper_id: s.paper_id, name: s.subject_name }))
     };
   }, 600000); // 10 min TTL for metadata
 }
@@ -99,11 +114,11 @@ export async function fetchPerformanceMetadata(examSelection: string): Promise<P
  * Manually invalidates the performance cache for a user.
  * Call this after a new attempt is submitted to ensure data freshness.
  */
-export function getCachedAttempts(userId: string): any[] {
+export function getCachedAttempts(userId: string): AttemptWithRelations[] {
   return queryCache.get(`${PERF_ATTEMPTS_PREFIX}${userId}`) || [];
 }
 
-export function getCachedMetadata(examSelection: string): any {
+export function getCachedMetadata(examSelection: string): PerformanceMetadata {
   return queryCache.get(`${PERF_METADATA_PREFIX}${examSelection}`) || { exams: [], papers: [], subjects: [] };
 }
 

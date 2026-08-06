@@ -86,7 +86,7 @@ export const dashboardService = {
       
       const allowedIds = getAllowedExamIds(examSelection);
       const formatted = (attempts || [])
-        .filter(a => allowedIds.includes(a.exam_id))
+        .filter(a => allowedIds.includes(a.exam_id ?? ''))
         .reverse()
         .slice(0, 5);
         

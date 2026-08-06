@@ -1,6 +1,8 @@
+import { memo } from 'react'
 import { AlertTriangle, Clock } from 'lucide-react'
+import { Alert, Card } from '../../common/AntigravityUI'
 import { DifficultyBadge } from '../common/DifficultyBadge'
-import type { ParsedDataItem } from '../../../hooks/useBulkUpload'
+import type { ParsedDataItem } from './useBulkUpload'
 
 interface PreviewTabProps {
   parsedData: ParsedDataItem[]
@@ -8,9 +10,9 @@ interface PreviewTabProps {
   duplicateCount: number
 }
 
-export function PreviewTab({ parsedData, validationSummary, duplicateCount }: PreviewTabProps) {
+export const PreviewTab = memo(function PreviewTab({ parsedData, validationSummary, duplicateCount }: PreviewTabProps) {
   return (
-    <div className="space-y-6 animate-in zoom-in-95 duration-500">
+    <div className="space-y-6 animate-in">
       {validationSummary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
@@ -19,21 +21,20 @@ export function PreviewTab({ parsedData, validationSummary, duplicateCount }: Pr
             { label: 'Medium', value: validationSummary.medium, color: 'text-warning' },
             { label: 'Hard', value: validationSummary.hard, color: 'text-danger' },
           ].map(stat => (
-            <div key={stat.label} className="p-4 rounded-2xl border text-center bg-hover-bg/20 border-border-subtle/30">
+            <Card key={stat.label} variant="subtle" padding={16} className="text-center">
               <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
-              <p className="text-[9px] font-bold text-text-secondary uppercase tracking-widest mt-1">{stat.label}</p>
-            </div>
+              <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-1">{stat.label}</p>
+            </Card>
           ))}
         </div>
       )}
 
       {duplicateCount > 0 && (
-        <div role="alert" className="p-4 rounded-2xl border flex items-center gap-3 bg-amber-500/5 border-amber-500/20">
-          <AlertTriangle size={18} className="text-amber-500 shrink-0" />
+        <Alert variant="warning" icon={AlertTriangle}>
           <p className="text-xs font-medium text-text-secondary">
-            <span className="font-bold text-amber-600">{duplicateCount}</span> duplicate{duplicateCount > 1 ? 's' : ''} auto-filtered out.
+            <span className="font-bold text-warning">{duplicateCount}</span> duplicate{duplicateCount > 1 ? 's' : ''} auto-filtered out.
           </p>
-        </div>
+        </Alert>
       )}
 
       <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
@@ -59,4 +60,4 @@ export function PreviewTab({ parsedData, validationSummary, duplicateCount }: Pr
       </div>
     </div>
   )
-}
+})

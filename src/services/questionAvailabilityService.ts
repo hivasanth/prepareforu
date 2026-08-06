@@ -18,7 +18,7 @@ export async function getMinQuestions(examSelection: string, force = false): Pro
 
       const data = await examRepo.fetchMinQuestions(allowedIds);
 
-      const records = (data as any[]) || [];
+      const records = data ?? [];
       if (records.length === 0) return DEFAULT_MIN_QUESTIONS;
 
       const values = records

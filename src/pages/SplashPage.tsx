@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
+import { BrandTitle } from '../components/common/AntigravityUI';
 import logoImg from "../assets/logo.png";
 
 const TITLE_TEXT = "WHAT U WANT";
@@ -162,11 +163,8 @@ export default function SplashPage() {
       {phase !== 'exit' && (
         <motion.div
           key="splash"
-          className="fixed inset-0 w-screen h-screen overflow-hidden z-[9999] select-none flex flex-col items-center justify-center cursor-pointer font-['Inter',_system-ui,_-apple-system,_sans-serif]"
+          className="fixed inset-0 w-screen h-screen overflow-hidden z-[9999] select-none flex flex-col items-center justify-center cursor-pointer bg-[radial-gradient(circle_at_center,var(--canvas-splash-bg)_0%,var(--canvas-splash-dark)_100%)] font-['Inter',_system-ui,_-apple-system,_sans-serif]"
           onClick={playSplashSound} // Play sound on click if browser blocked autoplay
-          style={{
-            background: "radial-gradient(circle at center, #110e08 0%, #030201 100%)"
-          }}
           initial={{ opacity: 1 }}
           exit={{
             opacity: 0,
@@ -177,22 +175,19 @@ export default function SplashPage() {
         >
           {/* Subtle central ambient gold glow */}
           <div
-            className="absolute inset-0 pointer-events-none animate-pulse duration-[3s]"
-            style={{
-              background: "radial-gradient(circle at center, rgba(200, 150, 12, 0.06) 0%, transparent 60%)"
-            }}
+            className="absolute inset-0 pointer-events-none animate-pulse duration-[3s] bg-[radial-gradient(circle_at_center,var(--gold-200)_0%,transparent_60%)] opacity-[0.06]"
           />
 
           <div className="relative z-10 flex flex-col items-center justify-center px-6 max-w-sm w-full text-center">
             
             {/* Logo container: circular coin frame matching the new logo */}
             <motion.div
-              className="relative flex items-center justify-center mb-8 p-2.5 rounded-full bg-gradient-to-b from-[#dfc096] to-[#b07a14] shadow-[0_0_60px_rgba(200,150,12,0.25)]"
+              className="relative flex items-center justify-center mb-8 p-2.5 rounded-full bg-gradient-to-b from-[var(--gold-100)] to-[var(--gold-400)] shadow-[0_0_60px_color-mix(in_srgb,var(--gold-200)_25%,transparent)]"
               initial={{ opacity: 0, scale: 0.8, rotate: -15 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.1 }}
             >
-              <div className="w-48 h-48 flex items-center justify-center rounded-full bg-[#110e08] overflow-hidden p-0.5">
+              <div className="w-48 h-48 flex items-center justify-center rounded-full bg-[var(--canvas-splash-bg)] overflow-hidden p-0.5">
                 <img
                   src={logoImg}
                   alt="WhatUWant Logo"
@@ -202,28 +197,22 @@ export default function SplashPage() {
               
               {/* Spinning sheen light sweep overlay */}
               <div 
-                className="absolute inset-0 rounded-full pointer-events-none opacity-25"
-                style={{
-                  background: 'linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%)',
-                  backgroundSize: '250% 250%',
-                  animation: 'sheen 4s infinite linear'
-                }}
+                className="absolute inset-0 rounded-full pointer-events-none opacity-25 bg-[linear-gradient(135deg,transparent_40%,rgba(255,255,255,0.4)_50%,transparent_60%)] bg-[length:250%_250%] animate-[sheen_4s_infinite_linear]"
               />
             </motion.div>
 
             {/* Brand Title */}
-            <motion.h1
-              className="text-transparent bg-clip-text bg-gradient-to-b from-[#f5e0be] to-[#b88c3a] text-[26px] font-black tracking-[0.2em] pl-[0.2em] uppercase mb-2 font-cinzel drop-shadow-md"
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
             >
-              {TITLE_TEXT}
-            </motion.h1>
+              <BrandTitle variant="gradient" className="mb-2">{TITLE_TEXT}</BrandTitle>
+            </motion.div>
 
             {/* Tagline */}
             <motion.p
-              className="text-[#dfc096] opacity-60 text-[9px] font-bold tracking-[0.35em] uppercase mb-12 pl-[0.35em]"
+              className="text-[var(--gold-300)] opacity-60 text-[9px] font-bold tracking-[0.35em] uppercase mb-12 pl-[0.35em]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.5 }}
@@ -239,32 +228,24 @@ export default function SplashPage() {
               transition={{ duration: 0.8, delay: 0.6 }}
             >
               {/* Progress Track */}
-              <div className="h-[2px] w-full bg-slate-900/80 rounded-full overflow-hidden relative border border-white/5">
+              <div className="h-[2px] w-full bg-white/5 rounded-full overflow-hidden relative border border-white/5">
                 {/* Progress Fill (Premium Gold Gradient) */}
                 <motion.div
-                  className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-[#dfc096] to-[#b07a14] rounded-full shadow-[0_0_10px_rgba(200,150,12,0.4)]"
+                  className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-[var(--gold-100)] to-[var(--gold-400)] rounded-full shadow-[0_0_10px_color-mix(in_srgb,var(--gold-200)_40%,transparent)]"
                   style={{ width: barWidth }}
                 />
               </div>
 
               {/* Progress Labels */}
-              <div className="flex justify-between items-center text-[8px] tracking-widest text-[#dfc096]/50 font-bold uppercase">
+              <div className="flex justify-between items-center text-[8px] tracking-widest text-[var(--gold-300)]/50 font-bold uppercase">
                 <span>{loadingMsg}</span>
-                <span className="font-mono text-[#dfc096]/70">{Math.round(progress)}%</span>
+                <span className="font-mono text-[var(--gold-300)]/70">{Math.round(progress)}%</span>
               </div>
             </motion.div>
 
           </div>
         </motion.div>
       )}
-      
-      {/* Dynamic keyframe CSS inject for the sheen effect */}
-      <style>{`
-        @keyframes sheen {
-          0% { background-position: 200% 200%; }
-          100% { background-position: -200% -200%; }
-        }
-      `}</style>
     </AnimatePresence>
   );
 }

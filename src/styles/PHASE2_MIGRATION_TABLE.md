@@ -179,7 +179,6 @@ to its replacement Design Token. Created during Phase 2 audit on 2026-07-08.
 | SplashPage (btn) | `from-[#dfc096] to-[#b07a14]` | *(pending — no gold gradient token)* |
 | SplashPage (text) | `from-[#f5e0be] to-[#b88c3a]` | *(pending — no gold gradient token)* |
 | UserLeaderboard | `from-[#FFD700] to-[#B8860B]` | *(pending — no gold gradient token)* |
-| UserUpgrade | `from-[#C8960C]/8 via-card-bg to-card-bg` | *(pending — no gold gradient token)* |
 | WelcomeBanner | `from-[rgba(10,30,18,0.95)] via-[rgba(10,30,18,0.7)] to-transparent` | `--gradient-header` |
 | Ancient card | `linear-gradient(170deg, rgba(255,240,195,0.35) 0%, rgba(195,145,70,0.08) 45%, rgba(155,100,35,0.12) 100%), #C9A070` | `--gradient-surface` + `--stat-card-bg` |
 | Ancient stat card | `linear-gradient(135deg, #D4A55A 0%, #C9943C 50%, #BF8A30 100%)` | *(pending — no stat card gradient token)* |

@@ -2,6 +2,11 @@
 @import "./styles/themes.css";
 @import "tailwindcss";
 
+/* Register the `light:` variant so light-mode utility overrides compile.
+   ThemeContext toggles the `.light` class on <html>; this wires the
+   Tailwind `light:` utility prefix to that ancestor selector. */
+@custom-variant light (&:where(.light, .light *));
+
 /* ─── Global Responsive Safety Layer ────────────────────────────────────────
    Prevent ALL horizontal overflow at the root. Real fixes live at component
    level — this is strictly a last-resort safety net.
@@ -35,11 +40,15 @@ html::-webkit-scrollbar {
   /* Brand System */
   --color-primary: var(--color-accent);
   --color-primary-hover: var(--color-accent-hover);
-  --color-secondary: var(--secondary);
-  --color-success: var(--success);
-  --color-danger: var(--danger);
-  --color-warning: var(--warning);
-  --color-info: var(--info);
+  /* 5.3E T3: state aliases repointed to canonical --color-* namespace (themes.css
+     :root/.light are the unlayered runtime winners). The @theme registrations are
+     dead for value resolution but load-bearing for utility generation; each now
+     references the canonical directly to eliminate the alias<->canonical loop. */
+  --color-secondary: var(--color-secondary);
+  --color-success: var(--color-success);
+  --color-danger: var(--color-danger);
+  --color-warning: var(--color-warning);
+  --color-info: var(--color-info);
 
   /* App Background System */
   --color-app-bg: var(--bg-app);
@@ -47,28 +56,191 @@ html::-webkit-scrollbar {
   --color-elevated-bg: var(--bg-elevated);
   --color-hover-bg: var(--bg-hover);
 
-  /* Text System */
+  /* Text System — semantic typography tokens (ONE source of truth) */
   --color-text-primary: var(--text-primary);
+  --color-text-title: var(--text-title);
   --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-hint: var(--text-hint);
   --color-text-disabled: var(--text-disabled);
-  --color-text-muted: var(--text-disabled);
+  --color-text-placeholder: var(--placeholder-color, var(--text-muted));
+  --color-text-on-dark: var(--text-on-dark);
 
-  /* UI Palette */
-  --color-border-subtle: var(--border-color);
-  --color-input-border: var(--border-input);
-  --color-input-focus: var(--border-focus);
+  /* UI Palette — TAS-2B: repoint to canonical semantic token.
+     Previously var(--border-color) -> var(--border-default); both equal
+     themes.css --border-subtle (#374151). Single canonical owner now,
+     computed value unchanged. (--border-color alias retained for compat.) */
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  /* Gold accent utility (premium family — Phase 4.2, D-141). Exposes the
+     certified --gold-300 token as border-gold-300 / text-gold-300 / bg-gold-300. */
+  --color-gold-300: var(--gold-300);
 
-  /* Exam State Colors */
-  --color-correct: var(--color-success);
-  --color-wrong: var(--color-danger);
-  --color-disabled-btn: var(--text-disabled);
+  /* Exam State Colors — consumed directly via --color-success/--color-danger/--text-disabled */
 
-  /* Radii */
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
+  /* Radii — 5.3E T2 (Option A): aligned to themes.css :root (unlayered runtime
+     winner). Canonical runtime = radius-xl 20px, radius-2xl 24px. The 12px/16px
+     duplicate registrations removed; rendered radii unchanged. */
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
   --radius-3xl: 20px;
-  --radius-4xl: 28px;
+
+  /* Shadow Tailwind Mappings */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+
+  /* Elevation Tailwind Mappings */
+  --shadow-elevation-0: var(--elevation-0);
+  --shadow-elevation-1: var(--elevation-1);
+  --shadow-elevation-2: var(--elevation-2);
+  --shadow-elevation-3: var(--elevation-3);
+  --shadow-elevation-4: var(--elevation-4);
+
+  /* ─── Card & Stat Card component tokens ────────────────────────────────────
+     Expose EXISTING design tokens as Tailwind utilities so components consume
+     them instead of arbitrary bg-[var(--…)] / inline styles. No new tokens. */
+  --color-card-border: var(--card-border);
+  --shadow-card-shadow: var(--card-shadow);
+  --shadow-card-hover-shadow: var(--card-hover-shadow);
+
+  /* Premium (dark forest) card material — Semantic Material tokens.
+     Exposed so Card variant="premium" consumes tokens, not primitives. */
+  --color-card-premium-surface: var(--material-card-premium-surface);
+  --color-card-premium-border: var(--material-card-premium-border);
+  --shadow-card-premium: var(--material-card-premium-shadow);
+
+  /* Light auth card material (DS-001). Exposed so Card variant="auth-light"
+     consumes tokens, not raw bg-white. */
+  --color-card-auth-light-surface: var(--material-card-auth-light-surface);
+  --color-card-auth-light-border: var(--material-card-auth-light-border);
+  --shadow-card-auth-light: var(--material-card-auth-light-shadow);
+
+  /* ─── Control Family — per-role semantic role tokens (D-121) ──────────────
+     Exposed so Control components consume role tokens (never Surface/Card
+     tokens directly). Values are theme-switched via themes.css :root/.light.
+     Engineering Standard V3.1, Principle 4/5. */
+  --color-button-surface-secondary: var(--button-surface-secondary);
+  --color-button-surface-secondary-hover: var(--button-surface-secondary-hover);
+  --color-button-text-secondary: var(--button-text-secondary);
+  --color-button-border-secondary: var(--button-border-secondary);
+  --shadow-button-secondary: var(--button-shadow-secondary);
+  --shadow-button-secondary-hover: var(--button-shadow-secondary-hover);
+  --color-button-surface-ghost: var(--button-surface-ghost);
+  --color-button-surface-ghost-hover: var(--button-surface-ghost-hover);
+  --color-button-text-ghost: var(--button-text-ghost);
+  --color-button-text-ghost-hover: var(--button-text-ghost-hover);
+  --color-button-border-ghost: var(--button-border-ghost);
+
+  --color-input-bg: var(--input-bg);
+  --color-input-text: var(--input-text);
+  --color-input-border: var(--input-border);
+  --color-input-focus-border: var(--input-focus-border);
+  --color-input-surface-active: var(--input-surface-active);
+  --color-input-text-active: var(--input-text-active);
+  --color-input-border-active: var(--input-border-active);
+  --color-input-border-hover-active: var(--input-border-hover-active);
+
+  --color-filter-surface: var(--filter-surface);
+  --color-filter-border: var(--filter-border);
+  --color-filter-text: var(--filter-text);
+  --color-filter-border-hover: var(--filter-border-hover);
+  --color-filter-surface-active: var(--filter-surface-active);
+  --color-filter-text-active: var(--filter-text-active);
+  --color-filter-border-active: var(--filter-border-active);
+  --shadow-filter: var(--filter-shadow);
+  --shadow-filter-hover: var(--filter-shadow-hover);
+
+  --color-checkbox-surface: var(--checkbox-surface);
+  --color-checkbox-border: var(--checkbox-border);
+  --color-checkbox-border-hover: var(--checkbox-border-hover);
+  --color-checkbox-border-focus: var(--checkbox-border-focus);
+  --color-checkbox-surface-checked: var(--checkbox-surface-checked);
+  --color-checkbox-border-checked: var(--checkbox-border-checked);
+
+  --color-radio-surface: var(--radio-surface);
+  --color-radio-border: var(--radio-border);
+  --color-radio-border-hover: var(--radio-border-hover);
+  --color-radio-border-checked: var(--radio-border-checked);
+  --color-radio-dot-checked: var(--radio-dot-checked);
+  --color-radio-track-surface: var(--radio-track-surface);
+
+  /* Tab material shadows (comma multi-shadow → must be registered utilities). */
+  --shadow-tab-track: var(--material-tab-track-shadow);
+  --shadow-tab-pill-light: var(--material-tab-pill-shadow-light);
+
+  --color-stat-card-border: var(--stat-card-border);
+  --color-stat-value-text: var(--stat-value-text);
+  --color-stat-label-text: var(--stat-label-text);
+  --color-stat-icon-bg: var(--stat-icon-bg);
+  --color-stat-icon-color: var(--stat-icon-color);
+  --shadow-stat-card-shadow: var(--stat-card-shadow);
+  --radius-stat-card-radius: var(--stat-card-radius);
+  --radius-stat-icon-radius: var(--stat-icon-radius);
+
+  /* ─── Premium Material Shadow Utilities ──────────────────────────────────
+     Multi-shadow combos (token + inset gold highlight) that arbitrary
+     Tailwind values CANNOT express (commas break the class → purged).
+     Registered here as --shadow-* so `shadow-<name>` utilities generate.
+     Reuse EXISTING elevation tokens; no new raw values beyond the shared
+     inset cream highlight used across the StatCard material family. */
+  --shadow-premium-card: var(--stat-card-3d-shadow), inset 0 1px 0 rgba(255, 248, 210, 0.55);
+  --shadow-premium-elevated: var(--card-3d-shadow), inset 0 1px 0 rgba(255, 248, 210, 0.6);
+  --shadow-premium-icon: var(--elevation-carved), inset 0 1px 0 rgba(255, 248, 210, 0.5);
+
+  /* Typography scale — expose canonical semantic sizes as font-size utilities.
+     5.3E T4: `--text-stat-value` font-size registration removed — it was
+     collision-suppressed by the --color-stat-value namespace (the compiled
+     .text-stat-value class is color-only) and never emitted a font-size utility;
+     LoginPage stat sizes come from the Display component's inline
+     fontSize: var(--text-display). Removal is render-neutral. */
+
+
+  /* Sidebar / Stat value semantic aliases (fix bg-sidebar / text-stat-value no-ops) */
+  --color-sidebar: var(--sidebar-bg);
+  --color-stat-value: var(--stat-value-text);
+
+  /* ─── Spacing Tokens (DS-014, Phase 1b Step 3) ─────────────────────────────
+     Expose the single-layer spacing token system (themes.css --space-*) in the
+     Tailwind spacing namespace so existing utilities (p-4, gap-2, mt-6, py-8,
+     etc.) resolve through the Design System tokens with ZERO JSX changes.
+     Direct 1:1 mapping — no new tokens, no semantic aliases, no abstraction
+     layer. Tokens values are identical to the 4px scale already in use, so no
+     visual change. Keys WITHOUT a --space-* token (e.g. 1.5/2.5/3.5/7/9/11/14/
+     28/32/40/…) keep Tailwind's default calc(var(--spacing) * N) behavior. */
+  --spacing-0: var(--space-0);
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-8: var(--space-8);
+  --spacing-10: var(--space-10);
+  --spacing-12: var(--space-12);
+  --spacing-16: var(--space-16);
+  --spacing-20: var(--space-20);
+  --spacing-24: var(--space-24);
 }
+
+/* Gradient tokens (e.g. --stat-card-bg) cannot be color utilities (gradients are
+   invalid as background-color). Expose them as real Tailwind utilities via @utility
+   so the component still consumes the existing token — no hardcoded gradient. */
+@utility stat-card-surface {
+  background-image: var(--stat-card-bg);
+}
+
+@utility selection-surface {
+  background: var(--sidebar-bg);
+}
+
+/* (removed dead `.light .selection-container-dark` block: the `selection-container-dark`
+   utility is not registered, so the `light:selection-container-dark` class tokens in
+   components never produced CSS and this selector never matched. D-125 fix — making
+   light SelectionContainer text readable — is owned by the Navigation P2-1 token wave.) */
 
 :root {
   /* ─── Typography Token System (IBM Carbon / Tailwind Hybrid) ─── */
@@ -79,61 +251,45 @@ html::-webkit-scrollbar {
   --fw-semibold: 500;
   --fw-regular: 400;
 
-  /* Default Tokens (XS: <480px) */
-  --text-h1: 1.75rem; --lh-h1: 1.15; --fw-h1: 700;
-  --text-h2: 1.375rem; --lh-h2: 1.2; --fw-h2: 700;
-  --text-h3: 1.125rem; --lh-h3: 1.3; --fw-h3: 600;
+  /* Default Tokens (XS: <480px) — text-h1/h2/h3 canonical values live in
+     themes.css :root (with --ls-* letter-spacing). Only h4/h5/h6 and the
+     caption/label micro-tokens remain here as XS defaults. */
   --text-h4: 1.0rem; --lh-h4: 1.35; --fw-h4: 600;
   --text-h5: 0.875rem; --lh-h5: 1.4; --fw-h5: 600;
   --text-h6: 0.75rem; --lh-h6: 1.5; --fw-h6: 600;
-  
-  --text-sub-1: 1.0rem; --lh-sub-1: 1.5; --fw-sub-1: 400;
-  --text-sub-2: 0.875rem; --lh-sub-2: 1.5; --fw-sub-2: 400;
-  
-  --text-body-1: 0.875rem; --lh-body-1: 1.7; --fw-body-1: 400;
-  --text-body-2: 0.8125rem; --lh-body-2: 1.65; --fw-body-2: 400;
-  
-  --text-caption: 0.6875rem; --lh-caption: 1.4; --fw-caption: 400;
-  --text-overline: 0.6875rem; --lh-overline: 1.4; --fw-overline: 500; /* 11px floor */
-  --text-button: 0.8125rem; --lh-button: 1.0; --fw-button: 500;
-  --text-label: 0.75rem; --lh-label: 1.4; --fw-label: 500;
 
-  /* Theme Palette (Dark Default) — delegated to Design Tokens */
+  --text-caption: 0.6875rem; --lh-caption: 1.4; --fw-caption: 400;
+  --text-label: 0.625rem; --lh-label: 1.4; --fw-label: 700;
+
+  /* Theme Palette (Dark Default) — delegated to Design Tokens.
+     NOTE (TAS-2A): --text-primary / --text-secondary / --text-disabled /
+     --border-subtle were previously re-defined here with the SAME literal values
+     as themes.css :root. Those duplicate value definitions have been removed so
+     themes.css is the single canonical owner. Computed values are unchanged
+     (identical literals), preserving pixel-identical rendering in both themes. */
   --app-bg: var(--bg-app);
   --card-bg: var(--bg-surface);
   --elevated-bg: var(--bg-elevated);
   --hover-bg: var(--bg-hover);
-  --text-primary: #F9FAFB;
-  --text-secondary: #D1D5DB;
-  --text-disabled: #9CA3AF;
   --border-color: var(--border-default);
-  --border-subtle: #374151;
-  --input-border: var(--border-input);
+  --input-border: var(--border-subtle);
 
   /* Shorthand aliases — delegated to Design Tokens */
   --primary: var(--color-accent);
   --primary-hover: var(--color-accent-hover);
   --primary-subtle: var(--color-accent-subtle);
   --primary-rgb: var(--color-accent-rgb);
-  --secondary: #10B981;
-  --success: #22C55E;
-  --danger: #F87171;
-  --warning: #FBBF24;
-  --info: #3B82F6;
+  /* 5.3E T3: legacy aliases delegated to the canonical state namespace so direct
+     var(--danger) etc. consumers become theme-aware (light mode now resolves the
+     certified light values; dark mode byte-identical). */
+  --secondary: var(--color-secondary);
+  --success: var(--color-success);
+  --danger: var(--color-danger);
+  --warning: var(--color-warning);
+  --info: var(--color-info);
 
   /* Ancient theme defaults (dark mode — semantic tokens handle these) */
-  --ancient-gold: var(--primary);
-  --ancient-brown-deep: var(--text-primary);
-  --ancient-brown: var(--text-secondary);
-  --ancient-cream: var(--card-bg);
-  --ancient-danger: var(--danger);
-  --ancient-danger-hover: transparent;
-  --ancient-badge-bg: transparent;
-  --ancient-badge-border: transparent;
-  --ancient-forest: var(--primary);
-  --ancient-gold-bright: var(--primary);
-  --ancient-amber: var(--warning);
-  --ancient-cream-light: var(--card-bg);
+  --ancient-gold-bright: var(--color-secondary-light);
 
   background-color: var(--app-bg);
   color: var(--text-primary);
@@ -149,7 +305,6 @@ html::-webkit-scrollbar {
   :root {
     --text-h1: 1.45rem;
     --text-h2: 1.2rem;
-    --text-body-1: 0.8125rem;
   }
 }
 
@@ -162,41 +317,10 @@ input, button, select, textarea, optgroup {
 
 /* ─── Light Mode Overrides ─── */
 .light {
-  --app-bg: var(--bg-app);
-  --card-bg: var(--bg-surface);
-  --elevated-bg: var(--bg-elevated);
-  --hover-bg: var(--bg-hover);
-  --text-primary: #0A0503;
-  --text-secondary: #23120B;
-  --text-disabled: #4A3525;
-  --border-color: var(--border-default);
-  --border-subtle: rgba(139, 90, 16, 0.45);
-  --input-border: var(--border-input);
-  --primary: var(--color-accent);
-  --primary-hover: var(--color-accent-hover);
-  --secondary: var(--color-secondary);
-  --success: var(--color-success);
-  --danger: var(--color-danger);
-  --warning: var(--color-warning);
-  --info: var(--color-info);
   color-scheme: light;
   font-family: var(--font-sans) !important;
   -webkit-font-smoothing: antialiased !important;
   -moz-osx-font-smoothing: grayscale !important;
-
-  /* Ancient theme color tokens — centralized for DRY usage across components */
-  --ancient-gold: #A87828;
-  --ancient-brown-deep: #3D1F08;
-  --ancient-brown: #8B5A10;
-  --ancient-cream: #F4E5C4;
-  --ancient-danger: #D32F2F;
-  --ancient-danger-hover: #FFEBEE;
-  --ancient-badge-bg: #FFF8E1;
-  --ancient-badge-border: #FFE082;
-  --ancient-forest: #1C3D28;
-  --ancient-gold-bright: #C8960C;
-  --ancient-amber: #B45309;
-  --ancient-cream-light: #E8D5B0;
 }
 
 /* Ensure headings, page titles, stat values, and decorative text use the unified high-legibility font styles */
@@ -204,12 +328,9 @@ input, button, select, textarea, optgroup {
 .light h4, .light h5, .light h6,
 .light .font-cinzel,
 .light .font-garamond,
-.light .ancient-stat-card .stat-value,
-.light .ancient-stat-card .stat-unit,
-.light .ancient-stat-card .stat-label,
-.light .ancient-divider-text,
 .light .font-ancient {
-  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
+  font-family: var(--font-sans) !important;
+  font-weight: var(--weight-bold);
 }
 
 /* Ensure inputs, select lists, and textareas have crisp legibility */
@@ -240,76 +361,46 @@ input, button, select, textarea, optgroup {
   background-color: var(--bg-disabled) !important;
 }
 
-/* Boost readability of small uppercase labels */
-.light span.text-\[10px\],
-.light label {
-  color: var(--text-secondary) !important;
-  letter-spacing: 0.12em !important;
-}
+/* Opacity and label overrides removed to restore design token system integrity */
 
-/* Adjust all low-contrast Tailwind opacity helper classes on text in light mode */
-.light .opacity-70 { opacity: 0.95 !important; }
-.light .opacity-60 { opacity: 0.90 !important; }
-.light .opacity-50 { opacity: 0.85 !important; }
-.light .opacity-40 { opacity: 0.75 !important; }
-.light .opacity-30 { opacity: 0.65 !important; }
-.light .opacity-20 { opacity: 0.55 !important; }
-.light .opacity-10 { opacity: 0.35 !important; }
-
-/* ─── 3D Lift Effect Utility ────────────────────────────────────────────────── */
+/* ─── Premium Lift Effect Utility ──────────────────────────────────────────── */
 .ancient-3d-lift {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
   cursor: pointer;
   position: relative !important;
 }
 
-/* Pseudo-element for light reflection on hover */
 .ancient-3d-lift::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 40%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
-/* Desktop-only hover lift (no sticky hover on touch devices) */
 @media (hover: hover) {
   .ancient-3d-lift:hover {
-    transform: translateY(-2px) !important;
-    z-index: 50 !important;
-    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.3) !important;
-  }
-
-  .ancient-3d-lift:hover::after {
-    opacity: 1;
+    transform: translateY(-1px) !important;
+    z-index: 10 !important;
+    box-shadow: var(--elevation-3) !important;
   }
 
   .light .ancient-3d-lift:hover {
-    box-shadow: 0 8px 16px -4px rgba(168, 120, 40, 0.25) !important;
+    box-shadow: var(--elevation-3) !important;
   }
 }
 
-/* For table rows specifically */
 tr.ancient-3d-lift {
   display: table-row !important;
 }
 
-/* Prevent translation and box-shadow on table rows to ensure layout stability */
 tr.ancient-3d-lift:hover {
   transform: none !important;
   box-shadow: none !important;
 }
 
 tr.ancient-3d-lift:hover td {
-  background-color: var(--elevated-bg) !important;
+  background-color: var(--bg-hover) !important;
 }
 
 .light tr.ancient-3d-lift:hover td {
-  background-color: #F8ECD0 !important;
+  background-color: rgba(0, 0, 0, 0.03) !important;
 }
 
 .light tr.ancient-3d-lift td:first-child {
@@ -319,13 +410,6 @@ tr.ancient-3d-lift:hover td {
 .light tr.ancient-3d-lift td:last-child {
   border-top-right-radius: 12px;
   border-bottom-right-radius: 12px;
-}
-
-/* Ancient headings font */
-.light h1, .light h2, .light h3,
-.light h4, .light h5, .light h6 {
-  font-family: var(--font-sans) !important;
-  font-weight: var(--weight-bold);
 }
 
 /* Font helpers */
@@ -352,38 +436,50 @@ select option {
 /* 🔷 SM Breakpoint (480px) */
 @media (min-width: 480px) {
   :root {
-    --text-h1: 2.0rem; --text-h2: 1.625rem; --text-h3: 1.25rem; --text-h4: 1.0625rem;
-    --text-h5: 0.9375rem; --text-h6: 0.8125rem; --text-sub-1: 1.0625rem; --text-sub-2: 0.9375rem;
-    --text-body-1: 0.9375rem; --text-body-2: 0.8125rem; --text-button: 0.875rem; --text-label: 0.8125rem;
+    --text-h1: 1.375rem; --text-h2: 1.125rem; --text-h3: 0.875rem; --text-h4: 1.0625rem;
+    --text-h5: 0.9375rem; --text-h6: 0.8125rem;
+    --text-label: 0.625rem;
+    --text-display: 2.0rem;
   }
 }
 
 /* 🔷 MD Breakpoint (768px) */
 @media (min-width: 768px) {
   :root {
-    --text-h1: 2.25rem; --text-h2: 1.75rem; --text-h3: 1.375rem; --text-h4: 1.125rem;
-    --text-h5: 1.0rem; --text-h6: 0.8125rem; --text-sub-1: 1.125rem; --text-sub-2: 0.9375rem;
-    --text-body-1: 1.0rem; --text-body-2: 0.875rem; --text-caption: 0.75rem; --text-overline: 0.6875rem;
+    --text-h1: 1.625rem; --text-h2: 1.25rem; --text-h3: 0.9375rem; --text-h4: 1.125rem;
+    --text-h5: 1.0rem; --text-h6: 0.8125rem;
+    --text-caption: 0.75rem;
+    --text-display: 2.25rem;
+    --text-body: 0.875rem;
+    --text-caption: 0.75rem;
+    --text-badge: 0.625rem;
   }
 }
 
 /* 🔷 LG Breakpoint (1024px) */
 @media (min-width: 1024px) {
   :root {
-    --text-h1: 2.5rem; --text-h2: 2.0rem; --text-h3: 1.5rem; --text-h4: 1.25rem;
-    --text-h5: 1.0625rem; --text-h6: 0.875rem; --text-sub-1: 1.25rem; --text-sub-2: 1.0rem;
-    --text-body-1: 1.0rem; --text-body-2: 0.875rem; --text-button: 0.9375rem; --text-label: 0.875rem;
-    --text-overline: 0.75rem;
+    --text-h1: 1.875rem; --text-h2: 1.25rem; --text-h3: 0.9375rem; --text-h4: 1.25rem;
+    --text-h5: 1.0625rem; --text-h6: 0.875rem;
+    --text-label: 0.625rem;
+    --text-display: 2.5rem;
+    --text-body: 0.875rem;
+    --text-caption: 0.75rem;
+    --text-badge: 0.625rem;
   }
 }
 
 /* 🔷 XL Breakpoint (1440px) */
 @media (min-width: 1440px) {
   :root {
-    --text-h1: 3.0rem; --text-h2: 2.25rem; --text-h3: 1.75rem; --text-h4: 1.375rem;
-    --text-h5: 1.125rem; --text-h6: 0.9375rem; --text-sub-1: 1.375rem; --text-sub-2: 1.125rem;
-    --text-body-1: 1.125rem; --text-body-2: 1.0rem; --text-caption: 0.8125rem; --text-overline: 0.75rem;
-    --text-button: 1.0rem; --text-label: 0.875rem;
+    --text-h1: 1.875rem; --text-h2: 1.25rem; --text-h3: 0.9375rem; --text-h4: 1.375rem;
+    --text-h5: 1.125rem; --text-h6: 0.9375rem;
+    --text-caption: 0.8125rem;
+    --text-label: 0.625rem;
+    --text-display: 3.0rem;
+    --text-body: 0.875rem;
+    --text-caption: 0.75rem;
+    --text-badge: 0.625rem;
   }
 }
 
@@ -470,6 +566,12 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 }
 
 /* ─── Theme-aware Utilities (auto dark/light) ─── */
+/* Top-edge micro-light: subconscious material sheen on raised surfaces.
+   background-image only; safe in dark mode (resolves to none). */
+.micro-light {
+  background-image: var(--gradient-surface);
+}
+
 .premium-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
@@ -508,11 +610,9 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
   outline-offset: var(--focus-ring-offset, 2px);
 }
 
-.light .bg-app-bg {
-  background: transparent !important;
-}
+/* Removed dead bg-app-bg hack */
 
-/* ── LIGHT MODE — premium ancient sandstone/parchment background (Global) ── */
+/* ── LIGHT MODE — premium clean background (Global) ── */
 .light, .light body, .light #root {
   background-color: var(--bg-app);
   background-image: var(--gradient-app);
@@ -520,29 +620,33 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 }
 
 
-/* Light: sidebars across all panels — dark forest green, visible against bg image */
+/* Light: sidebars across all panels inherits premium tokens */
 .light aside {
-  background: rgba(12, 32, 20, 0.95) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  box-shadow: 4px 0 24px rgba(0,0,0,0.45) !important;
-  border-right: 1px solid rgba(200,150,12,0.35) !important;
 }
+
 /* Navigation links & SVG icons inside light-mode sidebars */
 .light aside nav a {
-  color: rgba(223, 192, 150, 0.7) !important;
+  color: rgba(212, 168, 75, 0.7) !important;
 }
 .light aside nav a svg {
   color: inherit !important;
   stroke: currentColor !important;
 }
-.light aside nav a.active, 
+/* Canonical active navigation surface — shared by Sidebar nav items and Selection Container tabs.
+   Single source of truth for the elevated active treatment. */
+.light .nav-active-surface,
+.light aside nav a.active,
 .light aside nav a[aria-current="page"],
 .light aside .ancient-nav-item-active {
-  background: rgba(200, 150, 12, 0.2) !important;
-  color: rgba(255, 223, 160, 1) !important;
-  box-shadow: inset 3px 0 0px #C8960C !important;
-  border: 1px solid rgba(200, 150, 12, 0.3) !important;
+  background: var(--bg-nav-active) !important;
+  color: var(--text-nav-active) !important;
+  box-shadow: var(--header-shadow) !important;
+  border: 1.8px solid var(--sidebar-border) !important;
+}
+/* Active tab text inherits nav-active-surface color in light mode.
+   The pill (motion.div.nav-active-surface) sits behind the text span as a sibling. */
+.light .nav-active-surface + span {
+  color: var(--text-nav-active) !important;
 }
 .light aside nav a:hover:not(.active):not([aria-current="page"]) {
   background: rgba(200, 150, 12, 0.1) !important;
@@ -553,7 +657,7 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
   color: rgba(255, 255, 255, 0.95) !important;
 }
 .light aside .text-text-secondary {
-  color: rgba(223, 192, 150, 0.7) !important;
+  color: rgba(212, 168, 75, 0.7) !important;
 }
 .light aside .text-danger {
   color: #FCA5A5 !important;
@@ -587,61 +691,42 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 }
 .light aside button.absolute {
   background: rgba(12, 32, 20, 0.95) !important;
-  border: 1.5px solid rgba(200, 150, 12, 0.4) !important;
+  border: 1px solid rgba(200, 150, 12, 0.3) !important;
   color: rgba(220, 185, 120, 0.9) !important;
+  box-shadow: none !important;
 }
 .light aside button.absolute:hover {
   color: #FFFFFF !important;
-  border-color: rgba(200, 150, 12, 0.8) !important;
+  border-color: rgba(200, 150, 12, 0.6) !important;
   background: #1C3D28 !important;
 }
 
 
 
 
-/* ── LIGHT MODE HEADER — dark forest green 3D card ── */
+/* ── LIGHT MODE HEADER — dark forest green premium bar ── */
 .light .ancient-header {
-  /* Same bg as the light-mode sidebar — rgba(12, 32, 20, 0.93) */
-  background: rgba(12, 32, 20, 0.93) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1.8px solid rgba(200, 150, 12, 0.35) !important;
   position: relative !important;
-
-  /* 3D embossed shadow: top gold shimmer + bottom depth + hard 5px offset */
-  box-shadow:
-    inset 0 2px 4px rgba(200, 150, 12, 0.18),
-    inset 2px 0 3px rgba(200, 150, 12, 0.08),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.55),
-    inset -1px 0 2px rgba(0, 0, 0, 0.30),
-    5px 6px 0px rgba(4, 12, 7, 0.90),
-    0 14px 32px rgba(0, 0, 0, 0.40) !important;
 }
 
-/* Thin gold top-edge shimmer line */
 .light .ancient-header::before {
   content: '';
   position: absolute;
   top: 0; left: 14px; right: 14px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(200,150,12,0.6), transparent);
+  background: linear-gradient(90deg, transparent, rgba(200, 150, 12, 0.6), transparent);
   border-radius: 999px;
   pointer-events: none;
 }
 
-/* H1 — same weight/tracking as sidebar nav labels */
 .light .ancient-header h1, .light .ancient-header span.text-lg {
   font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
   font-weight: 700 !important;
   letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
   color: rgba(220, 185, 120, 0.92) !important;
-  text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.8),
-    0 0 12px rgba(200, 150, 12, 0.25) !important;
-  /* Ensure font-size comes from parent clamp, not from base h1 rules */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
   font-size: clamp(13px, 1.2vw, 16px);
-  /* Safe overflow handling */
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -668,30 +753,32 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
   border-color: rgba(80, 180, 120, 0.3) !important;
 }
 
-/* Notification bell button in light mode */
 .light .ancient-header button.bg-hover-bg\/50 {
   background: rgba(200, 150, 12, 0.10) !important;
-  border-color: rgba(168, 120, 22, 0.40) !important;
-  box-shadow:
-    inset 0 1px 2px rgba(200, 150, 12, 0.12),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.4),
-    2px 3px 0px rgba(4, 12, 7, 0.8) !important;
+  border-color: rgba(200, 150, 12, 0.25) !important;
+  box-shadow: none !important;
 }
 .light .ancient-header .text-text-secondary {
   color: rgba(220, 185, 120, 0.70) !important;
 }
 
-/* Mobile menu hamburger button in light mode */
 .light .ancient-header button.bg-hover-bg {
   background: rgba(200, 150, 12, 0.08) !important;
   color: rgba(220, 185, 120, 0.80) !important;
-  border: 1px solid rgba(168, 120, 22, 0.25) !important;
+  border: 1px solid rgba(200, 150, 12, 0.2) !important;
+}
+/* Gold hover for all icon buttons in the ancient header (hamburger, bell, etc.)
+   Matches the sidebar nav hover at .light aside nav a:hover (line 585).
+   No !important needed: unlayered CSS wins over Tailwind @layer utilities,
+   and selector (0,3,1) > hover utility (0,2,1). */
+.light .ancient-header button:hover {
+  background: rgba(200, 150, 12, 0.10);
+  color: rgba(255, 223, 160, 1);
 }
 
-/* Avatar initials button in light mode */
 .light .ancient-header button.bg-gradient-to-br, .light .ancient-header .bg-primary {
-  border: 1.5px solid rgba(168, 120, 22, 0.5) !important;
-  box-shadow: 2px 3px 0px rgba(4, 12, 7, 0.7), 0 6px 16px rgba(0,0,0,0.35) !important;
+  border: 1px solid rgba(200, 150, 12, 0.35) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -700,43 +787,17 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
    hard-offset shadows, beveled inset edges, dark forest green.
    ══════════════════════════════════════════════════════════════ */
 
-/* ── PARCHMENT CARD — raised stone-tablet 3D effect ── */
+/* ── PREMIUM CARD — elegant raised surface (token-driven) ── */
 .ancient-card {
-  /* Deep warm amber parchment — matches reference exactly */
-  background:
-    linear-gradient(
-      170deg,
-      rgba(255, 240, 195, 0.35) 0%,    /* top-left light catch */
-      rgba(195, 145, 70, 0.08) 45%,
-      rgba(155, 100, 35, 0.12) 100%
-    ),
-    #C9A070;                             /* base amber-parchment */
-
-  border-radius: 18px;
-
-  /* Amber-gold border — thick enough to be visible */
-  border: 1.8px solid #A87828;
-
-  box-shadow:
-    /* TOP inset highlight — raised surface catching light */
-    inset 0 2px 5px rgba(255, 235, 165, 0.65),
-    /* LEFT inset highlight */
-    inset 2px 0 4px rgba(255, 235, 165, 0.25),
-    /* BOTTOM inset shadow — beveled depth illusion */
-    inset 0 -2px 5px rgba(100, 58, 12, 0.45),
-    /* RIGHT inset shadow */
-    inset -1px 0 3px rgba(100, 58, 12, 0.2),
-    /* HARD OFFSET SHADOW — physical 3D thickness (key effect) */
-    5px 6px 0px rgba(105, 62, 15, 0.70),
-    /* Soft ambient drop */
-    0 12px 28px rgba(60, 28, 5, 0.22);
-
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-
+  background-color: var(--surface-primary);
+  background-image: var(--gradient-surface);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--elevation-surface);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 24px;
 }
 
-/* Responsive adjustments for smaller screens */
 @media (max-width: 767px) {
   .ancient-card {
     padding: 16px;
@@ -744,446 +805,248 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 }
 
 .ancient-card:hover {
-  transform: translateY(-2px) translateX(-1px);
-  box-shadow:
-    inset 0 2px 5px rgba(255, 235, 165, 0.65),
-    inset 2px 0 4px rgba(255, 235, 165, 0.25),
-    inset 0 -2px 5px rgba(100, 58, 12, 0.45),
-    inset -1px 0 3px rgba(100, 58, 12, 0.2),
-    6px 8px 0px rgba(105, 62, 15, 0.65),
-    0 16px 34px rgba(60, 28, 5, 0.28);
+  box-shadow: var(--elevation-raised);
+  border-color: var(--border-hover);
 }
 
-/* ── STAT CARD — pure CSS parchment card (no image) ── */
-.ancient-stat-card {
-  /* Layered parchment gradient — same palette as .ancient-card */
-  background:
-    linear-gradient(
-      170deg,
-      rgba(255, 248, 210, 0.55) 0%,    /* top-left highlight catch */
-      rgba(220, 170, 90, 0.15) 40%,
-      rgba(175, 118, 45, 0.18) 100%
-    ),
-    linear-gradient(135deg, #D4A55A 0%, #C9943C 50%, #BF8A30 100%);
-
-  border-radius: 18px;
-  border: 1.8px solid #A87828;
-
-  box-shadow:
-    /* TOP inset highlight — raised surface */
-    inset 0 2px 6px rgba(255, 240, 170, 0.70),
-    /* LEFT inset bevel */
-    inset 2px 0 4px rgba(255, 235, 165, 0.30),
-    /* BOTTOM inset shadow — carved depth */
-    inset 0 -3px 6px rgba(100, 55, 10, 0.50),
-    /* RIGHT inset shadow */
-    inset -1px 0 3px rgba(100, 58, 12, 0.22),
-    /* HARD OFFSET — physical tablet thickness */
-    5px 6px 0px rgba(105, 62, 15, 0.72),
-    /* Ambient drop shadow */
-    0 12px 28px rgba(60, 28, 5, 0.22);
-
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 18px 18px 16px;
-  gap: 10px;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-  cursor: default;
-}
-
-/* Subtle parchment grain overlay */
-.ancient-stat-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 3px,
-      rgba(100, 55, 10, 0.025) 3px,
-      rgba(100, 55, 10, 0.025) 4px
-    );
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-/* Add an inner etched border for a premium ancient look */
-.ancient-stat-card::after {
-  content: '';
-  position: absolute;
-  top: 6px; left: 6px; right: 6px; bottom: 6px;
-  border: 1px solid rgba(168, 120, 22, 0.25);
-  border-radius: 9px;
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* ── Stat card sub-elements ── */
-.ancient-stat-card .stat-header {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  width: 100%;
-  margin-bottom: 8px;
-}
-
-.ancient-stat-card .stat-label {
-  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
-  font-size: clamp(9px, 1.2vw, 11px);
-  letter-spacing: 0.25em;
-  color: #A87828;
-  text-transform: uppercase;
-  font-weight: 800;
-  margin: 0;
-  padding-top: 4px;
-}
-
-.ancient-stat-card .stat-icon-wrap {
-  background: linear-gradient(150deg, #1C3D28 0%, #081510 100%);
-  border: 1.8px solid rgba(168, 120, 22, 0.85);
-  border-radius: 11px;
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow:
-    inset 0 1px 3px rgba(200, 150, 12, 0.22),
-    inset 1px 0 2px rgba(200, 150, 12, 0.10),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.55),
-    3px 4px 0px rgba(4, 12, 7, 0.90);
-}
-
-.ancient-stat-card .stat-body {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-}
-
-.ancient-stat-card .stat-value {
-  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
-  font-size: clamp(28px, 5vw, 38px);
-  font-weight: 900;
-  color: #3D1F08;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  margin: 0;
-  text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.4); /* Embossed effect */
-}
-
-.ancient-stat-card .stat-unit {
-  font-family: 'Vend Sans', system-ui, -apple-system, sans-serif !important;
-  font-size: clamp(13px, 2vw, 16px);
-  color: #8B5A10;
-  font-weight: 600;
-  font-style: italic;
-  margin: 0;
-  line-height: 1.3;
-}
-/* END of ancient-stat-card styles */
-
-/* Responsive adjustments for ancient-stat-card on smaller viewports */
-@media (max-width: 640px) {
-  .ancient-stat-card {
-    padding: 12px 12px 10px;
-    gap: 6px;
-    border-radius: 12px;
-    box-shadow:
-      inset 0 1.5px 4px rgba(255, 240, 170, 0.70),
-      inset 1.5px 0 3px rgba(255, 235, 165, 0.30),
-      inset 0 -2px 4px rgba(100, 55, 10, 0.50),
-      inset -1px 0 2px rgba(100, 58, 12, 0.22),
-      3px 4px 0px rgba(105, 62, 15, 0.72),
-      0 8px 20px rgba(60, 28, 5, 0.18);
-  }
-  .ancient-stat-card::after {
-    top: 4px; left: 4px; right: 4px; bottom: 4px;
-    border-radius: 6px;
-  }
-  .ancient-stat-card .stat-header {
-    margin-bottom: 4px;
-  }
-  .ancient-stat-card .stat-icon-wrap {
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    box-shadow:
-      inset 0 1px 2px rgba(200, 150, 12, 0.22),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.55),
-      1.5px 2px 0px rgba(4, 12, 7, 0.90);
-  }
-  .ancient-stat-card .stat-icon-wrap svg {
-    width: 14px;
-    height: 14px;
-  }
-  .ancient-stat-card .stat-label {
-    font-size: 8px;
-    letter-spacing: 0.15em;
-    padding-top: 2px;
-  }
-  .ancient-stat-card .stat-value {
-    font-size: 20px;
-  }
-  .ancient-stat-card .stat-unit {
-    font-size: 11px;
-  }
-}
-
-/* ── DARK FOREST GREEN CARD — embossed stone block ── */
+/* ── DARK FOREST GREEN CARD — premium dark surface ── */
 .ancient-card-dark {
   background: linear-gradient(150deg, #162B1C 0%, #0A1A10 100%);
-  border-radius: 13px;
-  border: 1.8px solid rgba(176, 122, 20, 0.9);
-
-  box-shadow:
-    /* Top inner gold shimmer */
-    inset 0 2px 4px rgba(200, 150, 12, 0.18),
-    /* Bottom inner depth */
-    inset 0 -2px 4px rgba(0, 0, 0, 0.6),
-    /* Hard 3D offset */
-    5px 6px 0px rgba(4, 12, 7, 0.95),
-    0 12px 32px rgba(0, 0, 0, 0.5);
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(200, 150, 12, 0.25);
+  box-shadow: var(--elevation-2);
 }
 
-/* ── TAB TRACK — inset dark stone ── */
-.ancient-tab-track {
-  background: linear-gradient(150deg, #162B1C 0%, #0A1A10 100%);
-  border-radius: 16px;
-  border: 1.5px solid rgba(176, 122, 20, 0.6);
-  box-shadow: 
-    inset 0 4px 12px rgba(0, 0, 0, 0.8),
-    0 12px 24px rgba(0, 0, 0, 0.15);
-  
-  /* Standardized text colors for dark backgrounds in light mode */
-  --tab-text-active: #2A1506;
-  --tab-text-inactive: #DFC096; /* Brighter solid gold for high contrast */
-}
-
-/* ── TAB PILL — specifically for framer-motion layout elements (no css transition) ── */
-.ancient-tab-pill {
-  background: linear-gradient(135deg, #E6D2A5 0%, #D8C390 100%);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 
-    inset 0 2px 4px rgba(255,255,255,0.7),
-    inset 0 -2px 5px rgba(139, 90, 16, 0.2),
-    4px 5px 0px rgba(100, 60, 10, 0.15),
-    0 8px 16px rgba(0,0,0,0.08);
-}
-
-/* ── ICON BADGE — carved dark medallion ── */
+/* ── ICON BADGE — Family B forest-chrome medallion ── */
 .ancient-icon-badge {
-  background: linear-gradient(150deg, #1C3D28 0%, #081510 100%);
-  border: 1.8px solid rgba(168, 120, 22, 0.85);
+  background: var(--sidebar-bg);
+  border: 1px solid var(--sidebar-border);
   border-radius: 11px;
-
-  box-shadow:
-    /* Top inner gold catch */
-    inset 0 1px 3px rgba(200, 150, 12, 0.22),
-    /* Left inner light */
-    inset 1px 0 2px rgba(200, 150, 12, 0.1),
-    /* Bottom inner dark */
-    inset 0 -1px 3px rgba(0, 0, 0, 0.55),
-    /* Hard carved shadow */
-    3px 4px 0px rgba(4, 12, 7, 0.9);
-
-  color: #C8960C;
+  box-shadow: var(--header-shadow-sm);
+  color: var(--text-nav-active);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-/* ── ARROW CIRCLE BUTTON ── */
-.ancient-arrow-btn {
-  background: linear-gradient(150deg, #1C3D28 0%, #081510 100%);
-  border: 1.8px solid rgba(168, 120, 22, 0.85);
-  border-radius: 50%;
-
+/* ── MATERIAL FAMILY C — INPUT MATERIAL (light only) ──
+   Phase 4.2 — neutral surface · neutral slate border · soft elevation ·
+   gentle green focus ring. No parchment, no gold borders, no amber glow. */
+.light .ancient-input,
+.light .ancient-select,
+.light .ancient-textarea {
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease;
+}
+.light .ancient-input:hover:not(:disabled):not([readonly]),
+.light .ancient-select:hover:not(:disabled),
+.light .ancient-otp:hover:not(:disabled),
+.light .ancient-textarea:hover:not(:disabled):not([readonly]) {
+  border-color: var(--border-hover);
+}
+.light .ancient-input:focus,
+.light .ancient-select:focus,
+.light .ancient-textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  background-color: var(--bg-elevated);
   box-shadow:
-    inset 0 1px 3px rgba(200, 150, 12, 0.2),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
-    3px 4px 0px rgba(4, 12, 7, 0.9),
-    0 5px 14px rgba(0, 0, 0, 0.3);
-
-  color: #C8960C;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform 0.15s ease;
+    0 0 0 3px var(--focus-ring-color),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    var(--shadow-sm);
 }
-.ancient-arrow-btn:hover { transform: scale(1.08); }
-
-/* ── PROGRESS BAR ── */
-.ancient-progress-track {
-  height: 5px;
-  background: rgba(100, 60, 15, 0.22);
-  border-radius: 999px;
-  border: 1px solid rgba(168, 120, 22, 0.3);
-  overflow: hidden;
+.light .ancient-input:disabled,
+.light .ancient-select:disabled,
+.light .ancient-textarea:disabled {
+  background-color: var(--bg-disabled);
+  border-color: var(--input-disabled-border);
+  color: var(--text-disabled);
+  opacity: 0.7;
 }
-.ancient-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #0A1A10, #1A4030);
-  border-radius: 999px;
+.light .ancient-input[readonly],
+.light .ancient-textarea[readonly] {
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.light .ancient-textarea {
+  border-radius: 24px;
+}
+.light .ancient-otp {
+  background-color: var(--bg-hover);
+  border: 2px solid var(--border-input);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  color: var(--text-primary);
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease, transform .2s ease;
+}
+.light .ancient-otp:focus {
+  outline: none;
+  background-color: var(--bg-elevated);
+  box-shadow:
+    0 0 0 3px var(--focus-ring-color),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    var(--shadow-sm);
+}
+.light .ancient-otp.ancient-otp-active {
+  border-color: var(--border-focus);
+  box-shadow:
+    0 0 0 3px var(--focus-ring-color),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    var(--shadow-sm);
+  transform: scale(1.1);
+}
+.light .ancient-otp:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-/* ── PRIMARY CTA BUTTON ── */
+/* ── MATERIAL FAMILY D — OVERLAY MATERIAL (light only) ──
+   Floating surface · soft premium shadow · soft edge ·
+   warm premium surface · gentle border · clean separation.
+   No carved, no forest chrome, no heavy bevel, no hard contact shadow. */
+.light .ancient-overlay {
+  background-color: var(--surface-floating);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--elevation-4);
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+.light .ancient-tooltip {
+  background-color: var(--surface-floating);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  box-shadow: var(--elevation-4);
+}
+
+/* ── PREMIUM BUTTONS ── */
 .ancient-btn-primary {
-  background: linear-gradient(150deg, #1C3D28 0%, #081510 100%);
-  border: 1.8px solid rgba(176, 122, 20, 0.9);
-  box-shadow:
-    inset 0 1px 4px rgba(200, 150, 12, 0.2),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
-    5px 6px 0px rgba(4, 12, 7, 0.9),
-    0 10px 28px rgba(0, 0, 0, 0.35);
-  color: #DFC096;
+  background: var(--color-accent);
+  border: 1px solid transparent;
+  box-shadow: var(--elevation-1);
+  color: var(--text-on-accent);
   font-family: inherit;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .ancient-btn-primary:hover {
-  box-shadow:
-    inset 0 1px 4px rgba(200, 150, 12, 0.2),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
-    6px 8px 0px rgba(4, 12, 7, 0.85),
-    0 14px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--elevation-3);
+  filter: brightness(1.1);
 }
 .ancient-btn-primary:active {
-  transform: translateY(2px) translateX(2px);
-  box-shadow:
-    inset 0 1px 4px rgba(200, 150, 12, 0.2),
-    2px 3px 0px rgba(4, 12, 7, 0.9);
+  transform: translateY(1px);
+  box-shadow: var(--elevation-1);
+  filter: brightness(0.95);
 }
 
 .ancient-btn-secondary {
-  background: #E8D5B0;
-  border: 1.8px solid #7B5C3A;
-  box-shadow:
-    inset 0 1px 4px rgba(255, 255, 255, 0.5),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.1),
-    4px 5px 0px rgba(123, 92, 58, 0.25);
-  color: #3D1F08;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--elevation-1);
+  color: var(--text-primary);
   font-family: inherit;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .ancient-btn-secondary:hover {
-  background: #F0DFB8;
-  border-color: #5E4B3C;
-  box-shadow: 5px 6px 0px rgba(123, 92, 58, 0.3);
+  background: var(--bg-hover);
+  box-shadow: var(--elevation-2);
 }
 .ancient-btn-secondary:active {
-  transform: translateY(1px) translateX(1px);
-  box-shadow: 2px 2px 0px rgba(123, 92, 58, 0.25);
+  transform: translateY(1px);
+  box-shadow: var(--elevation-1);
 }
 
 .ancient-btn-danger {
-  background: linear-gradient(150deg, #420D09 0%, #2D0805 100%);
-  border: 1.8px solid #8B0000;
-  box-shadow:
-    inset 0 1px 4px rgba(255, 0, 0, 0.1),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
-    4px 5px 0px rgba(45, 8, 5, 0.9);
-  color: #FFD700;
+  background: var(--color-danger);
+  border: 1px solid transparent;
+  box-shadow: var(--elevation-1);
+  color: var(--text-on-danger);
   font-family: inherit;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .ancient-btn-danger:hover {
-  box-shadow: 6px 8px 0px rgba(45, 8, 5, 0.85);
+  box-shadow: var(--elevation-3);
+  filter: brightness(1.1);
 }
 .ancient-btn-danger:active {
-  transform: translateY(2px) translateX(2px);
-  box-shadow: 2px 3px 0px rgba(45, 8, 5, 0.9);
+  transform: translateY(1px);
+  box-shadow: var(--elevation-1);
+  filter: brightness(0.95);
 }
 
 .ancient-btn-success {
-  background: linear-gradient(150deg, #064E3B 0%, #064030 100%);
-  border: 1.8px solid #059669;
-  box-shadow:
-    inset 0 1px 4px rgba(0, 255, 0, 0.1),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
-    4px 5px 0px rgba(6, 64, 48, 0.9);
-  color: #10B981;
+  background: var(--color-success);
+  border: 1px solid transparent;
+  box-shadow: var(--elevation-1);
+  color: var(--text-on-accent);
   font-family: inherit;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .ancient-btn-success:hover {
-  box-shadow: 6px 8px 0px rgba(6, 64, 48, 0.85);
+  box-shadow: var(--elevation-3);
+  filter: brightness(1.1);
 }
 .ancient-btn-success:active {
-  transform: translateY(2px) translateX(2px);
-  box-shadow: 2px 3px 0px rgba(6, 64, 48, 0.9);
+  transform: translateY(1px);
+  box-shadow: var(--elevation-1);
+  filter: brightness(0.95);
 }
 
 
 
-/* ── ANCIENT LAYOUT ── */
+/* ── PREMIUM LAYOUT ── */
 .ancient-sidebar {
-  background: #F1E5D1; /* Slightly darker parchment */
-  border-right: 2px solid rgba(123, 92, 58, 0.3);
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
+  background: var(--sidebar-bg);
+  border-right: 1.8px solid var(--sidebar-border);
+  box-shadow: var(--header-shadow);
 }
 
+.nav-active-surface,
 .ancient-nav-item-active {
-  background: #E8D5B0 !important;
-  border: 1.5px solid #7B5C3A !important;
-  box-shadow: 
-    inset 2px 2px 5px rgba(0,0,0,0.1), 
-    inset -1px -1px 2px rgba(255,255,255,0.5),
-    0 4px 12px rgba(0,0,0,0.08) !important;
-  color: #3D1F08 !important;
+  background: var(--bg-accent-subtle) !important;
+  border: 1px solid var(--border-accent) !important;
+  box-shadow: var(--elevation-1) !important;
+  color: var(--color-accent) !important;
 }
 
 .ancient-header {
-  background: rgba(252, 248, 240, 0.8) !important;
-  backdrop-filter: blur(12px) !important;
-  border-bottom: 2px solid rgba(123, 92, 58, 0.15) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+  background: var(--header-bg) !important;
+  border: 1.8px solid var(--header-border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--header-shadow) !important;
 }
 
-/* Light mode sidebar footer container override */
 .light .sidebar-footer-container {
   background-color: rgba(6, 17, 11, 0.98) !important;
-  border-top: 1px solid rgba(200, 150, 12, 0.3) !important;
+  border-top: 1px solid rgba(200, 150, 12, 0.2) !important;
 }
 
 /* ─── Reduced Motion ───────────────────────────────────────────────────────────
@@ -1198,3 +1061,92 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4.2 — ANCIENT-CARD LIGHT MATERIAL NEUTRALIZED
+   Previously: carved-stone parchment card (warm parchment, gold edge, hard
+   contact shadow, bevel insets, soft grain, physical hover). Retired to the
+   certified Management Surface family: neutral white surface, neutral slate
+   border, neutral elevation. Dark mode untouched. Components untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── CARVED PARCEMENT CARD → NEUTRAL MANAGEMENT SURFACE ── */
+.light .ancient-card {
+  background: var(--management-surface);
+  border-radius: 18px;
+  border: 1.8px solid var(--management-border);
+  box-shadow: var(--management-shadow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  padding: 24px !important;
+  position: relative;
+  overflow: hidden;
+}
+.light .ancient-card.p-0 { padding: 0px !important; }
+.light .ancient-card.p-4 { padding: 16px !important; }
+.light .ancient-card.p-5 { padding: 20px !important; }
+.light .ancient-card.p-6 { padding: 24px !important; }
+
+/* Soft grain texture — neutral, non-parchment */
+.light .ancient-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(15, 23, 42, 0.02) 3px, rgba(15, 23, 42, 0.02) 4px);
+  pointer-events: none;
+  z-index: 0;
+}
+.light .ancient-card > * { position: relative; z-index: 1; }
+
+@media (max-width: 767px) {
+  .light .ancient-card { padding: 16px !important; }
+  .light .ancient-card.p-0 { padding: 0px !important; }
+  .light .ancient-card.p-4 { padding: 12px !important; }
+  .light .ancient-card.p-5 { padding: 14px !important; }
+  .light .ancient-card.p-6 { padding: 16px !important; }
+}
+
+.light .ancient-card:hover {
+  transform: translateY(-2px) translateX(-1px);
+  box-shadow: var(--management-shadow-hover);
+}
+
+/* ── 3D LIFT — light reflection + neutral hover elevation ── */
+.light .ancient-3d-lift { position: relative; }
+.light .ancient-3d-lift::after {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 45%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+@media (hover: hover) {
+  .light .ancient-3d-lift:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--elevation-3) !important;
+  }
+  .light .ancient-3d-lift:hover::after { opacity: 1; }
+}
+
+/* ─── Splash coin sheen sweep (Phase 3.1 — formerly an inline <style> tag in
+   SplashPage; consolidated globally so no component injects keyframes). ─── */
+@keyframes sheen {
+  0% { background-position: 200% 200%; }
+  100% { background-position: -200% -200%; }
+}
+
+/* ─── Toast slide-in (P1 A-4 — formerly an inline <style> tag in useToast;
+   consolidated globally so no component injects keyframes). ─── */
+@keyframes slideIn {
+  from { transform: translateX(100%) scale(0.9); opacity: 0; }
+  to { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+.toast-slide-in {
+  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

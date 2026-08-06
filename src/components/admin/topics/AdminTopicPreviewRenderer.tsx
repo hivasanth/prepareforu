@@ -3,20 +3,11 @@ import { Globe, Languages, Youtube } from 'lucide-react'
 import type { StudyTopic } from '../../../types/exam.types'
 import { FormattedBodyText } from '../../common/FormattedBodyText'
 import { parseHeading } from '../../../utils/parseOutlineText'
+import { TagBadge } from '../../user/TagBadge'
+import { Badge, Button } from '../../common/AntigravityUI'
 
 interface AdminTopicPreviewRendererProps {
   topic: StudyTopic
-}
-
-function tagBadge(tag: string) {
-  const colors: Record<string, string> = {
-    IMP: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-    TIP: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-    ALERT: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
-    KEY: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
-  }
-  const cls = colors[tag] || 'bg-sky-500/10 text-sky-500 border-sky-500/20'
-  return `inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border leading-none ${cls}`
 }
 
 export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererProps) {
@@ -32,18 +23,16 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-1 p-1 rounded-xl bg-hover-bg/30">
           {(['en', 'te'] as const).map(l => (
-            <button
+            <Button
               key={l}
+              size="xs"
+              variant={lang === l ? 'primary' : 'ghost'}
               onClick={() => setLang(l)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                lang === l
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
+              className="!px-3"
             >
               {l === 'en' ? <Globe size={12} /> : <Languages size={12} />}
               {l === 'en' ? 'EN' : 'TE'}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -52,7 +41,7 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
             href={topic.youtube_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-750"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-danger text-white hover:bg-danger/90"
           >
             <Youtube size={12} />
             Watch Video
@@ -60,13 +49,13 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
         )}
       </div>
 
-      <div className="p-6 rounded-[20px] border space-y-6 bg-card-bg border-border-subtle/40">
+      <div className="p-6 rounded-3xl border space-y-6 bg-card-bg border-border-subtle/40">
         <div className="pb-5 border-b border-border-subtle/30 space-y-2">
           <div className="flex items-center gap-2.5">
-            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black bg-primary/20 text-primary">
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold bg-primary/20 text-primary">
               {topic.display_order}
             </span>
-            <h3 className="text-base font-black text-text-primary">
+            <h3 className="text-base font-bold text-text-primary">
               {title}
             </h3>
           </div>
@@ -83,7 +72,7 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
             sections.map((sec, _idx) => (
               <div key={sec.label_en + sec.type} className="space-y-2">
                 {sec.label_en || sec.label_te ? (
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary">
                     {lang === 'en' ? sec.label_en : sec.label_te}
                   </h4>
                 ) : null}
@@ -107,7 +96,7 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
                           {item.icon ? (
                             <span className="text-xl flex-shrink-0 leading-none">{item.icon}</span>
                           ) : parsed.numberPrefix ? (
-                            <span className={`flex-shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 h-5 text-[9px] font-black tracking-wider rounded-md border leading-none bg-primary/10 border-primary/20 text-primary`}>
+                            <span className={`flex-shrink-0 inline-flex items-center justify-center px-1.5 py-0.5 h-5 text-[9px] font-bold tracking-wider rounded-md border leading-none bg-primary/10 border-primary/20 text-primary`}>
                               {parsed.numberPrefix}
                             </span>
                           ) : parsed.bulletPrefix ? (
@@ -117,9 +106,7 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
                             {parsed.text && (
                               <div className="flex flex-wrap items-center gap-1.5 mb-1">
                                 {parsed.tag && (
-                                  <span className={tagBadge(parsed.tag)}>
-                                    {parsed.tag}
-                                  </span>
+                                  <TagBadge tag={parsed.tag} />
                                 )}
                                 <p className="font-bold text-xs text-text-primary leading-snug">
                                   {parsed.text}
@@ -165,9 +152,7 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
                             {parsed.text && (
                               <div className="flex flex-wrap items-center gap-1 mb-0.5">
                                 {parsed.tag && (
-                                  <span className={tagBadge(parsed.tag)}>
-                                    {parsed.tag}
-                                  </span>
+                                  <TagBadge tag={parsed.tag} />
                                 )}
                                 <span className="font-semibold text-text-primary">{parsed.text}</span>
                               </div>
@@ -194,9 +179,7 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
                           {parsed.text && (
                             <div className="flex flex-wrap items-center gap-1 mb-1.5">
                               {parsed.tag && (
-                                <span className={tagBadge(parsed.tag)}>
-                                  {parsed.tag}
-                                </span>
+                                <TagBadge tag={parsed.tag} />
                               )}
                               <span className="font-bold text-xs text-text-primary uppercase tracking-wide">{parsed.text}</span>
                             </div>
@@ -221,17 +204,20 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
                         <div key={ii} className="space-y-1">
                           {parsed.text && (
                             <div className="flex flex-wrap items-center gap-1 mb-0.5">
-                              {parsed.tag && (
-                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border leading-none ${
-                                  parsed.tag === 'IMP' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                  parsed.tag === 'TIP' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                                  parsed.tag === 'ALERT' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
-                                  parsed.tag === 'KEY' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
-                                  'bg-sky-500/10 text-sky-500 border-sky-500/20'
-                                }`}>
-                                  {parsed.tag}
-                                </span>
-                              )}
+                          {parsed.tag && (
+                            <Badge
+                              variant={
+                                parsed.tag === 'IMP' ? 'warning' :
+                                parsed.tag === 'TIP' ? 'success' :
+                                parsed.tag === 'ALERT' ? 'danger' :
+                                parsed.tag === 'KEY' ? 'primary' : 'secondary'
+                              }
+                              size="sm"
+                              className="!text-[8px] !px-1.5 !py-0.5"
+                            >
+                              {parsed.tag}
+                            </Badge>
+                          )}
                               <p className="font-bold text-xs">{parsed.text}</p>
                             </div>
                           )}
@@ -249,7 +235,7 @@ export function AdminTopicPreviewRenderer({ topic }: AdminTopicPreviewRendererPr
               </div>
             ))
           ) : (
-            <p className="text-center text-xs text-text-secondary py-4">No structured content added.</p>
+            <p className="text-center text-xs text-text-hint py-4">No structured content added.</p>
           )}
         </div>
       </div>

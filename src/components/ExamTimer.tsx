@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, type FC } from 'react';
-import { useToast } from '../hooks/useToast';
 import { updateTabSwitchCount } from '../services/examService';
 
 interface ExamTimerProps {
@@ -9,6 +8,8 @@ interface ExamTimerProps {
   onTimeUp: () => void;
   tabSwitchLimit?: number;
   initialTabSwitches?: number;
+  /** Contextual exam banner (Group 5: floating warnings eliminated). */
+  onSecurityNotice?: (message: string) => void;
 }
 
 export const ExamTimer: FC<ExamTimerProps> = ({
@@ -17,11 +18,12 @@ export const ExamTimer: FC<ExamTimerProps> = ({
   startedAt,
   onTimeUp,
   tabSwitchLimit = 5,
-  initialTabSwitches = 0
+  initialTabSwitches = 0,
+  onSecurityNotice,
 }) => {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [tabSwitches, setTabSwitches] = useState(initialTabSwitches);
-  const { showToast } = useToast();
+  const [announcement, setAnnouncement] = useState<string>('');
   const timerRef = useRef<any>(null);
 
   /**
@@ -53,6 +55,7 @@ export const ExamTimer: FC<ExamTimerProps> = ({
     // If time is already up when the component mounts (e.g. resumed attempt),
     // fire immediately instead of waiting for the first tick.
     if (initial <= 0) {
+      setAnnouncement('Time is up. Your answers are being submitted.');
       onTimeUpRef.current();
       return;
     }
@@ -61,8 +64,14 @@ export const ExamTimer: FC<ExamTimerProps> = ({
       const remaining = calculateTimeLeft();
       setTimeLeft(remaining);
 
+      // Last-minute countdown announced to screen readers at 10-second marks.
+      if (remaining > 0 && remaining <= 60 && remaining % 10 === 0) {
+        setAnnouncement(`${remaining} seconds remaining`);
+      }
+
       if (remaining <= 0) {
         clearInterval(timerRef.current!);
+        setAnnouncement('Time is up. Your answers are being submitted.');
         onTimeUpRef.current(); // always calls the latest version via ref
       }
     }, 1000);
@@ -88,10 +97,10 @@ export const ExamTimer: FC<ExamTimerProps> = ({
   // Stable refs so the event listener closure never goes stale
   const attemptIdRef = useRef(attemptId);
   const tabSwitchLimitRef = useRef(tabSwitchLimit);
-  const showToastRef = useRef(showToast);
+  const onSecurityNoticeRef = useRef(onSecurityNotice);
   useEffect(() => { attemptIdRef.current = attemptId; }, [attemptId]);
   useEffect(() => { tabSwitchLimitRef.current = tabSwitchLimit; }, [tabSwitchLimit]);
-  useEffect(() => { showToastRef.current = showToast; }, [showToast]);
+  useEffect(() => { onSecurityNoticeRef.current = onSecurityNotice; }, [onSecurityNotice]);
 
   useEffect(() => {
     const handleVisibilityChange = async () => {
@@ -106,20 +115,17 @@ export const ExamTimer: FC<ExamTimerProps> = ({
 
         const limit = tabSwitchLimitRef.current;
         if (newCount >= limit) {
-          showToastRef.current(
-            'Security Alert: Maximum tab switches reached. Auto-submitting...',
-            'error'
+          onSecurityNoticeRef.current?.(
+            'Security Alert: Maximum tab switches reached. Auto-submitting...'
           );
           onTimeUpRef.current();
         } else if (newCount >= 3) {
-          showToastRef.current(
-            `Warning: You have ${limit - newCount} tab switch(es) left before auto-submit.`,
-            'warning'
+          onSecurityNoticeRef.current?.(
+            `Warning: You have ${limit - newCount} tab switch(es) left before auto-submit.`
           );
         } else {
-          showToastRef.current(
-            `Tab switch recorded. Warning: ${newCount}/${limit}`,
-            'warning'
+          onSecurityNoticeRef.current?.(
+            `Tab switch recorded. Warning: ${newCount}/${limit}`
           );
         }
       } catch (err) {
@@ -152,19 +158,23 @@ export const ExamTimer: FC<ExamTimerProps> = ({
   };
 
   return (
-    <div className={`
+    <div
+      role="timer"
+      aria-label={`Time remaining: ${minutes} minutes ${seconds} seconds`}
+      className={`
       flex items-center gap-2 px-6 py-2.5 rounded-2xl border-2 transition-all duration-500
       ${getBorderColor()}
       bg-elevated-bg
     `}>
       <div className="flex flex-col items-center">
-        <span className="text-[9px] font-black uppercase tracking-widest leading-none mb-1 text-text-disabled">
+        <span className="text-[9px] font-bold uppercase tracking-widest leading-none mb-1 text-text-muted">
           Remaining
         </span>
         <div className={`text-2xl tabular-nums leading-none font-['Vend_Sans'] ${getTimerColor()}`}>
           {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
         </div>
       </div>
+      <span role="status" className="sr-only">{announcement}</span>
     </div>
   );
 };

@@ -47,6 +47,8 @@ export type ServiceErrorCode =
   | 'INVALID_COUPON'
   | 'CAPTCHA_FAILED'
   | 'REGISTRATION_FAILED'
+  | 'VALIDATION_ERROR'
+  | 'ACTION_FORBIDDEN'
   | 'UNKNOWN'
 
 export interface AuthError {

@@ -21,7 +21,7 @@ export const QuestionPalette: FC<QuestionPaletteProps> = ({
   onJumpTo,
 }) => {
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div role="group" aria-label="Question palette" className="grid grid-cols-5 gap-2">
       {questions.map((q, i) => {
         const state = computeQuestionState(q.id, i, currentIdx, selectedAnswers, markedForReview, visitedQuestions);
         const stateClass = getPaletteColor(state);
@@ -31,6 +31,7 @@ export const QuestionPalette: FC<QuestionPaletteProps> = ({
             key={q.id}
             onClick={() => onJumpTo(i)}
             aria-label={`Go to question ${i + 1}`}
+            aria-current={state.isCurrent ? 'true' : undefined}
             className={`h-11 rounded-xl flex items-center justify-center text-[11px] font-bold transition-all active:scale-90 border ${stateClass}`}
           >
             {i + 1}
@@ -49,7 +50,7 @@ export const MobileQuestionStrip: FC<{
   visitedQuestions: Set<string>;
   onJumpTo: (index: number) => void;
 }> = ({ questions, currentIdx, selectedAnswers, markedForReview, visitedQuestions, onJumpTo }) => (
-  <div className="md:hidden h-16 bg-card-bg border-t border-border-subtle flex items-center px-4 overflow-x-auto gap-3 no-scrollbar scroll-smooth">
+  <div role="group" aria-label="Question palette" className="md:hidden h-16 bg-card-bg border-t border-border-subtle flex items-center px-4 overflow-x-auto gap-3 no-scrollbar scroll-smooth">
     {questions.map((q, i) => {
       const state = computeQuestionState(q.id, i, currentIdx, selectedAnswers, markedForReview, visitedQuestions);
       const stateClass = getPaletteColorMobile(state);
@@ -59,7 +60,8 @@ export const MobileQuestionStrip: FC<{
           key={q.id}
           onClick={() => onJumpTo(i)}
           aria-label={`Go to question ${i + 1}`}
-          className={`min-w-[44px] h-10 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 transition-all border-2 ${state.isCurrent ? 'border-success scale-110 shadow-lg' : 'border-transparent'} ${stateClass}`}
+          aria-current={state.isCurrent ? 'true' : undefined}
+          className={`min-w-[44px] h-11 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all border-2 ${state.isCurrent ? 'border-success scale-110 shadow-lg' : 'border-transparent'} ${stateClass}`}
         >
           {i + 1}
         </button>

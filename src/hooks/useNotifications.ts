@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useAsyncOperation } from './useAsyncOperation'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import * as notificationService from '../services/notificationService'
@@ -21,7 +22,7 @@ export interface AppNotification {
 export function useNotifications() {
   const { user } = useAuth()
   const [notifications, setNotifications] = useState<AppNotification[]>([])
-  const [loading, setLoading] = useState(true)
+  const { loading, execute } = useAsyncOperation()
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
   const unreadCount = notifications.filter(n => !n.is_read).length
@@ -29,16 +30,11 @@ export function useNotifications() {
   // ── Fetch latest 30 notifications ─────────────────────────────────────────
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) return
-    setLoading(true)
-    try {
+    await execute(async () => {
       const data = await notificationService.fetchNotifications(user.id)
       setNotifications(data as unknown as AppNotification[])
-    } catch {
-      // Service already logs errors
-    } finally {
-      setLoading(false)
-    }
-  }, [user?.id])
+    })
+  }, [user?.id, execute])
 
   // ── Realtime subscription ──────────────────────────────────────────────────
   useEffect(() => {

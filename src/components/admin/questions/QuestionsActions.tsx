@@ -1,5 +1,6 @@
-import { Search, Plus, Upload, Filter } from 'lucide-react'
-import { Input, FilterSelect, Button } from '../../common/AntigravityUI'
+import { memo } from 'react'
+import { Search, Plus, Upload } from 'lucide-react'
+import { Input, CollectionFilter, Button, CollectionToolbar } from '../../common/AntigravityUI'
 
 interface QuestionsActionsProps {
   searchQuery: string
@@ -11,7 +12,7 @@ interface QuestionsActionsProps {
   isUploadDisabled?: boolean
 }
 
-export function QuestionsActions({
+export const QuestionsActions = memo(function QuestionsActions({
   searchQuery, setSearchQuery,
   difficultyFilter, setDifficultyFilter,
   onAddQuestion, onBulkUpload,
@@ -19,7 +20,7 @@ export function QuestionsActions({
 }: QuestionsActionsProps) {
 
   return (
-    <div className={`flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between p-6 bg-transparent border-none relative z-10`}>
+    <CollectionToolbar>
       
       {/* Search & Filter Group */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 min-w-0">
@@ -30,20 +31,22 @@ export function QuestionsActions({
             onChange={(e) => setSearchQuery(e.target.value)}
             leftIcon={Search}
             className="w-full"
+            aria-label="Search questions"
           />
         </div>
         
-        <FilterSelect
-          icon={Filter}
+        <CollectionFilter
+          label="Difficulty"
+          ariaLabel="Filter by difficulty"
           value={difficultyFilter}
           onChange={setDifficultyFilter}
           options={[
-            { id: 'easy', name: 'Easy' },
-            { id: 'medium', name: 'Medium' },
-            { id: 'hard', name: 'Hard' }
+            { id: 'all', label: 'All' },
+            { id: 'easy', label: 'Easy' },
+            { id: 'medium', label: 'Medium' },
+            { id: 'hard', label: 'Hard' }
           ]}
-          placeholder="Level"
-          className="w-full sm:w-auto sm:min-w-[140px]"
+          className="w-full sm:w-fit"
         />
       </div>
 
@@ -54,7 +57,6 @@ export function QuestionsActions({
             variant="secondary"
             onClick={onBulkUpload}
             disabled={isUploadDisabled}
-            className="flex items-center gap-2 !h-[44px] md:!h-[48px] !px-4 !rounded-[12px] !text-xs sm:!text-sm"
           >
             <Upload size={16} />
             <span className="hidden sm:inline">Bulk Upload</span>
@@ -67,7 +69,6 @@ export function QuestionsActions({
             variant="primary"
             onClick={onAddQuestion}
             disabled={isUploadDisabled}
-            className="flex items-center gap-2 !h-[44px] md:!h-[48px] !px-4 !rounded-[12px] !text-xs sm:!text-sm"
           >
             <Plus size={16} />
             <span className="hidden sm:inline">Add Question</span>
@@ -76,6 +77,6 @@ export function QuestionsActions({
         )}
       </div>
 
-    </div>
+    </CollectionToolbar>
   );
-}
+});

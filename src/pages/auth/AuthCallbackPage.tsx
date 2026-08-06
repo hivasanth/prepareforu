@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as authService from '../../services/authService'
-import { ThemeContext } from '../../context/ThemeContext'
+import { AuthThemeProvider } from '../../components/common/AntigravityUI'
 import LoadingScreen from '../../components/LoadingScreen'
 
 /**
@@ -102,10 +102,8 @@ export default function AuthCallbackPage() {
   }, [navigate])
 
   return (
-    <ThemeContext.Provider value={{ isDark: false, toggleTheme: () => {} }}>
-    <div className="light">
+    <AuthThemeProvider>
       <LoadingScreen message="Securing your session..." />
-    </div>
-    </ThemeContext.Provider>
+    </AuthThemeProvider>
   );
 }

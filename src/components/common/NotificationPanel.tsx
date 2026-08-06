@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bell,
@@ -16,6 +15,8 @@ import {
 } from 'lucide-react'
 import { useNotifications, type AppNotification, type NotificationType } from '../../hooks/useNotifications'
 import { IconBadge } from './AntigravityUI'
+import { Menu } from './Menu'
+import { LoadingSkeleton } from './SharedComponents'
 
 // ─── Icon resolver per type ────────────────────────────────────────────────────
 function typeIconInfo(type: NotificationType): { icon: LucideIcon; color: string } {
@@ -110,7 +111,7 @@ function NotificationRow({
             {notification.body}
           </p>
         )}
-        <p className="text-[10px] text-text-secondary/50 font-bold mt-1 uppercase tracking-widest">
+        <p className="text-[10px] text-text-muted font-bold mt-1 uppercase tracking-widest">
           {timeAgo(notification.created_at)}
         </p>
       </div>
@@ -142,91 +143,59 @@ interface NotificationBellProps {
 
 export function NotificationBell({ align = 'right', onNavigate }: NotificationBellProps) {
   const { notifications, unreadCount, loading, markRead, markAllRead, deleteNotification, clearAll, refresh } = useNotifications()
-  const [open, setOpen] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
-
-  // Close on outside click or Escape
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent) {
-        if (e.key === 'Escape') setOpen(false)
-        return
-      }
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    document.addEventListener('keydown', handler)
-    return () => {
-      document.removeEventListener('mousedown', handler)
-      document.removeEventListener('keydown', handler)
-    }
-  }, [open])
 
   const handleNavigate = (link: string | null) => {
     if (link && onNavigate) {
       onNavigate(link)
-      setOpen(false)
     }
   }
 
   return (
-    <div ref={panelRef} className="relative">
-
+    <Menu
+      align={align === 'right' ? 'right' : 'left'}
+      offset="top-12"
+      zIndex="z-[200]"
+      animation="scale"
+    >
       {/* ── Bell button ─────────────────────────────────────────────────────── */}
-      <button
-        onClick={() => setOpen(prev => !prev)}
-        aria-expanded={open}
-        aria-haspopup="true"
-        className={`relative w-9 h-9 flex items-center justify-center rounded-xl transition-all
-          ${open
-            ? 'bg-primary/20 text-primary'
-            : 'hover:bg-hover-bg text-text-secondary hover:text-text-primary'
-          }`}
-        title="Notifications"
+      <Menu.Trigger className={`relative w-9 h-9 flex items-center justify-center rounded-xl transition-all
+        ${false
+          ? 'bg-primary/20 text-primary'
+          : 'hover:bg-hover-bg text-text-secondary hover:text-text-primary'
+        }`}
       >
-        <Bell size={18} />
-        <AnimatePresence>
-          {unreadCount > 0 && (
-            <motion.span
-              key="badge"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 bg-danger rounded-full
-                         text-white text-[9px] font-black flex items-center justify-center border-2 border-app-bg"
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </button>
+        {({ isOpen }) => (
+          <div className="relative">
+            <Bell size={18} className={isOpen ? 'text-primary' : ''} />
+            <AnimatePresence>
+              {unreadCount > 0 && (
+                <motion.span
+                  key="badge"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 bg-danger rounded-full
+                             text-white text-[9px] font-black flex items-center justify-center border-2 border-app-bg"
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </Menu.Trigger>
 
       {/* ── Dropdown panel ──────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -8 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            className={`absolute top-12 z-[200] w-80 rounded-2xl shadow-2xl overflow-hidden
-              border flex flex-col max-h-[420px]
-              bg-card-bg border-border-subtle
-              ${align === 'right' ? 'right-0' : 'left-0'}
-            `}
-          >
+      <Menu.Content className="w-80 flex flex-col max-h-[420px]">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Bell size={14} className="text-primary" />
-                <span className="text-[13px] font-black text-text-primary uppercase tracking-widest">
+                <span className="text-[13px] font-bold text-text-primary uppercase tracking-widest">
                   Notifications
                 </span>
                 {unreadCount > 0 && (
-                  <span className="bg-primary/10 text-primary text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                  <span className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                     {unreadCount} new
                   </span>
                 )}
@@ -268,13 +237,13 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
               {loading ? (
                 <div className="flex flex-col gap-2 p-4">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="h-14 rounded-xl bg-hover-bg/40 animate-pulse" />
+                    <LoadingSkeleton key={i} height={56} borderRadius={12} />
                   ))}
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-4 gap-3 opacity-40">
                   <Bell size={36} className="text-text-secondary" />
-                  <p className="text-[11px] font-black uppercase tracking-widest text-text-secondary text-center">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-text-hint text-center">
                     No notifications yet
                   </p>
                 </div>
@@ -292,9 +261,7 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
                 </AnimatePresence>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      </Menu.Content>
+    </Menu>
   )
 }

@@ -74,10 +74,10 @@ function PageTitle({ title, children }: { title: string; children: ReactNode }) 
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <AuthProvider>
-          <ThemeProvider>
+    <ThemeProvider>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <AuthProvider>
             <LanguageProvider>
               <Routes>
                 <Route path="/login"  element={<GuestGuard><Suspense fallback={<PageLoader />}><PageTitle title="Login"><LoginPage /></PageTitle></Suspense></GuestGuard>} />
@@ -92,40 +92,40 @@ export default function App() {
 
                 {/* ─── User Routes ─────────────────────────────────────────── */}
                 <Route element={<AuthGuard><UserLayout /></AuthGuard>}>
-                  <Route path="/dashboard"     element={<Suspense fallback={<PageLoader />}><PageTitle title="Dashboard"><UserDashboard /></PageTitle></Suspense>} />
-                  <Route path="/exams"         element={<Suspense fallback={<PageLoader />}><PageTitle title="Exams"><UserExams /></PageTitle></Suspense>} />
-                  <Route path="/history"       element={<Suspense fallback={<PageLoader />}><PageTitle title="History"><UserHistory /></PageTitle></Suspense>} />
-                  <Route path="/subject-tests" element={<Suspense fallback={<PageLoader />}><PageTitle title="Subject Tests"><UserSubjectTests /></PageTitle></Suspense>} />
-                  <Route path="/topic-exams"   element={<Suspense fallback={<PageLoader />}><PageTitle title="Topic Exams"><UserTopicExams /></PageTitle></Suspense>} />
-                  <Route path="/topics"        element={<Suspense fallback={<PageLoader />}><PageTitle title="Topics"><UserTopics /></PageTitle></Suspense>} />
-                  <Route path="/prepare-write" element={<Suspense fallback={<PageLoader />}><PageTitle title="Prepare & Write"><UserPrepareWrite /></PageTitle></Suspense>} />
-                  <Route path="/performance"   element={<Suspense fallback={<PageLoader />}><PageTitle title="Performance"><UserPerformance /></PageTitle></Suspense>} />
-                  <Route path="/educator-exams" element={<Suspense fallback={<PageLoader />}><PageTitle title="Educator Exams"><UserTeacherExams /></PageTitle></Suspense>} />
-                  <Route path="/leaderboard"   element={<Suspense fallback={<PageLoader />}><PageTitle title="Leaderboard"><UserLeaderboard /></PageTitle></Suspense>} />
-                  <Route path="/profile"       element={<Suspense fallback={<PageLoader />}><PageTitle title="Profile"><UserProfile /></PageTitle></Suspense>} />
+                  <Route path="/dashboard"     element={<PageTitle title="Dashboard"><UserDashboard /></PageTitle>} />
+                  <Route path="/exams"         element={<PageTitle title="Exams"><UserExams /></PageTitle>} />
+                  <Route path="/history"       element={<PageTitle title="History"><UserHistory /></PageTitle>} />
+                  <Route path="/subject-tests" element={<PageTitle title="Subject Tests"><UserSubjectTests /></PageTitle>} />
+                  <Route path="/topic-exams"   element={<PageTitle title="Topic Exams"><UserTopicExams /></PageTitle>} />
+                  <Route path="/topics"        element={<PageTitle title="Topics"><UserTopics /></PageTitle>} />
+                  <Route path="/prepare-write" element={<PageTitle title="Prepare & Write"><UserPrepareWrite /></PageTitle>} />
+                  <Route path="/performance"   element={<PageTitle title="Performance"><UserPerformance /></PageTitle>} />
+                  <Route path="/educator-exams" element={<PageTitle title="Educator Exams"><UserTeacherExams /></PageTitle>} />
+                  <Route path="/leaderboard"   element={<PageTitle title="Leaderboard"><UserLeaderboard /></PageTitle>} />
+                  <Route path="/profile"       element={<PageTitle title="Profile"><UserProfile /></PageTitle>} />
                 </Route>
 
                 {/* ─── Admin Routes ─────────────────────────────────────────── */}
                 <Route path="/admin" element={<AuthGuard><RoleGuard allowedRoles={['admin']}><AdminLayout /></RoleGuard></AuthGuard>}>
                   <Route index element={<Navigate to="overview" replace />} />
-                  <Route path="overview"    element={<Suspense fallback={<PageLoader />}><PageTitle title="Admin — Overview"><AdminOverview /></PageTitle></Suspense>} />
-                  <Route path="users"       element={<Suspense fallback={<PageLoader />}><PageTitle title="Admin — Users"><AdminUsers /></PageTitle></Suspense>} />
-                  <Route path="sub-admins"  element={<Suspense fallback={<PageLoader />}><PageTitle title="Admin — Sub-Admins"><AdminSubAdmins /></PageTitle></Suspense>} />
-                  <Route path="questions"   element={<Suspense fallback={<PageLoader />}><PageTitle title="Admin — Questions"><AdminQuestions /></PageTitle></Suspense>} />
-                  <Route path="upload"      element={<Suspense fallback={<PageLoader />}><PageTitle title="Admin — Upload"><AdminUpload /></PageTitle></Suspense>} />
-                  <Route path="topics"      element={<Suspense fallback={<PageLoader />}><PageTitle title="Admin — Topics"><AdminTopics /></PageTitle></Suspense>} />
-                  <Route path="leaderboard" element={<Suspense fallback={<PageLoader />}><PageTitle title="Admin — Leaderboard"><AdminLeaderboard /></PageTitle></Suspense>} />
-                  <Route path="settings"    element={<Suspense fallback={<PageLoader />}><PageTitle title="Admin — Settings"><AdminSettings /></PageTitle></Suspense>} />
+                  <Route path="overview"    element={<PageTitle title="Admin — Overview"><AdminOverview /></PageTitle>} />
+                  <Route path="users"       element={<PageTitle title="Admin — Users"><AdminUsers /></PageTitle>} />
+                  <Route path="sub-admins"  element={<PageTitle title="Admin — Sub-Admins"><AdminSubAdmins /></PageTitle>} />
+                  <Route path="questions"   element={<PageTitle title="Admin — Questions"><AdminQuestions /></PageTitle>} />
+                  <Route path="upload"      element={<PageTitle title="Admin — Upload"><AdminUpload /></PageTitle>} />
+                  <Route path="topics"      element={<PageTitle title="Admin — Topics"><AdminTopics /></PageTitle>} />
+                  <Route path="leaderboard" element={<PageTitle title="Admin — Leaderboard"><AdminLeaderboard /></PageTitle>} />
+                  <Route path="settings"    element={<PageTitle title="Admin — Settings"><AdminSettings /></PageTitle>} />
                 </Route>
 
                 {/* ─── Sub-Admin Routes ─────────────────────────────────────── */}
                 <Route path="/sub-admin" element={<AuthGuard><RoleGuard allowedRoles={['sub_admin']}><SubAdminLayout /></RoleGuard></AuthGuard>}>
                   <Route index element={<Navigate to="dashboard" replace />} />
-                  <Route path="dashboard" element={<Suspense fallback={<PageLoader />}><PageTitle title="Sub-Admin — Dashboard"><SubAdminDashboard /></PageTitle></Suspense>} />
-                  <Route path="my-exams"  element={<Suspense fallback={<PageLoader />}><PageTitle title="Sub-Admin — My Exams"><SubAdminExams /></PageTitle></Suspense>} />
-                  <Route path="students"  element={<Suspense fallback={<PageLoader />}><PageTitle title="Sub-Admin — Students"><SubAdminStudents /></PageTitle></Suspense>} />
-                  <Route path="create"    element={<Suspense fallback={<PageLoader />}><PageTitle title="Sub-Admin — Create"><SubAdminCreate /></PageTitle></Suspense>} />
-                  <Route path="settings"  element={<Suspense fallback={<PageLoader />}><PageTitle title="Sub-Admin — Settings"><SubAdminSettings /></PageTitle></Suspense>} />
+                  <Route path="dashboard" element={<PageTitle title="Sub-Admin — Dashboard"><SubAdminDashboard /></PageTitle>} />
+                  <Route path="my-exams"  element={<PageTitle title="Sub-Admin — My Exams"><SubAdminExams /></PageTitle>} />
+                  <Route path="students"  element={<PageTitle title="Sub-Admin — Students"><SubAdminStudents /></PageTitle>} />
+                  <Route path="create"    element={<PageTitle title="Sub-Admin — Create"><SubAdminCreate /></PageTitle>} />
+                  <Route path="settings"  element={<PageTitle title="Sub-Admin — Settings"><SubAdminSettings /></PageTitle>} />
                 </Route>
 
                 {/* ─── Exam Routes ──────────────────────────────────────────── */}
@@ -153,10 +153,10 @@ export default function App() {
                 <Route path="*"                 element={<RoleBasedRedirector />} />
               </Routes>
             </LanguageProvider>
-          </ThemeProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </ErrorBoundary>
+          </AuthProvider>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </ThemeProvider>
   )
 }
 

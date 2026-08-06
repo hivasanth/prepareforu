@@ -4,14 +4,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line, Legend
 } from 'recharts';
 import { AlertCircle, Table as TableIcon, Info } from 'lucide-react';
-
-export type DiagramData = 
-  | { type: "pie_chart"; metadata: { labels: string[]; values: number[] } }
-  | { type: "bar_chart"; metadata: { x: string[]; y: number[] } }
-  | { type: "line_graph"; metadata: { x: string[]; y: number[] } }
-  | { type: "table"; metadata: { columns: string[]; rows: any[][] } }
-  | { type: "venn_diagram"; metadata: { sets: string[]; intersections: Record<string, any[]> } }
-  | null;
+import type { DiagramData } from '../../types/exam.types';
 
 interface DiagramRendererProps {
   diagram: DiagramData;
@@ -50,12 +43,12 @@ export const DiagramRenderer: FC<DiagramRendererProps> = React.memo(({ diagram, 
   };
 
   return (
-    <div className={`w-full my-6 overflow-hidden rounded-2xl border border-border-subtle/30 bg-card-bg/40 backdrop-blur-sm shadow-sm p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-2 duration-500 ${className}`}>
+    <div className={`w-full my-6 overflow-hidden rounded-2xl border border-border-subtle/30 bg-card-bg/40 backdrop-blur-sm shadow-sm p-4 sm:p-6 animate-in ${className}`}>
       <div className="flex items-center gap-2 mb-4">
         <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
           {type === 'table' ? <TableIcon size={14} /> : <Info size={14} />}
         </div>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-text-secondary opacity-70">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
           Source Visualization: {type.replace('_', ' ')}
         </span>
       </div>
@@ -99,7 +92,7 @@ function renderPieChart(metadata: any) {
           </Pie>
           <Tooltip 
             formatter={(value: any) => value.toLocaleString()}
-            contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-subtle)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+            contentStyle={{ backgroundColor: 'var(--surface-floating)', border: '1px solid var(--border-subtle)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
             itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
           />
           <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px', paddingTop: '20px' }} />
@@ -146,7 +139,7 @@ function renderBarChart(metadata: any) {
           <Tooltip 
              cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
              formatter={(value: any) => value.toLocaleString()}
-             contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-subtle)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+             contentStyle={{ backgroundColor: 'var(--surface-floating)', border: '1px solid var(--border-subtle)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
           />
           <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '10px', paddingBottom: '20px' }} />
           {seriesKeys.map((key, idx) => (
@@ -197,7 +190,7 @@ function renderLineGraph(metadata: any) {
           <YAxis axisLine={false} tickLine={false} fontSize={10} tick={{ fill: 'var(--text-secondary)' }} tickFormatter={(val) => val.toLocaleString()} />
           <Tooltip 
              formatter={(value: any) => value.toLocaleString()}
-             contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-subtle)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+             contentStyle={{ backgroundColor: 'var(--surface-floating)', border: '1px solid var(--border-subtle)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
           />
           <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '10px', paddingBottom: '20px' }} />
           {seriesKeys.map((key, idx) => (
@@ -229,7 +222,7 @@ function renderTable(metadata: any) {
         <thead>
           <tr className="bg-hover-bg/40">
             {columns.map((col: string, i: number) => (
-              <th key={i} className="px-4 py-3 text-[11px] font-black uppercase tracking-wider text-text-secondary border-b border-border-subtle/20">
+               <th key={i} className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-text-secondary border-b border-border-subtle/20">
                 {col}
               </th>
             ))}
@@ -267,7 +260,7 @@ function renderVennDiagram(metadata: any) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {sets.map((set: string, i: number) => (
           <div key={i} className="p-4 rounded-xl border border-border-subtle/30 bg-primary/5">
-            <h6 className="text-[10px] font-black text-primary uppercase mb-2 tracking-tighter">Set: {set}</h6>
+            <h6 className="text-[10px] font-bold text-primary uppercase mb-2 tracking-tighter">Set: {set}</h6>
             <div className="text-sm text-text-primary font-medium line-clamp-2">
                {intersections[`${set}_only`]?.join(', ') || '∅'}
             </div>
@@ -275,7 +268,7 @@ function renderVennDiagram(metadata: any) {
         ))}
       </div>
       <div className="p-4 rounded-xl border border-primary/20 bg-primary/10">
-        <h6 className="text-[10px] font-black text-primary uppercase mb-1">Intersections Identified</h6>
+        <h6 className="text-[10px] font-bold text-primary uppercase mb-1">Intersections Identified</h6>
         <div className="flex flex-wrap gap-2 mt-2">
           {Object.entries(intersections).map(([key, items]: [string, any], i) => {
             if (key.includes('_only') || key === 'Neither') return null;
@@ -340,7 +333,7 @@ function render2SetVenn(sets: string[], intersections: any) {
       <div className="relative w-full max-w-[340px] h-64 flex items-center justify-center">
         {/* Circle A */}
         <div className="absolute left-0 w-44 h-44 rounded-full border-2 border-primary/40 bg-primary/20 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center shadow-lg transition-transform hover:scale-105">
-           <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-primary/20 px-2 py-0.5 rounded text-[9px] font-black text-primary uppercase border border-primary/30">{sets[0]}</div>
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-primary/20 px-2 py-0.5 rounded text-[9px] font-bold text-primary uppercase border border-primary/30">{sets[0]}</div>
            <div className="text-[11px] font-bold text-text-primary line-clamp-4 pr-10">
               {aOnly.join(', ') || '∅'}
            </div>
@@ -348,15 +341,15 @@ function render2SetVenn(sets: string[], intersections: any) {
 
         {/* Circle B */}
         <div className="absolute right-0 w-44 h-44 rounded-full border-2 border-rose-500/40 bg-rose-500/20 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center shadow-lg transition-transform hover:scale-105">
-           <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-rose-500/20 px-2 py-0.5 rounded text-[9px] font-black text-rose-500 uppercase border border-rose-500/30">{sets[1]}</div>
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-rose-500/20 px-2 py-0.5 rounded text-[9px] font-bold text-rose-500 uppercase border border-rose-500/30">{sets[1]}</div>
            <div className="text-[11px] font-bold text-text-primary line-clamp-4 pl-10">
               {bOnly.join(', ') || '∅'}
            </div>
         </div>
 
         {/* The Overlap (The true intersection) */}
-        <div className="z-20 w-24 h-24 rounded-full bg-card-bg/40 backdrop-blur-xl border border-border-subtle/30 shadow-[0_0_20px_var(--border-subtle)] flex flex-col items-center justify-center p-3 text-center animate-pulse-slow">
-           <div className="text-[7px] font-black text-text-secondary uppercase mb-1 opacity-60">Both</div>
+        <div className="z-20 w-24 h-24 rounded-full bg-card-bg/40 backdrop-blur-xl border border-border-subtle/30 shadow-[0_0_20px_var(--border-subtle)] flex flex-col items-center justify-center p-3 text-center">
+            <div className="text-[7px] font-bold text-text-hint uppercase mb-1">Both</div>
            <div className="text-xs font-black text-text-primary leading-tight">
               {both.join(', ') || '∅'}
            </div>
@@ -364,8 +357,8 @@ function render2SetVenn(sets: string[], intersections: any) {
       </div>
 
       {neither.length > 0 && (
-        <div className="mt-8 px-6 py-3 rounded-2xl bg-card-bg/30 border border-border-subtle/20 flex items-center gap-3 animate-in fade-in zoom-in duration-500">
-           <div className="px-2 py-0.5 rounded bg-text-secondary/10 text-[8px] font-black text-text-secondary uppercase border border-text-secondary/20">Neither</div>
+        <div className="mt-8 px-6 py-3 rounded-2xl bg-card-bg/30 border border-border-subtle/20 flex items-center gap-3 animate-in">
+            <div className="px-2 py-0.5 rounded bg-text-secondary/10 text-[8px] font-bold text-text-muted uppercase border border-text-secondary/20">Neither</div>
            <div className="text-xs font-medium text-text-primary italic opacity-80">
               {neither.join(', ')}
            </div>
@@ -382,7 +375,7 @@ function render3SetVenn(sets: string[], intersections: any) {
       <div className="relative w-full max-w-[340px] h-[340px]">
         {/* Circle Top (Set A) */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-44 h-44 rounded-full border-2 border-primary/40 bg-primary/20 backdrop-blur-md flex flex-col items-center p-6 text-center">
-           <span className="text-[9px] font-black text-primary uppercase mb-1">{sets[0]}</span>
+            <span className="text-[9px] font-bold text-primary uppercase mb-1">{sets[0]}</span>
            <span className="text-[10px] font-bold text-text-primary mt-2">
               {findValueSafe(intersections, sets[0], 'only').length} items
            </span>
@@ -390,7 +383,7 @@ function render3SetVenn(sets: string[], intersections: any) {
 
         {/* Circle Bottom Left (Set B) */}
         <div className="absolute bottom-8 left-0 w-44 h-44 rounded-full border-2 border-emerald-500/40 bg-emerald-500/20 backdrop-blur-md flex flex-col items-center p-6 text-center">
-           <span className="text-[9px] font-black text-emerald-500 uppercase mb-1">{sets[1]}</span>
+            <span className="text-[9px] font-bold text-emerald-500 uppercase mb-1">{sets[1]}</span>
            <span className="text-[10px] font-bold text-text-primary mt-2">
               {findValueSafe(intersections, sets[1], 'only').length} items
            </span>
@@ -398,7 +391,7 @@ function render3SetVenn(sets: string[], intersections: any) {
 
         {/* Circle Bottom Right (Set C) */}
         <div className="absolute bottom-8 right-0 w-44 h-44 rounded-full border-2 border-amber-500/40 bg-amber-500/20 backdrop-blur-md flex flex-col items-center p-6 text-center">
-           <span className="text-[9px] font-black text-amber-500 uppercase mb-1">{sets[2]}</span>
+            <span className="text-[9px] font-bold text-amber-500 uppercase mb-1">{sets[2]}</span>
            <span className="text-[10px] font-bold text-text-primary mt-2">
               {findValueSafe(intersections, sets[2], 'only').length} items
            </span>
@@ -417,7 +410,7 @@ function render3SetVenn(sets: string[], intersections: any) {
            if (key.toLowerCase().includes('only')) return null;
            return (
              <div key={i} className="px-3 py-2 rounded-lg bg-card-bg/40 border border-border-subtle/10 flex flex-col">
-                <span className="text-[7px] font-black text-text-secondary uppercase opacity-60 tracking-wider font-mono">{key.replace(/_/g, ' ∩ ')}</span>
+                <span className="text-[7px] font-bold text-text-hint uppercase tracking-wider font-mono">{key.replace(/_/g, ' ∩ ')}</span>
                 <span className="text-xs font-bold text-text-primary truncate">
                    {Array.isArray(items) ? (items.join(', ') || '∅') : String(items || '∅')}
                 </span>

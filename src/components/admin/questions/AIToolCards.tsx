@@ -1,5 +1,6 @@
+import { memo } from 'react'
 import { Bot, Notebook, Sparkles } from 'lucide-react'
-import { IconBadge } from '../../common/AntigravityUI'
+import { Card, IconBadge, H3 } from '../../common/AntigravityUI'
 
 interface AIToolCardsProps {
   setActiveTab: (tab: 'generate' | 'instructions' | 'json' | 'preview') => void
@@ -29,20 +30,20 @@ const AI_TOOLS = [
   },
 ]
 
-export function AIToolCards({ setActiveTab }: AIToolCardsProps) {
+export const AIToolCards = memo(function AIToolCards({ setActiveTab }: AIToolCardsProps) {
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-      <div className="p-6 rounded-3xl border bg-hover-bg/20 border-border-subtle/50">
+    <div className="space-y-6 animate-in">
+      <Card variant="subtle" padding={24} className="rounded-3xl">
         <div className="flex items-center gap-3 mb-6">
           <IconBadge
             icon={Bot}
             size="xl"
-            className="bg-secondary/10 text-secondary"
-            darkClassName="rounded-2xl bg-secondary/10 text-secondary"
+            status="secondary"
+            className="rounded-2xl"
           />
           <div>
-            <h3 className="font-black text-sm uppercase tracking-widest text-text-primary">AI Question Generation</h3>
-            <p className="text-[10px] font-bold tracking-wider opacity-60">Use external AI tools to generate question sets</p>
+            <H3 className="font-bold uppercase tracking-wide">AI Question Generation</H3>
+            <p className="text-[10px] font-medium tracking-wider text-text-secondary">Use external AI tools to generate question sets</p>
           </div>
         </div>
 
@@ -58,7 +59,7 @@ export function AIToolCards({ setActiveTab }: AIToolCardsProps) {
             >
               <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-white/5 group-hover:scale-150 transition-transform duration-700" />
               <tool.icon className="w-8 h-8 mb-3 opacity-90" />
-              <h4 className="font-black text-sm uppercase tracking-wider mb-1">{tool.name}</h4>
+              <h4 className="font-bold text-sm uppercase tracking-wider mb-1">{tool.name}</h4>
               <p className="text-[10px] opacity-80 leading-relaxed font-medium">{tool.description}</p>
               <div className="mt-4 text-[9px] font-black uppercase tracking-wider opacity-70 group-hover:opacity-100 transition-opacity">
                 Open Tool →
@@ -66,7 +67,7 @@ export function AIToolCards({ setActiveTab }: AIToolCardsProps) {
             </button>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   )
-}
+})

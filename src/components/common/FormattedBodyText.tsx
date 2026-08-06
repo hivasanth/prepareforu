@@ -10,7 +10,7 @@ function parseInlineMarkdown(text: string): React.ReactNode {
   const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-extrabold text-text-primary">{part.slice(2, -2)}</strong>;
+      return <strong key={i} className="font-bold text-text-primary">{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith('*') && part.endsWith('*')) {
       return <em key={i} className="italic">{part.slice(1, -1)}</em>;
@@ -75,7 +75,7 @@ export function FormattedBodyText({ text, className }: FormattedBodyTextProps) {
             className="w-full overflow-x-auto my-5 rounded-2xl border border-border-subtle/30 shadow-sm"
           >
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="bg-hover-bg/50 text-text-primary border-b border-border-subtle/20 font-bold uppercase tracking-wider">
+              <thead className="bg-hover-bg/50 text-text-secondary border-b border-border-subtle/20 font-bold uppercase tracking-wider">
                 <tr>
                   {headers.map((h, i) => (
                     <th 

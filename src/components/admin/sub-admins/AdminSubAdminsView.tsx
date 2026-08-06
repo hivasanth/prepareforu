@@ -1,14 +1,13 @@
-import { Mail, Shield, Search, Tag, Trash2, Plus } from 'lucide-react'
+import { Mail, Shield, Search, Tag, Trash2, Plus, AlertCircle } from 'lucide-react'
 import {
-  Button, IconButton, Input, Badge, DataGrid, Stack,
-  Body, FilterBar, Label
+  Button, IconButton, Input, Badge, DataGrid, Stack, Card,
+  Body, FilterBar, Label, Alert
 } from '../../common/AntigravityUI'
-import { AdminCard } from '../common/AdminCard'
-import { AdminIconWrap } from '../common/AdminIconWrap'
-import { AdminText } from '../common/AdminText'
+import { AdminIconWrap } from '../../common/AdminIconWrap'
+import { AdminText } from '../../common/AdminText'
 import { ErrorState, EmptyState, LoadingSkeleton } from '../../common/SharedComponents'
 import { ConfirmModal } from '../../common/SharedComponents'
-import { AdminModal } from '../../admin/common/AdminModal'
+import { AdminModal } from '../../common/AdminModal'
 import { SubAdminMobileCard } from './SubAdminMobileCard'
 import { formatDate } from '../../../utils/dateUtils'
 import type { SubAdminRow } from '../../../types/subAdmin.types'
@@ -17,6 +16,7 @@ interface AdminSubAdminsViewProps {
   filteredSAs: SubAdminRow[]
   loading: boolean
   error: string | null
+  actionError: string | null
   searchQuery: string
   showAddModal: boolean
   showRemoveModal: boolean
@@ -26,6 +26,8 @@ interface AdminSubAdminsViewProps {
   newSAEmail: string
   newSACoupon: string
   addingSa: boolean
+  fieldErrors?: Partial<Record<'name' | 'email' | 'couponCode', string>>
+  onFieldBlur?: (field: 'name' | 'email' | 'couponCode') => void
   onSearchChange: (val: string) => void
   onAddOpen: () => void
   onAddClose: () => void
@@ -39,9 +41,10 @@ interface AdminSubAdminsViewProps {
 }
 
 export function AdminSubAdminsView({
-  filteredSAs, loading, error, searchQuery,
+  filteredSAs, loading, error, actionError, searchQuery,
   showAddModal, showRemoveModal, saToRemove, removingSa,
   newSAName, newSAEmail, newSACoupon, addingSa,
+  fieldErrors = {}, onFieldBlur,
   onSearchChange, onAddOpen, onAddClose, onAddSubmit,
   onRemoveRequest, onRemoveConfirm, onRemoveCancel,
   onNewSANameChange, onNewSAEmailChange, onNewSACouponChange
@@ -57,10 +60,10 @@ export function AdminSubAdminsView({
             {sa.full_name.charAt(0).toUpperCase()}
           </AdminIconWrap>
           <Stack gap="xs">
-            <AdminText as="span" variant="garamond" className="font-black uppercase tracking-tight leading-tight text-base">
+            <AdminText as="span" variant="garamond" className="font-bold uppercase tracking-tight leading-tight text-base">
               {sa.full_name}
             </AdminText>
-            <span className="text-xs flex items-center gap-1 text-text-secondary opacity-60">
+            <span className="text-xs flex items-center gap-1 text-text-secondary">
               <Mail size={12} /> {sa.email}
             </span>
           </Stack>
@@ -79,7 +82,7 @@ export function AdminSubAdminsView({
     {
       key: 'created_at',
       label: 'Joined',
-      render: (val: string) => <span className="text-xs font-medium text-text-secondary">{formatDate(val)}</span>
+      render: (val: string) =>         <span className="text-xs font-medium text-text-muted">{formatDate(val)}</span>
     },
     {
       key: 'actions',
@@ -88,7 +91,7 @@ export function AdminSubAdminsView({
       render: (_: unknown, sa: SubAdminRow) => (
         <IconButton
           aria-label="Remove sub-admin"
-          className="text-danger hover:bg-danger/10"
+          variant="danger-soft"
           onClick={() => onRemoveRequest(sa)}
           disabled={removingSa === sa.id}
         >
@@ -128,6 +131,7 @@ export function AdminSubAdminsView({
             <Input
               leftIcon={Search}
               placeholder="Search educators by name, email or coupon..."
+              aria-label="Search educators"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
             />
@@ -139,7 +143,7 @@ export function AdminSubAdminsView({
           </div>
         </FilterBar>
 
-        <AdminCard className="overflow-hidden p-0">
+        <Card variant="subtle" padding={0} className="overflow-hidden">
           {error ? (
             <ErrorState message={error} onRetry={() => {}} />
           ) : loading ? (
@@ -168,7 +172,7 @@ export function AdminSubAdminsView({
               {filteredSAs.length === 0 && !loading && emptyState}
             </>
           )}
-        </AdminCard>
+        </Card>
       </Stack>
 
       <AdminModal
@@ -177,30 +181,56 @@ export function AdminSubAdminsView({
         title="Onboard New Educator"
       >
         <Stack gap="lg">
+          {actionError && (
+            <Alert variant="error" icon={AlertCircle} title="Action failed">
+              {actionError}
+            </Alert>
+          )}
           <Stack gap="sm">
-            <Label>Display Name</Label>
+            <Label htmlFor="sa-name">Display Name</Label>
             <Input
+              id="sa-name"
               placeholder="e.g. Dr. Satish Kumar"
               value={newSAName}
               onChange={(e) => onNewSANameChange(e.target.value)}
+              onBlur={() => onFieldBlur?.('name')}
+              aria-invalid={!!fieldErrors.name}
+              aria-describedby={fieldErrors.name ? 'sa-name-error' : undefined}
             />
+            {fieldErrors.name && (
+              <span id="sa-name-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.name}</span>
+            )}
           </Stack>
           <Stack gap="sm">
-            <Label>Email Address</Label>
+            <Label htmlFor="sa-email">Email Address</Label>
             <Input
+              id="sa-email"
               type="email"
               placeholder="e.g. satish@example.com"
               value={newSAEmail}
               onChange={(e) => onNewSAEmailChange(e.target.value)}
+              onBlur={() => onFieldBlur?.('email')}
+              aria-invalid={!!fieldErrors.email}
+              aria-describedby={fieldErrors.email ? 'sa-email-error' : undefined}
             />
+            {fieldErrors.email && (
+              <span id="sa-email-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.email}</span>
+            )}
           </Stack>
           <Stack gap="sm">
-            <Label>Coupon Code</Label>
+            <Label htmlFor="sa-coupon">Coupon Code</Label>
             <Input
+              id="sa-coupon"
               placeholder="e.g. SATISH25"
               value={newSACoupon}
-              onChange={(e) => onNewSACouponChange(e.target.value.toUpperCase())}
+              onChange={(e) => onNewSACouponChange(e.target.value)}
+              onBlur={() => onFieldBlur?.('couponCode')}
+              aria-invalid={!!fieldErrors.couponCode}
+              aria-describedby={fieldErrors.couponCode ? 'sa-coupon-error' : undefined}
             />
+            {fieldErrors.couponCode && (
+              <span id="sa-coupon-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.couponCode}</span>
+            )}
           </Stack>
           <Button fullWidth onClick={onAddSubmit} loading={addingSa}>
             Confirm Onboarding
@@ -213,7 +243,7 @@ export function AdminSubAdminsView({
         onCancel={onRemoveCancel}
         onConfirm={onRemoveConfirm}
         title="Remove Educator?"
-        message={`Are you sure you want to remove ${saToRemove?.full_name}? This action is permanent.`}
+        message={`Are you sure you want to remove ${saToRemove?.full_name}? This action is permanent.${actionError ? `\n\n${actionError}` : ''}`}
         confirmLabel="Remove Access"
         danger={true}
       />

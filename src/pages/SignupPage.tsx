@@ -1,18 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Eye, EyeOff, Shield } from 'lucide-react';
+import { Eye, EyeOff, Shield, AlertCircle } from 'lucide-react';
 import { Turnstile } from '@marsidev/react-turnstile';
 
 import { signupWithEmail } from '../services/authService';
+import { signupSchema } from '../validations/authSchemas';
+import type { SignupFormData } from '../validations/authSchemas';
+import { getPasswordStrengthScore } from '../validations/securitySchemas';
 import { fetchActiveExams } from '../services/examService';
 import { updateExamSelection } from '../services/userService';
-import { useToast, ToastContainer } from '../hooks/useToast';
+import { useStableFetch } from '../hooks/useStableFetch';
 import { useCouponValidation } from '../hooks/useCouponValidation';
 import { useAuth } from '../context/AuthContext';
-import { ThemeContext } from '../context/ThemeContext';
 import {
   PageContainer,
   Grid,
@@ -20,42 +21,31 @@ import {
   Card,
   Input,
   Button,
+  IconButton,
+  Select,
   H3,
+  Display,
   Body,
   Label,
   IconBadge,
+  Alert,
+  AuthThemeProvider,
+  Spinner,
 } from '../components/common/AntigravityUI';
 import { LogoSVG } from '../components/Logo';
 import { ConfirmModal } from '../components/common/SharedComponents';
+import { SuccessModal } from '../components/common/SuccessModal';
 import { t } from '../utils/i18n';
 
-const signupSchema = z.object({
-  fullName: z.string().min(2, t("Enter your full name")),
-  email: z.string().email(t("Enter a valid email")),
-  password: z.string()
-    .min(8, t("Password must be at least 8 characters"))
-    .regex(/[A-Z]/, t("Must include an uppercase letter"))
-    .regex(/[0-9]/, t("Must include a number"))
-    .regex(/[^A-Za-z0-9]/, t("Must include a special character")),
-  confirmPassword: z.string(),
-  couponCode: z.string().optional(),
-  examSelection: z.string().min(1, t("Please select the exam you are preparing for"))
-}).refine(data => data.password === data.confirmPassword, {
-  message: t("Passwords do not match"),
-  path: ["confirmPassword"]
-});
-
-type SignupFormData = z.infer<typeof signupSchema>;
-
 export default function SignupPage() {
-  const { toasts, showError, showToast } = useToast();
   const navigate = useNavigate();
   const { user, updateUser, refreshUser } = useAuth();
-  const mountedRef = useRef(true);
-  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; } }, []);
-  const requestId = useRef(0);
+  const { nextId, isStale } = useStableFetch();
   const isSelectionOnly = !!user && !user.exam_selection && user.role !== 'admin' && user.role !== 'sub_admin';
 
+  const [signupError, setSignupError] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [accountCreated, setAccountCreated] = useState<{ title: string; message: string; target: 'dashboard' | 'verify-email' } | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -66,11 +56,11 @@ export default function SignupPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const id = ++requestId.current;
+    const id = nextId();
     (async () => {
       try {
         const active = await fetchActiveExams();
-        if (id !== requestId.current || !mountedRef.current) return;
+        if (isStale(id)) return;
         const seen = new Set<string>();
         const deduped: { id: string; name: string }[] = [];
         for (const e of active) {
@@ -86,13 +76,13 @@ export default function SignupPage() {
         setDynamicExams(deduped);
       } catch {
         // fallback to hardcoded list
-        if (id !== requestId.current || !mountedRef.current) return;
+        if (isStale(id)) return;
         setDynamicExams([
           { id: 'APPSC_GROUPS', name: 'APPSC (Group 1, 2, 3 & 4)' },
           { id: 'BANK_EXAMS', name: 'Bank Exams' },
         ]);
       } finally {
-        if (id === requestId.current && mountedRef.current) setSelectionLoading(false);
+        if (!isStale(id)) setSelectionLoading(false);
       }
     })();
   }, []);
@@ -101,11 +91,13 @@ export default function SignupPage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     setFocus,
     formState: { errors, isSubmitting, touchedFields }
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
-    mode: 'onChange'
+    mode: 'onSubmit',
+    reValidateMode: 'onBlur',
   });
 
   const passwordValue = watch('password') || '';
@@ -117,65 +109,63 @@ export default function SignupPage() {
 
     const handleSaveSelection = async () => {
       if (!localSelected || !user) return;
-      const id = ++requestId.current;
+      const id = nextId();
+      setSelectionError(null);
       setSaving(true);
       try {
         const res = await updateExamSelection({ user }, user.id, localSelected as any);
-        if (id !== requestId.current || !mountedRef.current) return;
+        if (isStale(id)) return;
         if (!res.success) {
           const msg = (typeof res.error === 'object' && (res.error as any)?.message) ? (res.error as any).message : (res.error || 'Failed to save.');
-          showError(msg as string);
+          setSelectionError(msg as string);
           return;
         }
         await refreshUser();
-        if (id !== requestId.current || !mountedRef.current) return;
+        if (isStale(id)) return;
         navigate('/dashboard', { replace: true });
       } catch {
-        showError('Failed to save selection.');
+        setSelectionError('Failed to save selection.');
       } finally {
-        if (id === requestId.current && mountedRef.current) setSaving(false);
+        if (!isStale(id)) setSaving(false);
       }
     };
 
     return (
-      <ThemeContext.Provider value={{ isDark: false, toggleTheme: () => {} }}>
-      <div className="light">
+      <AuthThemeProvider>
       <PageContainer className="min-h-screen flex items-center justify-center bg-app-bg px-4">
-        <Card className="w-full max-w-md p-8 text-center shadow-2xl">
-          <IconBadge icon={Shield} size="4xl" className="bg-primary/10 border border-primary/20 mx-auto mb-6 text-primary rounded-2xl" />
+        <Card variant="elevated" className="w-full max-w-md p-8 text-center shadow-elevation-3">
+          <IconBadge icon={Shield} size="4xl" status="primary" className="mx-auto mb-6 rounded-2xl" />
           <H3 className="text-2xl font-black mb-2">{t("Select Your Exam")}</H3>
-          <Body secondary className="mb-8 font-medium">{t("Choose the exam you are preparing for to get started.")}</Body>
-          <Stack gap="lg" className="text-left">
-            <Stack gap="xs">
-              <Label>{t("Exam Selection")}</Label>
-              <div className="relative group">
-                <select
-                  value={localSelected}
-                  onChange={e => setLocalSelected(e.target.value)}
-                  disabled={saving || selectionLoading}
-                  className="w-full h-[48px] border transition-all cursor-pointer px-4 text-[12px] font-bold uppercase tracking-wide rounded-[12px] focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-[#FCFAF2] border-primary/20 text-primary shadow-sm"
-                >
-                  <option value="">{t("-- SELECT AN EXAM --")}</option>
-                  {dynamicExams.map(ex => (
-                    <option key={ex.id} value={ex.id}>{ex.name}</option>
-                  ))}
-                </select>
-              </div>
-            </Stack>
+          <Body secondary className="mb-8">{t("Choose the exam you are preparing for to get started.")}</Body>
+            <Stack gap="lg" className="text-left">
+              {selectionError && (
+                <div aria-live="polite">
+                  <Alert variant="error" icon={AlertCircle} title={t("Action failed")} className="w-full">
+                    {selectionError}
+                  </Alert>
+                </div>
+              )}
+              <Select
+                label={t("Exam Selection")}
+                value={localSelected}
+                onChange={(val) => setLocalSelected(val)}
+                options={dynamicExams}
+                placeholder={t("-- SELECT AN EXAM --")}
+                disabled={saving || selectionLoading}
+              />
             <Button fullWidth onClick={handleSaveSelection} loading={saving || selectionLoading} disabled={!localSelected}>
               {t("Continue to Dashboard")}
             </Button>
           </Stack>
         </Card>
       </PageContainer>
-      </div>
-      </ThemeContext.Provider>
+      </AuthThemeProvider>
     );
   }
 
   const handleSignupSubmit = (data: SignupFormData) => {
     if (!captchaToken) {
-      showError(t("Please complete the security check to continue."));
+      setSignupError(t("Please complete the security check to continue."));
       return;
     }
     setConfirmExamData(data);
@@ -190,10 +180,12 @@ export default function SignupPage() {
 
   const handleCancelSignup = () => {
     setConfirmExamData(null);
+    setSignupError(null);
   };
 
   const onSignup = async (data: SignupFormData) => {
-    const id = ++requestId.current;
+    const id = nextId();
+    setSignupError(null);
     try {
       const result = await signupWithEmail({
         fullName:     data.fullName,
@@ -204,32 +196,45 @@ export default function SignupPage() {
         examSelection: data.examSelection,
       });
 
-      if (id !== requestId.current || !mountedRef.current) return;
+      if (isStale(id)) return;
 
       if (!result.success) {
-        if (result.error?.code === 'ALREADY_EXISTS') {
-          showError(t("An account with this email already exists"));
-        } else {
-          showError(result.error?.message || t("Something went wrong. Please try again."));
-        }
+        setSignupError(
+          result.error?.code === 'ALREADY_EXISTS'
+            ? t("An account with this email already exists")
+            : (result.error?.message || t("Something went wrong. Please try again."))
+        );
         return;
       }
 
       const isAutoConfirmed = !!(result.data?.session?.user?.email_confirmed_at || result.data?.profile?.email_verified);
 
       if (result.data?.session && result.data?.profile && isAutoConfirmed) {
-        showToast(t("Account created successfully!"), "success");
         updateUser(result.data.profile, result.data.session);
-        navigate('/dashboard', { replace: true });
+        setAccountCreated({
+          title: t("Account Created!"),
+          message: t("Your account has been created successfully. Welcome to PrepareForU!"),
+          target: 'dashboard',
+        });
       } else {
-        showToast(t("Account created! Check your email to confirm."), "success");
-        navigate('/verify-email', { replace: true });
+        setAccountCreated({
+          title: t("Account Created!"),
+          message: t("Your account has been created. Check your email to confirm."),
+          target: 'verify-email',
+        });
       }
     } catch (err: any) {
-      if (id !== requestId.current || !mountedRef.current) return;
+      if (isStale(id)) return;
       setCaptchaToken(null);
-      showError(t("Something went wrong. Please try again."));
+      setSignupError(t("Something went wrong. Please try again."));
     }
+  };
+
+  const handleAccountCreatedClose = () => {
+    if (!accountCreated) return;
+    const target = accountCreated.target;
+    setAccountCreated(null);
+    navigate(target === 'dashboard' ? '/dashboard' : '/verify-email', { replace: true });
   };
 
 
@@ -242,16 +247,7 @@ export default function SignupPage() {
     if (formErrors.couponCode) { setFocus('couponCode'); return; }
   };
 
-  const getPasswordStrength = (pw: string) => {
-    let score = 0;
-    if (pw.length >= 8) score++;
-    if (/[A-Z]/.test(pw)) score++;
-    if (/[0-9]/.test(pw)) score++;
-    if (/[^A-Za-z0-9]/.test(pw)) score++;
-    return score;
-  };
-
-  const strengthScore = getPasswordStrength(passwordValue);
+  const strengthScore = getPasswordStrengthScore(passwordValue);
   const strengthLabels = [t("Weak"), t("Weak"), t("Fair"), t("Good"), t("Strong")];
   const strengthColors = [
     'var(--color-border-subtle)',
@@ -268,15 +264,14 @@ export default function SignupPage() {
   // The Turnstile SECRET key must be configured in the Supabase Dashboard.
 
   return (
-    <ThemeContext.Provider value={{ isDark: false, toggleTheme: () => {} }}>
-    <div className="light">
+    <AuthThemeProvider>
     <PageContainer className="min-h-screen flex flex-col justify-center bg-app-bg px-4 sm:px-6">
       <Grid cols={2} className="w-full max-w-[1200px] mx-auto items-center min-h-[600px] gap-8 md:gap-16">
         
         {/* LEFT PANEL */}
         <div className="hidden lg:flex flex-col justify-center h-full relative">
-          <div className="absolute w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(124,58,237,0.04)_0%,transparent_70%)] top-[-150px] left-[-150px] pointer-events-none" />
-          <div className="absolute w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(167,139,250,0.03)_0%,transparent_70%)] bottom-[80px] right-[-60px] pointer-events-none" />
+          <div className="absolute w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-accent)_4%,transparent)_0%,transparent_70%)] top-[-150px] left-[-150px] pointer-events-none" />
+          <div className="absolute w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-accent)_3%,transparent)_0%,transparent_70%)] bottom-[80px] right-[-60px] pointer-events-none" />
           
           <Stack gap="lg" className="relative z-10">
             <Stack gap="sm">
@@ -285,18 +280,18 @@ export default function SignupPage() {
             </Stack>
 
             <Stack gap="sm" className="mt-8">
-              <h1 className="text-[36px] xl:text-[48px] font-black leading-[1.1] tracking-tight text-text-primary">
+              <Display className="leading-[1.1]">
                 {t("Start Your")} <br />
                 {t("Success Story.")}
-              </h1>
-              <Body secondary className="text-[15px] xl:text-[17px] max-w-[540px]">
+              </Display>
+              <Body secondary className="max-w-[540px]">
                 {t("Join thousands of students and get access to the best study material and tests.")}
               </Body>
             </Stack>
 
             <div className="mt-8 flex flex-wrap gap-3">
               {[t('Mock Tests'), t('PYQs'), t('Topic Analysis'), t('Flashcards'), t('Study Notes')].map(chip => (
-                <span key={chip} className="px-[18px] py-[8px] rounded-full border border-border-subtle bg-card-bg text-[13px] text-text-secondary font-bold shadow-sm">
+                <span key={chip} className="px-4 py-2 rounded-full border border-border-subtle bg-card-bg text-sm text-text-secondary font-bold shadow-sm">
                   {chip}
                 </span>
               ))}
@@ -306,7 +301,7 @@ export default function SignupPage() {
 
         {/* RIGHT PANEL */}
         <div className="flex flex-col items-center justify-center w-full relative">
-          <div className="absolute w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(124,58,237,0.03)_0%,transparent_70%)] top-[-100px] right-[-100px] pointer-events-none" />
+          <div className="absolute w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-accent)_3%,transparent)_0%,transparent_70%)] top-[-100px] right-[-100px] pointer-events-none" />
           
           <Card className="w-full max-w-[480px] p-6 sm:p-8 relative z-10" variant="elevated">
             
@@ -315,12 +310,19 @@ export default function SignupPage() {
                 <LogoSVG size={40} className="rounded-full shadow-lg shadow-primary/25" />
                 <span className="text-xl font-black">{t("PrepareForU")}</span>
               </div>
-              <H3 className="text-[28px] sm:text-[32px] font-black">{t("Create account")}</H3>
-              <Body secondary className="font-semibold text-[15px]">{t("Join the platform to start your preparation")}</Body>
+              <H3 className="text-2xl sm:text-3xl font-black">{t("Create account")}</H3>
+              <Body secondary className="font-semibold">{t("Join the platform to start your preparation")}</Body>
             </Stack>
 
             <form onSubmit={handleSubmit(handleSignupSubmit, onError)} noValidate>
               <Stack gap="lg">
+                {signupError && (
+                  <div aria-live="polite">
+                    <Alert variant="error" icon={AlertCircle} title={t("Action failed")} className="w-full">
+                      {signupError}
+                    </Alert>
+                  </div>
+                )}
                 {/* Full Name */}
                 <Stack gap="xs">
                   <Label>{t("Full Name")}</Label>
@@ -329,8 +331,9 @@ export default function SignupPage() {
                     placeholder="e.g. John Doe"
                     disabled={isSubmitting}
                     id="fullName"
+                    aria-invalid={errors.fullName ? true : undefined}
                     aria-describedby={errors.fullName ? "fullName-error" : undefined}
-                    {...register("fullName")}
+                    {...register("fullName", { onChange: () => setSignupError(null) })}
                   />
                   {errors.fullName && (
                     <span id="fullName-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
@@ -347,8 +350,9 @@ export default function SignupPage() {
                     placeholder="you@example.com"
                     disabled={isSubmitting}
                     id="email"
+                    aria-invalid={errors.email ? true : undefined}
                     aria-describedby={errors.email ? "email-error" : undefined}
-                    {...register("email")}
+                    {...register("email", { onChange: () => setSignupError(null) })}
                   />
                   {errors.email && (
                     <span id="email-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
@@ -366,18 +370,21 @@ export default function SignupPage() {
                       placeholder={t("Min 8 characters")}
                       disabled={isSubmitting}
                       id="password"
+                      aria-invalid={errors.password ? true : undefined}
                       aria-describedby={errors.password ? "password-error" : undefined}
-                      {...register("password")}
+                      {...register("password", { onChange: () => setSignupError(null) })}
                     />
-                    <button 
+                    <IconButton 
                       type="button" 
+                      variant="ghost"
+                      size="sm"
                       tabIndex={0}
                       aria-label={showPassword ? t("Hide password") : t("Show password")}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-text-secondary/40 hover:text-primary transition-colors rounded-[10px]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
+                    </IconButton>
                   </div>
                   {errors.password && (
                     <span id="password-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
@@ -401,7 +408,7 @@ export default function SignupPage() {
                           />
                         ))}
                       </Grid>
-                      <span className="text-[11px] font-bold mt-1 inline-block" style={{ color: strengthScore > 0 ? strengthColors[strengthScore] : 'var(--color-text-secondary)' }}>
+                      <span className="text-xs font-bold mt-1 inline-block" style={{ color: strengthScore > 0 ? strengthColors[strengthScore] : 'var(--color-text-secondary)' }}>
                         {strengthLabels[strengthScore]}
                       </span>
                     </div>
@@ -417,18 +424,21 @@ export default function SignupPage() {
                       placeholder={t("Repeat your password")}
                       disabled={isSubmitting}
                       id="confirmPassword"
+                      aria-invalid={errors.confirmPassword ? true : undefined}
                       aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
-                      {...register("confirmPassword")}
+                      {...register("confirmPassword", { onChange: () => setSignupError(null) })}
                     />
-                    <button 
+                    <IconButton 
                       type="button" 
+                      variant="ghost"
+                      size="sm"
                       tabIndex={0}
                       aria-label={showConfirmPassword ? t("Hide password") : t("Show password")}
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-text-secondary/40 hover:text-primary transition-colors rounded-[10px]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
                     >
                       {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
+                    </IconButton>
                   </div>
                   {errors.confirmPassword && (
                     <span id="confirmPassword-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
@@ -445,9 +455,10 @@ export default function SignupPage() {
                     placeholder={t("Enter referral code")}
                     disabled={isSubmitting}
                     id="couponCode"
+                    aria-invalid={errors.couponCode ? true : undefined}
                     aria-describedby={errors.couponCode ? "couponCode-error" : (couponMessage ? "coupon-status" : undefined)}
                     className="uppercase"
-                    {...register("couponCode")}
+                    {...register("couponCode", { onChange: () => setSignupError(null) })}
                   />
                   {errors.couponCode && (
                     <span id="couponCode-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
@@ -458,7 +469,7 @@ export default function SignupPage() {
                   <div aria-live="polite" id="coupon-status">
                     {couponStatus === 'loading' && (
                       <span className="text-xs font-bold text-primary mt-1 flex items-center gap-2">
-                        <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <Spinner size="sm" />
                         {t("Validating...")}
                       </span>
                     )}
@@ -472,38 +483,32 @@ export default function SignupPage() {
                 </Stack>
 
                 {/* Exam Selection */}
-                <Stack gap="xs">
-                  <Label>{t("Exam Selection")}</Label>
-                  <div className="relative group">
-                    <select
-                      id="examSelection"
-                      disabled={isSubmitting}
-                      className="w-full h-[48px] border transition-all cursor-pointer px-4 text-[12px] font-bold uppercase tracking-wide rounded-[12px] focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-[#FCFAF2] border-primary/20 text-primary shadow-sm"
-                      {...register("examSelection")}
-                    >
-                      <option value="">{t("-- SELECT AN EXAM --")}</option>
-                      {dynamicExams.map(ex => (
-                        <option key={ex.id} value={ex.id}>{ex.name}</option>
-                      ))}
-
-                    </select>
-                  </div>
-                  {errors.examSelection && (
-                    <span id="examSelection-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                      {errors.examSelection.message}
-                    </span>
-                  )}
-                </Stack>
+                <Select
+                  label={t("Exam Selection")}
+                  id="examSelection"
+                  aria-invalid={errors.examSelection ? true : undefined}
+                  aria-describedby={errors.examSelection ? "examSelection-error" : undefined}
+                  value={watch('examSelection') || ''}
+                  onChange={(val) => { setValue('examSelection', val, { shouldValidate: true }); setSignupError(null); }}
+                  options={dynamicExams}
+                  placeholder={t("-- SELECT AN EXAM --")}
+                  disabled={isSubmitting}
+                />
+                {errors.examSelection && (
+                  <span id="examSelection-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
+                    {errors.examSelection.message}
+                  </span>
+                )}
 
                 {/* SECURITY NOTE: captchaToken is verified server-side via Supabase auth */}
                 <div className="flex justify-center mt-2">
                   <Turnstile 
                     siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} 
-                    onSuccess={setCaptchaToken}
+                    onSuccess={(token) => { setCaptchaToken(token); setSignupError(null); }}
                     onExpire={() => setCaptchaToken(null)}
                     onError={() => {
                       setCaptchaToken(null);
-                      showError(t("Security check failed. Please try again."));
+                      setSignupError(t("Security check failed. Please try again."));
                     }}
                   />
                 </div>
@@ -520,7 +525,7 @@ export default function SignupPage() {
             </form>
 
             <div className="text-center mt-8">
-              <Body secondary className="font-semibold text-[14px]">
+              <Body secondary className="font-semibold">
                 {t("Already have an account?")} <Link to="/login" className="text-text-primary font-bold ml-1 hover:underline">{t("Sign in")}</Link>
               </Body>
             </div>
@@ -540,12 +545,18 @@ export default function SignupPage() {
             onCancel={handleCancelSignup}
             danger
           />
+
+          <SuccessModal
+            isOpen={!!accountCreated}
+            title={accountCreated?.title || ''}
+            message={accountCreated?.message || ''}
+            okLabel={t("Continue")}
+            onClose={handleAccountCreatedClose}
+          />
         </div>
 
       </Grid>
-      <ToastContainer toasts={toasts} />
     </PageContainer>
-    </div>
-    </ThemeContext.Provider>
+    </AuthThemeProvider>
   );
 }

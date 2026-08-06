@@ -16,7 +16,8 @@ import type {
 import { queryCache } from '../utils/queryCache';
 import { clearPerformanceCache } from './performanceService';
 import { assertValidEnFields } from '../utils/languageUtils';
-import { logError, logWarn } from '../utils/logger'
+import { selectedOptionSchema } from '../validations/questionSchema';
+import { logDebug, logError, logWarn } from '../utils/logger'
 
 /**
  * EXAM SERVICE
@@ -90,7 +91,15 @@ export const fetchQuestionsForPaper = async (
         const answeredQuestions = await attemptRepo.findAnsweredQuestionIds(attemptIds);
         
         if (answeredQuestions) {
-          attemptedQuestionIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
+          const rawIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
+          attemptedQuestionIds = [...new Set(rawIds)];
+
+          logDebug('examService.exclusionMetrics', {
+            rawCount: rawIds.length,
+            uniqueCount: attemptedQuestionIds.length,
+            duplicatesRemoved: rawIds.length - attemptedQuestionIds.length,
+            attemptCount: userAttempts.length,
+          });
         }
       }
     }
@@ -351,6 +360,9 @@ export const setQuestionAnswer = async (
   marksPerQuestion: number,
   negativeMarkValue: number,
 ): Promise<void> => {
+  if (selectedOption !== null && !selectedOptionSchema.safeParse(selectedOption).success) {
+    throw new Error('Invalid answer option. Answer options are limited to A-D.');
+  }
   await attemptRepo.setQuestionAnswerRpc(attemptId, questionId, selectedOption, correctOption, marksPerQuestion, negativeMarkValue);
 };
 

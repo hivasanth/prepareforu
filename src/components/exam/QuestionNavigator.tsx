@@ -6,6 +6,7 @@ interface QuestionNavigatorProps {
   isLastQuestion: boolean;
   hasAnswer: boolean;
   isMarkedForReview: boolean;
+  canProceed?: boolean;
   onPrev: () => void;
   onNext: () => void;
   onClear: () => void;
@@ -13,7 +14,7 @@ interface QuestionNavigatorProps {
   onSkip?: () => void;
 }
 
-const baseBtn = 'flex items-center gap-2 uppercase tracking-widest shadow-sm transition-all font-black rounded-[13px]';
+const baseBtn = 'flex items-center gap-2 uppercase tracking-widest shadow-sm transition-all font-bold rounded-[13px]';
 
 const NavButton: FC<{
   onClick: () => void;
@@ -40,13 +41,16 @@ export const QuestionNavigator: FC<QuestionNavigatorProps> = ({
   isLastQuestion,
   hasAnswer,
   isMarkedForReview,
+  canProceed: canProceedProp,
   onPrev,
   onNext,
   onClear,
   onSubmit,
   onSkip,
 }) => {
-  const canProceed = hasAnswer || isMarkedForReview;
+  // Single source when provided (ActiveExamPage passes the hook's derivation);
+  // falls back to the local derivation for other consumers.
+  const canProceed = canProceedProp ?? (hasAnswer || isMarkedForReview);
 
   return (
     <div className="md:flex hidden items-center justify-between gap-4 mt-2">
@@ -93,7 +97,7 @@ export const MobileActionBar: FC<{
   onClear: () => void;
   onSubmit: () => void;
 }> = ({ isFirstQuestion, isLastQuestion, hasAnswer, canProceed, onPrev, onNext, onClear, onSubmit }) => {
-  const base = 'flex flex-col items-center justify-center gap-0.5 text-[10px] font-black h-full rounded-[13px] transition-all';
+  const base = 'flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold h-full rounded-[13px] transition-all';
 
   return (
     <footer className="md:hidden h-16 bg-card-bg border-t border-border-subtle grid grid-cols-3 gap-1 p-2">

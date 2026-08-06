@@ -2,15 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { FocusTrap } from 'focus-trap-react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Turnstile } from '@marsidev/react-turnstile';
 
 import { loginWithEmail, sendPasswordReset } from '../services/authService';
+import { loginSchema, resetSchema } from '../validations/authSchemas';
+import type { LoginFormData, ResetFormData } from '../validations/authSchemas';
 import { useAuth } from '../context/AuthContext';
-import { ThemeContext } from '../context/ThemeContext';
-import { useToast } from '../hooks/useToast';
+import { useToast, ToastContainer } from '../hooks/useToast';
+import { useStableFetch } from '../hooks/useStableFetch';
 import { getRouteForRole } from '../utils/getRouteForRole';
 import {
   PageContainer,
@@ -19,24 +19,17 @@ import {
   Card,
   Input,
   Button,
+  IconButton,
   H3,
+  Display,
   Body,
   Label,
+  Alert,
+  AuthThemeProvider,
 } from '../components/common/AntigravityUI';
+import { AdminModal } from '../components/common/AdminModal';
 import { LogoSVG } from '../components/Logo';
 import { t } from '../utils/i18n';
-
-const loginSchema = z.object({
-  email: z.string().email(t("Enter a valid email address.")),
-  password: z.string().min(1, t("Password is required")),
-});
-
-const resetSchema = z.object({
-  email: z.string().email(t("Enter a valid email address.")),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
-type ResetFormData = z.infer<typeof resetSchema>;
 
 // SECURITY NOTE:
 // captchaToken is passed to Supabase auth methods in authService.ts, which handles
@@ -48,12 +41,14 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { updateUser, setManualLoginActive, clearUser } = useAuth();
-  const { showError, showToast } = useToast();
+  const { toasts, showToast } = useToast();
   
-  const mountedRef = useRef(true);
+  const { mountedRef } = useStableFetch();
   const forgotPasswordBtnRef = useRef<HTMLButtonElement>(null);
   const turnstileRef = useRef<any>(null);
 
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [resetCooldown, setResetCooldown] = useState(0);
@@ -66,6 +61,8 @@ export default function LoginPage() {
     formState: { errors: loginErrors, isSubmitting: isLoginLoading },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    mode: 'onSubmit',
+    reValidateMode: 'onBlur',
   });
 
   const {
@@ -75,29 +72,25 @@ export default function LoginPage() {
     reset: resetResetForm,
   } = useForm<ResetFormData>({
     resolver: zodResolver(resetSchema),
+    mode: 'onSubmit',
+    reValidateMode: 'onBlur',
   });
-
-  // ─── Lifecycle & Cleanup ────────────────────────────────────────────────────
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => { mountedRef.current = false; };
-  }, []);
 
   // Handle URL error params (e.g. ?error=disabled from guards or auth callbacks)
   useEffect(() => {
     const err = searchParams.get('error');
     if (err) {
       if (err === 'disabled') {
-        showError(t('Your account has been disabled. Contact support.'));
+        setLoginError(t('Your account has been disabled. Contact support.'));
       } else {
-        showError(decodeURIComponent(err));
+        setLoginError(decodeURIComponent(err));
       }
-      // Clear URL parameter so toast doesn't re-fire on refresh
+      // Clear URL parameter so error doesn't re-fire on refresh
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('error');
       setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams, setSearchParams, showError]);
+  }, [searchParams, setSearchParams]);
 
   // Cooldown Timer
   useEffect(() => {
@@ -111,10 +104,11 @@ export default function LoginPage() {
   // ─── Login Flow ─────────────────────────────────────────────────────────────
   const onLogin = async (data: LoginFormData) => {
     if (!captchaToken) {
-      showError(t("Please complete the security check to continue."));
+      setLoginError(t("Please complete the security check to continue."));
       return;
     }
     
+    setLoginError(null);
     // Wipes any stale account details first as requested in Fix A
     clearUser();
 
@@ -134,7 +128,7 @@ export default function LoginPage() {
         setCaptchaToken(null);
         turnstileRef.current?.reset();
         setManualLoginActive(false);
-        showError(result.error?.message || t('Login failed.'));
+        setLoginError(result.error?.message || t('Login failed.'));
         return;
       }
 
@@ -144,7 +138,7 @@ export default function LoginPage() {
         setCaptchaToken(null);
         turnstileRef.current?.reset();
         setManualLoginActive(false);
-        showError(t('Session initialization failed.'));
+        setLoginError(t('Session initialization failed.'));
         return;
       }
 
@@ -170,13 +164,14 @@ export default function LoginPage() {
       setCaptchaToken(null);
       turnstileRef.current?.reset();
       setManualLoginActive(false);
-      showError(t('An unexpected error occurred.'));
+      setLoginError(t('An unexpected error occurred.'));
     }
   };
 
   // ─── Reset Password Flow ───────────────────────────────────────────────────
   const onReset = async (data: ResetFormData) => {
     if (resetCooldown > 0) return;
+    setResetError(null);
     
     try {
       const result = await sendPasswordReset(data.email);
@@ -184,7 +179,7 @@ export default function LoginPage() {
       if (!mountedRef.current) return;
 
       if (!result.success) {
-        showError(result.error?.message || t('Failed to send email.'));
+        setResetError(result.error?.message || t('Failed to send email.'));
         return;
       }
       
@@ -193,26 +188,26 @@ export default function LoginPage() {
       setResetCooldown(60);
     } catch (err: any) {
       if (!mountedRef.current) return;
-      showError(t('An unexpected error occurred.'));
+      setResetError(t('An unexpected error occurred.'));
     }
   };
 
   const closeResetModal = () => { 
     setShowReset(false);
     setResetSent(false);
+    setResetError(null);
     resetResetForm();
     forgotPasswordBtnRef.current?.focus();
   };
 
   return (
-    <ThemeContext.Provider value={{ isDark: false, toggleTheme: () => {} }}>
-    <div className="light">
+    <AuthThemeProvider>
     <PageContainer className="min-h-screen flex flex-col justify-center bg-app-bg px-4 sm:px-6">
       <Grid cols={2} className="w-full max-w-[1200px] mx-auto items-center min-h-[600px] gap-8 md:gap-16">
         
         {/* LEFT PANEL */}
         <div className="hidden lg:flex flex-col justify-center h-full relative">
-          <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(79,70,229,0.04)_0%,transparent_70%)] pointer-events-none -left-20 -top-20 w-[600px] h-[600px] rounded-full" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-accent)_4%,transparent)_0%,transparent_70%)] pointer-events-none -left-20 -top-20 w-[600px] h-[600px] rounded-full" />
           
           <Stack gap="lg" className="relative z-10">
             <Stack gap="sm">
@@ -222,26 +217,26 @@ export default function LoginPage() {
             </Stack>
 
             <Stack gap="sm" className="mt-8">
-              <h1 className="text-[36px] xl:text-[48px] font-black leading-[1.1] tracking-tight text-text-primary">
+              <Display className="leading-[1.1]">
                 {t("Ace Your Exam.")} <br />
                 {t("Beat the Competition.")}
-              </h1>
-              <Body secondary className="text-[15px] xl:text-[17px] max-w-md">
+              </Display>
+              <Body secondary className="max-w-md">
                 {t("Structured mock tests, subject-wise practice, real-time leaderboards and deep analytics — everything you need to crack your exam.")}
               </Body>
             </Stack>
 
             <Grid cols={3} gap={32} className="mt-8">
               <Stack gap="xs">
-                <span className="text-[32px] font-black text-text-primary">50K+</span>
+                <Display className="text-stat-value">{t("50K+")}</Display>
                 <Label>{t("Students")}</Label>
               </Stack>
               <Stack gap="xs">
-                <span className="text-[32px] font-black text-text-primary">1M+</span>
+                <Display className="text-stat-value">{t("1M+")}</Display>
                 <Label>{t("Questions")}</Label>
               </Stack>
               <Stack gap="xs">
-                <span className="text-[32px] font-black text-text-primary">9</span>
+                <Display className="text-stat-value">{t("9")}</Display>
                 <Label>{t("Exams Covered")}</Label>
               </Stack>
             </Grid>
@@ -257,22 +252,33 @@ export default function LoginPage() {
                 <LogoSVG size={40} className="rounded-full shadow-lg shadow-primary/25" />
                 <span className="text-xl font-black">{t("PrepareForU")}</span>
               </div>
-              <H3 className="text-[28px] sm:text-[32px] font-black">{t("Welcome back")}</H3>
-              <Body secondary className="font-semibold text-[15px]">{t("Sign in to continue your preparation")}</Body>
+              <H3 className="text-2xl sm:text-3xl font-black">{t("Welcome back")}</H3>
+              <Body secondary className="font-semibold">{t("Sign in to continue your preparation")}</Body>
             </Stack>
 
             <form onSubmit={handleLoginSubmit(onLogin)} noValidate>
               <Stack gap="lg">
+                {loginError && (
+                  <div aria-live="polite">
+                    <Alert variant="error" icon={AlertCircle} title={t("Action failed")} className="w-full">
+                      {loginError}
+                    </Alert>
+                  </div>
+                )}
+
                 <Stack gap="xs">
                   <Label>{t("Email Address")}</Label>
                   <Input 
                     type="email"
                     placeholder="you@example.com"
                     disabled={isLoginLoading}
-                    {...registerLogin("email")}
+                    id="login-email"
+                    aria-invalid={loginErrors.email ? true : undefined}
+                    aria-describedby={loginErrors.email ? "login-email-error" : undefined}
+                    {...registerLogin("email", { onChange: () => setLoginError(null) })}
                   />
                   {loginErrors.email && (
-                    <span className="text-xs font-bold text-danger mt-1">
+                    <span id="login-email-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
                       {loginErrors.email.message}
                     </span>
                   )}
@@ -285,34 +291,41 @@ export default function LoginPage() {
                       type={showPassword ? 'text' : 'password'}
                       placeholder={t("Enter your password")}
                       disabled={isLoginLoading}
-                      {...registerLogin("password")}
+                      id="login-password"
+                      aria-invalid={loginErrors.password ? true : undefined}
+                      aria-describedby={loginErrors.password ? "login-password-error" : undefined}
+                      {...registerLogin("password", { onChange: () => setLoginError(null) })}
                     />
-                    <button 
+                    <IconButton 
                       type="button" 
+                      variant="ghost"
+                      size="sm"
                       tabIndex={0}
                       aria-label={showPassword ? t("Hide password") : t("Show password")}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-text-secondary/40 hover:text-primary transition-colors rounded-[10px]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
+                    </IconButton>
                   </div>
                   {loginErrors.password && (
-                    <span className="text-xs font-bold text-danger mt-1">
+                    <span id="login-password-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
                       {loginErrors.password.message}
                     </span>
                   )}
                 </Stack>
 
                 <div className="flex justify-end -mt-2">
-                  <button 
+                  <Button 
                     type="button" 
+                    variant="ghost"
+                    size="sm"
                     ref={forgotPasswordBtnRef}
                     onClick={() => setShowReset(true)}
-                    className="text-sm font-bold text-primary hover:text-primary-hover transition-colors"
+                    className="text-sm font-bold"
                   >
                     {t("Forgot password?")}
-                  </button>
+                  </Button>
                 </div>
 
                 {/* SECURITY NOTE: captchaToken is verified server-side via Supabase auth */}
@@ -320,11 +333,11 @@ export default function LoginPage() {
                   <Turnstile 
                     ref={turnstileRef}
                     siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} 
-                    onSuccess={setCaptchaToken}
+                    onSuccess={(token) => { setCaptchaToken(token); setLoginError(null); }}
                     onExpire={() => setCaptchaToken(null)}
                     onError={() => {
                       setCaptchaToken(null);
-                      showError(t("Security check failed. Please try again."));
+                      setLoginError(t("Security check failed. Please try again."));
                     }}
                   />
                 </div>
@@ -344,7 +357,7 @@ export default function LoginPage() {
             <div className="mt-8">
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex-1 h-px bg-border-subtle/50" />
-                <Label className="text-text-secondary/60 uppercase tracking-widest text-[10px]">{t("Or continue with")}</Label>
+                <Label className="text-text-secondary/60 uppercase tracking-widest">{t("Or continue with")}</Label>
                 <div className="flex-1 h-px bg-border-subtle/50" />
               </div>
 
@@ -360,7 +373,7 @@ export default function LoginPage() {
             */}
 
             <div className="text-center mt-8">
-              <Body secondary className="font-semibold text-[14px]">
+              <Body secondary className="font-semibold">
                 {t("Don't have an account?")} <Link to="/signup" className="text-text-primary font-bold ml-1 hover:underline">{t("Create one")}</Link>
               </Body>
             </div>
@@ -371,82 +384,81 @@ export default function LoginPage() {
       </Grid>
 
       {/* RESET MODAL */}
-      {showReset && (
-        <FocusTrap focusTrapOptions={{ 
-          onDeactivate: closeResetModal,
-          clickOutsideDeactivates: true,
-          escapeDeactivates: true,
-          initialFocus: false // FocusTrap automatically focuses the first tabbable element by default
-        }}>
-          <div 
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 transition-all"
-            role="dialog"
-            aria-modal="true"
-            aria-label={t("Reset password")}
-          >
-            <Card className="w-full max-w-[440px] !p-8 animate-in zoom-in-95 duration-200">
-              {resetSent ? (
-                <Stack gap="lg" className="text-center items-center">
-                  <div className="text-5xl mb-2">📬</div>
-                  <H3 className="text-2xl font-black">{t("Check your inbox")}</H3>
-                  <Body secondary className="mb-4">
-                    {t("We sent a reset link to your email. Check your spam folder if you don't see it.")}
-                  </Body>
-                  <Button fullWidth onClick={closeResetModal}>
-                    {t("Done")}
-                  </Button>
-                </Stack>
-              ) : (
-                <form onSubmit={handleResetSubmit(onReset)} noValidate>
-                  <Stack gap="lg">
-                    <Stack gap="xs">
-                      <H3 className="text-2xl font-black">{t("Reset Password")}</H3>
-                      <Body secondary className="mb-2">
-                        {t("Enter your email and we'll send you a link to reset your password.")}
-                      </Body>
-                    </Stack>
-
-                    <div aria-live="polite">
-                       {resetErrors.email && (
-                         <div className="p-3 mb-2 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm font-bold">
-                           {resetErrors.email.message}
-                         </div>
-                       )}
-                    </div>
-
-                    <Stack gap="xs">
-                      <Label>{t("Email Address")}</Label>
-                      <Input 
-                        type="email"
-                        placeholder="you@example.com"
-                        disabled={isResetLoading || resetCooldown > 0}
-                        {...registerReset("email")}
-                        autoFocus
-                      />
-                    </Stack>
-
-                    <Grid cols={2} gap={12} className="mt-4">
-                      <Button variant="secondary" onClick={closeResetModal} type="button">
-                        {t("Cancel")}
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        loading={isResetLoading}
-                        disabled={resetCooldown > 0}
-                      >
-                        {resetCooldown > 0 ? t(`Retry in ${resetCooldown}s`) : t("Send Link")}
-                      </Button>
-                    </Grid>
-                  </Stack>
-                </form>
-              )}
-            </Card>
+      <AdminModal
+        isOpen={showReset}
+        onClose={closeResetModal}
+        title={resetSent ? t("Check your inbox") : t("Reset Password")}
+        maxWidth="sm:max-w-md"
+        footer={resetSent ? undefined : (
+          <div className="flex gap-3 w-full">
+            <Button variant="secondary" onClick={closeResetModal} type="button" className="flex-1">
+              {t("Cancel")}
+            </Button>
+            <Button 
+              type="submit" 
+              loading={isResetLoading}
+              disabled={resetCooldown > 0}
+              className="flex-1"
+              onClick={() => {
+                const form = document.querySelector('#reset-form') as HTMLFormElement
+                form?.requestSubmit()
+              }}
+            >
+              {resetCooldown > 0 ? t(`Retry in ${resetCooldown}s`) : t("Send Link")}
+            </Button>
           </div>
-        </FocusTrap>
-      )}
+        )}
+      >
+        {resetSent ? (
+          <Stack gap="lg" className="text-center items-center">
+            <div className="text-5xl mb-2">📬</div>
+            <Body secondary className="mb-4">
+              {t("We sent a reset link to your email. Check your spam folder if you don't see it.")}
+            </Body>
+            <Button fullWidth onClick={closeResetModal}>
+              {t("Done")}
+            </Button>
+          </Stack>
+        ) : (
+          <form id="reset-form" onSubmit={handleResetSubmit(onReset)} noValidate>
+            <Stack gap="lg">
+              <Body secondary className="mb-2">
+                {t("Enter your email and we'll send you a link to reset your password.")}
+              </Body>
 
+              <Stack gap="xs">
+                <Label>{t("Email Address")}</Label>
+                <Input 
+                  type="email"
+                  placeholder="you@example.com"
+                  disabled={isResetLoading || resetCooldown > 0}
+                  id="reset-email"
+                  aria-invalid={resetErrors.email ? true : undefined}
+                  aria-describedby={resetErrors.email ? "reset-email-error" : undefined}
+                  {...registerReset("email")}
+                  autoFocus
+                />
+                {resetErrors.email && (
+                  <span id="reset-email-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
+                    {resetErrors.email.message}
+                  </span>
+                )}
+              </Stack>
+
+              {resetError && (
+                <div aria-live="polite">
+                  <Alert variant="error" icon={AlertCircle} title={t("Action failed")} className="w-full">
+                    {resetError}
+                  </Alert>
+                </div>
+              )}
+            </Stack>
+          </form>
+        )}
+      </AdminModal>
+
+      <ToastContainer toasts={toasts} />
     </PageContainer>
-    </div>
-    </ThemeContext.Provider>
+    </AuthThemeProvider>
   );
 }

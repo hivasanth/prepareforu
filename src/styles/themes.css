@@ -10,8 +10,7 @@
    Layer 2: Referenced by all components and utilities
    Layer 3: Referenced ONLY by the owning component
    
-   Violations: Any CSS selector in this file beyond `:root`, `.light`, 
-   or `.high-contrast` is a violation. This file defines tokens only.
+   Violations: Any CSS selector in this file beyond `:root` or `.light` is a violation. This file defines tokens only.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 
@@ -26,197 +25,38 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
   /* ─── Gray Scale ─────────────────────────────────────────────────────── */
-  --gray-50: #F9FAFB;
-  --gray-100: #F3F4F6;
-  --gray-200: #E5E7EB;
-  --gray-300: #D1D5DB;
-  --gray-400: #9CA3AF;
-  --gray-500: #6B7280;
-  --gray-600: #4B5563;
-  --gray-700: #374151;
-  --gray-800: #1F2937;
-  --gray-900: #111827;
-  --gray-950: #030712;
 
   /* ─── Slate Scale ────────────────────────────────────────────────────── */
-  --slate-50: #f8fafc;
-  --slate-100: #f1f5f9;
-  --slate-200: #e2e8f0;
-  --slate-300: #cbd5e1;
-  --slate-400: #94a3b8;
-  --slate-500: #64748b;
-  --slate-600: #475569;
-  --slate-700: #334155;
-  --slate-800: #1e293b;
-  --slate-900: #0f172a;
-  --slate-950: #020617;
 
   /* ─── Blue Scale ─────────────────────────────────────────────────────── */
-  --blue-50: #EFF6FF;
-  --blue-100: #DBEAFE;
-  --blue-200: #BFDBFE;
-  --blue-300: #93C5FD;
-  --blue-400: #60A5FA;
-  --blue-500: #3B82F6;
-  --blue-600: #2563EB;
-  --blue-700: #1D4ED8;
-  --blue-800: #1E40AF;
-  --blue-900: #1E3A5F;
-  --blue-950: #172554;
 
   /* ─── Green Scale ────────────────────────────────────────────────────── */
-  --green-50: #F0FDF4;
-  --green-100: #DCFCE7;
-  --green-200: #BBF7D0;
-  --green-300: #86EFAC;
-  --green-400: #4ADE80;
-  --green-500: #22C55E;
-  --green-600: #16A34A;
-  --green-700: #15803D;
-  --green-800: #166534;
-  --green-900: #14532D;
-  --green-950: #052E16;
 
   /* ─── Red Scale ──────────────────────────────────────────────────────── */
-  --red-50: #FEF2F2;
-  --red-100: #FEE2E2;
-  --red-200: #FECACA;
-  --red-300: #FCA5A5;
-  --red-400: #F87171;
-  --red-500: #EF4444;
-  --red-600: #DC2626;
-  --red-700: #B91C1C;
-  --red-800: #991B1B;
-  --red-900: #7F1D1D;
-  --red-950: #450A0A;
 
   /* ─── Amber Scale ────────────────────────────────────────────────────── */
-  --amber-50: #FFFBEB;
-  --amber-100: #FEF3C7;
-  --amber-200: #FDE68A;
-  --amber-300: #FCD34D;
-  --amber-400: #FBBF24;
-  --amber-500: #F59E0B;
-  --amber-600: #D97706;
-  --amber-700: #B45309;
-  --amber-800: #92400E;
-  --amber-900: #78350F;
-  --amber-950: #451A03;
 
   /* ─── Purple Scale ───────────────────────────────────────────────────── */
-  --purple-50: #FAF5FF;
-  --purple-100: #F3E8FF;
-  --purple-200: #E9D5FF;
-  --purple-300: #D8B4FE;
-  --purple-400: #C084FC;
-  --purple-500: #A855F7;
-  --purple-600: #9333EA;
-  --purple-700: #7C3AED;
-  --purple-800: #6B21A8;
-  --purple-900: #581C87;
-  --purple-950: #3B0764;
 
   /* ─── Emerald Scale ──────────────────────────────────────────────────── */
-  --emerald-50: #ECFDF5;
-  --emerald-100: #D1FAE5;
-  --emerald-200: #A7F3D0;
-  --emerald-300: #6EE7B7;
-  --emerald-400: #34D399;
-  --emerald-500: #10B981;
-  --emerald-600: #059669;
-  --emerald-700: #047857;
-  --emerald-800: #065F46;
-  --emerald-900: #064E3B;
-  --emerald-950: #022C22;
 
   /* ─── Teal Scale ─────────────────────────────────────────────────────── */
-  --teal-50: #F0FDFA;
-  --teal-100: #CCFBF1;
-  --teal-200: #99F6E4;
-  --teal-300: #5EEAD4;
-  --teal-400: #2DD4BF;
-  --teal-500: #14B8A6;
-  --teal-600: #0D9488;
-  --teal-700: #0F766E;
-  --teal-800: #115E59;
-  --teal-900: #134E4A;
-  --teal-950: #042F2E;
 
   /* ─── Cyan Scale ─────────────────────────────────────────────────────── */
-  --cyan-50: #ECFEFF;
-  --cyan-100: #CFFAFE;
-  --cyan-200: #A5F3FC;
-  --cyan-300: #67E8F9;
-  --cyan-400: #22D3EE;
-  --cyan-500: #06B6D4;
-  --cyan-600: #0891B2;
-  --cyan-700: #0E7490;
-  --cyan-800: #155E75;
-  --cyan-900: #164E63;
-  --cyan-950: #083344;
 
   /* ─── Rose Scale ─────────────────────────────────────────────────────── */
-  --rose-50: #FFF1F2;
-  --rose-100: #FFE4E6;
-  --rose-200: #FECDD3;
-  --rose-300: #FDA4AF;
-  --rose-400: #FB7185;
-  --rose-500: #F43F5E;
-  --rose-600: #E11D48;
-  --rose-700: #BE123C;
-  --rose-800: #9F1239;
-  --rose-900: #881337;
-  --rose-950: #4C0519;
 
   /* ─── Pink Scale (minimal — for Admin Upload route) ──────────────────── */
   --pink-600: #DB2777;
 
   /* ─── Orange Scale ───────────────────────────────────────────────────── */
-  --orange-50: #FFF7ED;
-  --orange-100: #FFEDD5;
-  --orange-200: #FED7AA;
-  --orange-300: #FDBA74;
-  --orange-400: #FB923C;
-  --orange-500: #F97316;
-  --orange-600: #EA580C;
-  --orange-700: #C2410C;
-  --orange-800: #9A3412;
-  --orange-900: #7C2D12;
-  --orange-950: #431407;
 
   /* ─── Indigo Scale ───────────────────────────────────────────────────── */
-  --indigo-50: #EEF2FF;
-  --indigo-100: #E0E7FF;
-  --indigo-200: #C7D2FE;
-  --indigo-300: #A5B4FC;
-  --indigo-400: #818CF8;
-  --indigo-500: #6366F1;
-  --indigo-600: #4F46E5;
-  --indigo-700: #4338CA;
-  --indigo-800: #3730A3;
-  --indigo-900: #312E81;
-  --indigo-950: #1E1B4B;
 
-  /* ─── Brown Scale (Ancient / Parchment) ──────────────────────────────── */
-  --brown-50: #FFFDF9;
-  --brown-100: #FFF8E7;
-  --brown-150: #FFFAF2;
-  --brown-200: #FDF5E2;
-  --brown-250: #FFFAF0;
-  --brown-300: #F5EAD4;
-  --brown-350: #FFFAF0;
-  --brown-400: #F4E5C4;
-  --brown-450: #EEDEB5;
-  --brown-500: #E8D5B0;
-  --brown-550: #DFC096;
-  --brown-600: #C4A882;
-  --brown-650: #C9A070;
-  --brown-700: #A87828;
-  --brown-750: #8B5A10;
-  --brown-800: #7B5C3A;
-  --brown-850: #6B4A00;
-  --brown-900: #3D1F08;
-  --brown-950: #2D1505;
+  /* ─── Brown Scale (Ancient / Parchment) — RETIRED Phase 4.2 ─────────────
+     Parchment/amber surfaces and the 12 retired hexes are removed. Neutral
+     light surfaces come from the certified gray/slate + Management Surface
+     family (see LAYER 2 .light overrides and LAYER 3 management tokens). */
 
   /* ─── Forest Green Scale (Light Theme Primary) ───────────────────────── */
   --forest-50: #F0F5F2;
@@ -244,12 +84,8 @@
   --dark-200: #1A1A2E;
 
   /* ─── Custom Canvas Colors ──────────────────────────────────────────── */
-  --canvas-cream: #FCFAF2;
-  --canvas-eggshell: #FFF9F0;
-  --canvas-floral: #FFFAF0;
-  --canvas-almond: #FFFAF2;
-  --canvas-paper: #F5EAD4;
-  --canvas-parchment: #E2CFA6;
+  /* Parchment canvas family (cream/eggshell/floral/almond/paper/parchment)
+     RETIRED Phase 4.2. Splash remains dark-neutral (premium splash accent). */
   --canvas-splash-bg: #110e08;
   --canvas-splash-dark: #030201;
 
@@ -263,26 +99,10 @@
   --ai-green: #10a37f;
 
   /* ─── Chart Colors ───────────────────────────────────────────────────── */
-  --chart-navy: #264653;
-  --chart-teal: #2a9d8f;
-  --chart-yellow: #e9c46a;
-  --chart-orange: #f4a261;
-  --chart-coral: #e76f51;
-  --chart-indigo: #6366f1;
-  --chart-rose: #f43f5e;
-  --chart-emerald: #10b981;
-  --chart-amber: #f59e0b;
-  --chart-purple: #8b5cf6;
-  --chart-cyan: #06b6d4;
-  --chart-pink: #ec4899;
 
   /* ─── Admin Chart Colors ─────────────────────────────────────────────── */
-  --pie-forest: #12291C;
-  --pie-gold: #C8960C;
-  --pie-brown: #4E342E;
-  --pie-amber: #A87828;
-  --pie-green: #1A3316;
-  --pie-bronze: #8B5A10;
+  /* Phase 4.2 — pie-amber (#A87828) and pie-bronze (#8B5A10) retired.
+     Retained: pie-forest / pie-gold / pie-green (chart accents). */
 
   /* ─── Baseline Colors ────────────────────────────────────────────────── */
   --white: #FFFFFF;
@@ -290,25 +110,37 @@
   --transparent: transparent;
 
   /* ─── Radius Primitives ──────────────────────────────────────────────── */
-  --radius-none: 0px;
-  --radius-xs: 4px;
-  --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-2xl: 24px;
-  --radius-3xl: 28px;
-  --radius-4xl: 32px;
-  --radius-full: 9999px;
+  --radius-3xl: 20px;
+
+  /* ─── Component Radius Extensions (Golden Reference v1.0) ──────────── */
+
+  /* ─── Spacing Scale (Phase 1b Step 2) ────────────────────────────────────
+     SINGLE-LAYER spacing token system — the ONE source of truth for all
+     spacing in the repository (Phase 1b Step 2 design brief).
+     Deliberately NOT part of the Layer 1→2→3 dependency chain: spacing has
+     no semantic or alias layer. Components and utilities consume these
+     tokens directly.
+     Values mirror the Tailwind 4px scale already in use repo-wide (Phase 1b
+     Step 1 audit) — no new scale, no visual change.
+     Sizing (w/h/max-w/min-w) is a SEPARATE system and is NOT covered here. */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
 
   /* ─── Shadow Primitives ──────────────────────────────────────────────── */
-  --shadow-offset-none: 0 0 0 0;
-  --shadow-offset-xs: 0 1px 2px 0;
-  --shadow-offset-sm: 0 1px 3px 0;
-  --shadow-offset-md: 0 4px 6px -1px;
-  --shadow-offset-lg: 0 10px 15px -3px;
-  --shadow-offset-xl: 0 20px 25px -5px;
-  --shadow-offset-2xl: 0 25px 50px -12px;
 
   /* ─── Font Primitives ────────────────────────────────────────────────── */
   --font-sans: 'Vend Sans', system-ui, -apple-system, sans-serif;
@@ -323,24 +155,14 @@
   --weight-bold: 700;
   --weight-black: 900;
 
-  /* ─── Typography Size Primitives ─────────────────────────────────────── */
-  --text-3xs: 0.625rem;    /* 10px */
-  --text-2xs: 0.6875rem;   /* 11px */
-  --text-xs: 0.75rem;      /* 12px */
-  --text-sm: 0.8125rem;    /* 13px */
-  --text-base: 0.875rem;   /* 14px */
-  --text-md: 0.9375rem;    /* 15px */
-  --text-lg: 1.0rem;       /* 16px */
-  --text-xl: 1.0625rem;    /* 17px */
-  --text-2xl: 1.125rem;    /* 18px */
-  --text-3xl: 1.25rem;     /* 20px */
-  --text-4xl: 1.375rem;    /* 22px */
-  --text-5xl: 1.625rem;    /* 26px */
-  --text-6xl: 1.75rem;     /* 28px */
-  --text-7xl: 2.0rem;      /* 32px */
-  --text-8xl: 2.25rem;     /* 36px */
-  --text-9xl: 2.5rem;      /* 40px */
-  --text-10xl: 3.0rem;     /* 48px */
+  /* ─── Typography Size Primitives ───────────────────────────────────────
+     (U-2 Phase A, T-1: the raw --text-3xs..--text-10xl primitives were
+     UNWIRED and name-shifted vs what the app actually renders — the app's
+     text-xs/sm/base/... utilities resolve through the Tailwind v4 defaults
+     (12/14/16/18/20/24/30/36/48px), NOT these tokens. Zero consumers
+     (the only reference was the retired --font-size-caption). Retired;
+     the canonical semantic scale (--text-display/h1/h2/h3/body/caption/
+     label/stat-value/badge/metadata/small/title) is the single size language.) */
 
   /* ─── Line Height Primitives ─────────────────────────────────────────── */
   --lh-none: 1.0;
@@ -360,27 +182,6 @@
   --ls-ultra: 0.25em;
 
   /* ─── Opacity Primitives ─────────────────────────────────────────────── */
-  --opacity-0: 0;
-  --opacity-5: 0.05;
-  --opacity-10: 0.1;
-  --opacity-15: 0.15;
-  --opacity-20: 0.2;
-  --opacity-25: 0.25;
-  --opacity-30: 0.3;
-  --opacity-35: 0.35;
-  --opacity-40: 0.4;
-  --opacity-45: 0.45;
-  --opacity-50: 0.5;
-  --opacity-55: 0.55;
-  --opacity-60: 0.6;
-  --opacity-65: 0.65;
-  --opacity-70: 0.7;
-  --opacity-75: 0.75;
-  --opacity-80: 0.8;
-  --opacity-85: 0.85;
-  --opacity-90: 0.9;
-  --opacity-95: 0.95;
-  --opacity-100: 1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -410,10 +211,14 @@
   /* ─── Text Tokens ────────────────────────────────────────────────────── */
   --text-primary: #F9FAFB;
   --text-secondary: #D1D5DB;
+  --text-title: #F9FAFB;
+  --text-muted: #9CA3AF;
+  --text-hint: #6B7280;
   --text-disabled: #9CA3AF;
   --text-on-accent: #FFFFFF;
   --text-on-danger: #FFFFFF;
   --text-link: #3B82F6;
+  --text-on-dark: var(--text-primary); /* foreground on fixed-dark surfaces (e.g. ancient-card-dark) — light in both themes */
 
   /* ─── Border Tokens ──────────────────────────────────────────────────── */
   --border-default: #374151;
@@ -452,6 +257,13 @@
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.4);
   --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.4);
 
+  /* ─── Elevation Shadow Tokens (Layer 3 — Component Level) ───────────── */
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px rgb(0 0 0 / 0.3), 0 1px 3px rgb(0 0 0 / 0.35);
+  --elevation-2: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 6px -1px rgb(0 0 0 / 0.35);
+  --elevation-3: 0 2px 4px -1px rgb(0 0 0 / 0.3), 0 4px 12px -2px rgb(0 0 0 / 0.35);
+  --elevation-4: 0 4px 8px -2px rgb(0 0 0 / 0.35), 0 8px 20px -4px rgb(0 0 0 / 0.4);
+
   /* ─── Icon Tokens ────────────────────────────────────────────────────── */
   --icon-default: #D1D5DB;
   --icon-accent: #3B82F6;
@@ -482,14 +294,9 @@
   --placeholder-weight: var(--weight-regular);
 
   /* ─── Gradient Tokens ────────────────────────────────────────────────── */
-  --gradient-primary: linear-gradient(90deg, #3B82F6, #60A5FA);
-  --gradient-success: linear-gradient(90deg, #22C55E, #34D399);
-  --gradient-danger: linear-gradient(90deg, #F87171, #EF4444);
-  --gradient-warning: linear-gradient(90deg, #FBBF24, #F59E0B);
   --gradient-app: none;
   --gradient-surface: none;
   --gradient-header: none;
-  --gradient-sidebar: none;
 
   /* ─── Decorative Tokens ──────────────────────────────────────────────── */
   --divider-color: #374151;
@@ -498,15 +305,43 @@
   /* ─── Semantic Radius Tokens ──────────────────────── */
   --radius-card: var(--radius-3xl);
   --radius-container: var(--radius-2xl);
-  --radius-card-inner: var(--radius-xl);
-  --radius-surface: var(--radius-lg);
   --radius-control: var(--radius-md);
-  --radius-tooltip: var(--radius-sm);
-  --radius-pill: var(--radius-full);
 
-  /* ─── Semantic Typography Tokens ──────────────────── */
-  --font-size-caption: var(--text-xs);
-  --font-weight-caption: var(--weight-medium);
+  /* ─── Semantic Typography Tokens ────────────────────
+     (U-2 Phase A, T-1: --font-size-caption/--font-weight-caption retired —
+     zero consumers and inconsistent with the canonical --text-caption token.) */
+
+  /* ─── Canonical Typography Scale (Step 4) ─────────── */
+  /* Display — Hero / Brand Titles */
+  --text-display: 1.75rem;    --lh-display: 1.1;    --fw-display: 900;    --ls-display: -0.025em;
+  /* H1 — Page Headings */
+  --text-h1: 1.375rem;        --lh-h1: 1.15;        --fw-h1: 900;        --ls-h1: -0.025em;
+  /* H2 — Section Headings */
+  --text-h2: 1.125rem;        --lh-h2: 1.2;         --fw-h2: 700;        --ls-h2: -0.025em;
+  /* H3 — Subsection Headings */
+  --text-h3: 0.875rem;        --lh-h3: 1.3;         --fw-h3: 600;        --ls-h3: -0.025em;
+  /* Body — Primary Reading Text */
+  --text-body: 0.8125rem;     --lh-body: 1.7;       --fw-body: 500;
+  /* Caption — Secondary / Metadata */
+  --text-caption: 0.6875rem;  --lh-caption: 1.4;    --fw-caption: 500;
+  /* Label — Form Labels / Tags */
+  --text-label: 0.625rem;     --lh-label: 1.4;      --fw-label: 700;     --ls-label: 0.1em;       --tt-label: uppercase;
+  /* StatValue — Large Stat Display */
+  --text-stat-value: 1.75rem; --lh-stat-value: 1.0; --fw-stat-value: 900; --ls-stat-value: -0.05em;
+  /* Badge — Pill / Tag Text */
+  --text-badge: 0.5625rem;    --lh-badge: 1.0;      --fw-badge: 700;    --ls-badge: 0.05em;      --tt-badge: uppercase;
+  /* Metadata — Helper / Row / Table text (U-2 Phase A T-3; 12px = rendered text-xs.
+     lh mirrors Tailwind's text-xs line-height calc(1/.75) for byte-identical render.) */
+  --text-metadata: 0.75rem;   --lh-metadata: calc(1 / 0.75);   --fw-metadata: 500;
+  /* Small — Compact Table / Cell text (U-2 Phase A T-4; 14px = rendered text-sm.
+     lh mirrors Tailwind's text-sm line-height calc(1.25/.875) for byte-identical render.) */
+  --text-small: 0.875rem;     --lh-small: calc(1.25 / 0.875);  --fw-small: 500;
+  /* Heading — Emphasised Title / Card text (U-2 Phase A T-5; 16px = rendered text-base.
+     lh mirrors Tailwind's text-base line-height 1.5 (current consumer overrides via
+     leading-tight 1.25, which AdminText does not touch). Named --text-heading (NOT
+     --text-title) because --text-title is already an established COLOR token
+     (light #111827 / dark #F9FAFB, ~20 text-text-title uses).) */
+  --text-heading: 1rem;         --lh-heading: 1.5;   --fw-heading: 700;
 
   /* ─── Navigation Semantic Tokens ──────────────────── */
   --bg-nav: var(--bg-surface);
@@ -532,21 +367,51 @@
   --border-accent: var(--color-accent);
   --glow-warning: rgba(251, 191, 36, 0.2);
   --glow-danger: rgba(244, 63, 94, 0.2);
-  --opacity-disabled: var(--opacity-60);
 
-  /* ─── Ancient Backward Compatibility (removed Phase 7) ─ */
-  --ancient-gold: var(--color-accent);
-  --ancient-brown-deep: var(--text-primary);
-  --ancient-brown: var(--text-secondary);
-  --ancient-cream: var(--bg-surface);
-  --ancient-danger: var(--color-danger);
-  --ancient-danger-hover: transparent;
-  --ancient-badge-bg: transparent;
-  --ancient-badge-border: transparent;
-  --ancient-forest: var(--color-accent);
-  --ancient-gold-bright: var(--color-accent);
-  --ancient-amber: var(--color-warning);
-  --ancient-cream-light: var(--bg-surface);
+  /* ─── Foundation 4.6A — Semantic Surface Tokens (theme-aware via refs) ──── */
+  --surface-canvas: var(--bg-app);
+  --surface-nav: var(--bg-nav);
+  --surface-primary: var(--bg-surface);
+  --surface-secondary: var(--bg-elevated);
+  --surface-interactive: var(--bg-hover);
+  --surface-floating: var(--bg-elevated);
+  --surface-overlay: var(--bg-overlay);
+  --surface-hover: var(--bg-hover);
+  --surface-inset: var(--bg-input);
+  --surface-raised: var(--bg-elevated);
+
+  /* ─── Foundation 4.6A — Semantic Elevation Tokens (8-level) ─────────────── */
+  --elevation-surface: var(--shadow-sm);
+  --elevation-raised: var(--shadow-md);
+
+  /* ─── Foundation 4.6A — Semantic Shadow Tokens (single system) ───────────── */
+  --shadow-ambient: var(--shadow-sm);
+  --shadow-contact: var(--shadow-md);
+  --shadow-pressed: var(--shadow-xs);
+
+  /* ─── Foundation 4.6A — Semantic Navigation Surface Tokens ───────────────── */
+  /* P2 Wave 1 — complete the required --nav-* charter set (render-neutral aliases
+     of the certified nav values; no consumer yet — consumption is a separate,
+     reviewable wave). */
+
+  /* ─── Foundation 4.6A — Semantic Z-Index Layer Scale ─────────────────────── */
+  /* P2 Wave 5 — architecture completion only (render-neutral). Consumption of
+     these layers is a separate, reviewable wave; no component reads them yet.
+     Dropdown layer is already served by --dropdown-z (themes.css) and is
+     intentionally not duplicated here. */
+  --z-canvas: 0;
+  --z-content: 10;
+  --z-sticky: 30;
+  --z-drawer: 70;
+  --z-modal: 100;
+  --z-toast: 99999;
+
+  /* ─── Ancient Backward Compatibility (Phase 4.2 remap) ─
+     Aliases preserved ONLY for the certified premium-accent consumers
+     (PremiumIconContainer, BulkActionBar). Each alias now resolves to a
+     certified neutral or premium accent token — the .light warm overrides
+     were removed. Zero retired hexes remain behind these aliases. */
+  --ancient-gold-bright: var(--color-secondary-light);
 }
 
 
@@ -557,150 +422,198 @@
    Tokens NOT listed here keep their dark-theme default values.
    
    ⚠ WARNING: After Phase 7 (full migration), the ancient theme tokens
-   below will be REMOVED. They exist now only as compatibility aliases.
+   below will be REMOVED. Phase 4.2 already stripped the warm parchment
+   overrides; the neutral aliases in :root serve the premium-accent consumers.
    ═══════════════════════════════════════════════════════════════════════════ */
 .light {
   /* ─── Background Tokens ──────────────────────────────────────────────── */
-  --bg-app: #E8D5B0;
-  --bg-surface: #F4E5C4;
-  --bg-elevated: #FDF5E2;
-  --bg-hover: #EEDEB5;
-  --bg-active: #EEDEB5;
-  --bg-disabled: rgba(139, 90, 16, 0.08);
-  --bg-input: #FDF5E2;
-  --bg-overlay: rgba(0, 0, 0, 0.5);
-  --bg-success-subtle: rgba(14, 51, 38, 0.1);
-  --bg-warning-subtle: rgba(115, 50, 6, 0.1);
-  --bg-danger-subtle: rgba(122, 12, 12, 0.1);
-  --bg-accent-subtle: rgba(14, 51, 38, 0.1);
+  /* Phase 4.2 — parchment hexes retired. Neutral slate/gray ladder. */
+  --bg-app: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F1F5F9;
+  --bg-hover: #F1F5F9;
+  --bg-active: #E2E8F0;
+  --bg-disabled: rgba(15, 23, 42, 0.04);
+  --bg-input: #FFFFFF;
+  --bg-overlay: rgba(15, 23, 42, 0.45);
+  --bg-success-subtle: rgba(14, 51, 38, 0.15);
+  --bg-warning-subtle: rgba(115, 50, 6, 0.15);
+  --bg-danger-subtle: rgba(122, 12, 12, 0.15);
+  --bg-accent-subtle: rgba(22, 101, 52, 0.1);
 
   /* ─── Text Tokens ────────────────────────────────────────────────────── */
-  --text-primary: #0A0503;
-  --text-secondary: #23120B;
-  --text-disabled: #4A3525;
-  --text-on-accent: #E8D5B0;
+  /* Phase 4.2 — near-black browns retired. Neutral gray typography. */
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-title: #111827;
+  --text-muted: #6B7280;
+  --text-hint: #9CA3AF;
+  --text-disabled: #9CA3AF;
+  --text-on-accent: #FFFFFF;
   --text-on-danger: #FFFFFF;
-  --text-link: #0E3326;
+  --text-link: #166534;
+  --text-on-dark: #F9FAFB; /* neutral on fixed-dark surfaces (was brown-500 cream) */
+  --placeholder-color: #9CA3AF;
 
   /* ─── Border Tokens ──────────────────────────────────────────────────── */
-  --border-default: #8B5A10;
-  --border-input: #59320C;
-  --border-focus: #0E3326;
-  --border-hover: #A87828;
-  --border-disabled: rgba(139, 90, 16, 0.3);
-  --border-subtle: rgba(139, 90, 16, 0.45);
+  /* Phase 4.2 — gold/bronze borders retired. Neutral slate borders. */
+  --border-default: #E2E8F0;
+  --border-input: #CBD5E1;
+  --border-focus: #166534;
+  --border-hover: #94A3B8;
+  --border-disabled: rgba(148, 163, 184, 0.5);
+  --border-subtle: #E2E8F0;
 
   /* ─── Accent / Brand Tokens ──────────────────────────────────────────── */
-  --color-accent: #0E3326;
-  --color-accent-hover: #164635;
-  --color-accent-subtle: rgba(14, 51, 38, 0.1);
-  --color-accent-rgb: 14, 51, 38;
-  --color-secondary: #8B5A10;
-  --color-secondary-light: #C8960C;
+  --color-accent: #166534;
+  --color-accent-hover: #14532D;
+  --color-accent-subtle: rgba(22, 101, 52, 0.08);
+  --color-accent-rgb: 22, 101, 52;
+  --color-secondary: #C8960C;
+  --color-secondary-light: #D4A84B;
 
   /* ─── State Tokens ───────────────────────────────────────────────────── */
-  --color-success: #0E3326;
-  --color-success-hover: #164635;
-  --color-success-subtle: rgba(14, 51, 38, 0.12);
-  --color-warning: #733206;
-  --color-warning-hover: #8B4210;
-  --color-warning-subtle: rgba(115, 50, 6, 0.12);
-  --color-danger: #7A0C0C;
-  --color-danger-hover: #9A1010;
-  --color-danger-subtle: rgba(122, 12, 12, 0.12);
-  --color-info: #0E3326;
-  --color-info-subtle: rgba(14, 51, 38, 0.1);
+  --color-success: #16A34A;
+  --color-success-hover: #15803D;
+  --color-success-subtle: rgba(22, 163, 74, 0.08);
+  --color-warning: #D97706;
+  --color-warning-hover: #B45309;
+  --color-warning-subtle: rgba(217, 119, 6, 0.08);
+  --color-danger: #DC2626;
+  --color-danger-hover: #B91C1C;
+  --color-danger-subtle: rgba(220, 38, 38, 0.08);
+  --color-info: #166534;
+  --color-info-subtle: rgba(22, 101, 52, 0.08);
 
   /* ─── Shadow Tokens ──────────────────────────────────────────────────── */
-  --shadow-xs: 0 1px 2px rgba(139, 90, 16, 0.12);
-  --shadow-sm: 0 1px 3px rgba(139, 90, 16, 0.12);
-  --shadow-md: 0 4px 6px rgba(139, 90, 16, 0.15);
-  --shadow-lg: 0 10px 15px rgba(139, 90, 16, 0.2);
-  --shadow-xl: 0 20px 25px rgba(139, 90, 16, 0.25);
-  --shadow-2xl: 0 25px 50px rgba(139, 90, 16, 0.25);
+  /* Phase 4.2 — warm amber shadows retired. Neutral slate shadows. */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 8px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 10px 20px -3px rgba(15, 23, 42, 0.10), 0 4px 6px -4px rgba(15, 23, 42, 0.06);
+  --shadow-xl: 0 20px 30px -5px rgba(15, 23, 42, 0.12), 0 8px 12px -6px rgba(15, 23, 42, 0.08);
+  --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.15);
+
+  /* ─── Elevation Shadow Tokens (Light Mode) ──────────────────────────── */
+  /* Phase 4.2 — carved amber 3D shadows retired. Neutral elevation ladder. */
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --elevation-2: 0 1px 3px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.08);
+  --elevation-3: 0 2px 4px -1px rgba(15, 23, 42, 0.07), 0 4px 12px -2px rgba(15, 23, 42, 0.10);
+  --elevation-4: 0 4px 8px -2px rgba(15, 23, 42, 0.08), 0 8px 20px -4px rgba(15, 23, 42, 0.12);
 
   /* ─── Icon Tokens ────────────────────────────────────────────────────── */
-  --icon-default: #23120B;
-  --icon-accent: #0E3326;
-  --icon-disabled: #4A3525;
-  --icon-success: #0E3326;
-  --icon-danger: #7A0C0C;
-  --icon-warning: #733206;
-  --icon-info: #0E3326;
+  --icon-default: #4B5563;
+  --icon-accent: #166534;
+  --icon-disabled: #9CA3AF;
+  --icon-success: #16A34A;
+  --icon-danger: #DC2626;
+  --icon-warning: #D97706;
+  --icon-info: #166534;
 
   /* ─── Selection Tokens ───────────────────────────────────────────────── */
-  --selection-bg: #12291C;
-  --selection-text: #E8D5B0;
+  --selection-bg: #166534;
+  --selection-text: #FFFFFF;
 
   /* ─── Focus Ring Tokens ──────────────────────────────────────────────── */
-  --focus-ring-color: rgba(14, 51, 38, 0.5);
+  --focus-ring-color: rgba(22, 101, 52, 0.4);
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
 
   /* ─── Scrollbar Tokens ───────────────────────────────────────────────── */
-  --scrollbar-thumb: #8B5A10;
-  --scrollbar-thumb-hover: #A87828;
+  --scrollbar-thumb: #D1D5DB;
+  --scrollbar-thumb-hover: #9CA3AF;
   --scrollbar-track: transparent;
   --scrollbar-width: 8px;
 
   /* ─── Placeholder Tokens ─────────────────────────────────────────────── */
-  --placeholder-color: #4A3525;
-  --placeholder-opacity: 0.8;
-  --placeholder-weight: var(--weight-semibold);
+
 
   /* ─── Gradient Tokens ────────────────────────────────────────────────── */
-  --gradient-primary: linear-gradient(90deg, #0E3326, #164635);
-  --gradient-success: linear-gradient(90deg, #0E3326, #164635);
-  --gradient-danger: linear-gradient(90deg, #7A0C0C, #9A1010);
-  --gradient-warning: linear-gradient(90deg, #733206, #8B4210);
-  --gradient-app: radial-gradient(circle at 50% 0%, #EFE1C6 0%, #E2CFA6 60%, #D2BA8E 100%);
-  --gradient-surface: linear-gradient(170deg, rgba(255, 240, 195, 0.35) 0%, rgba(195, 145, 70, 0.08) 45%, rgba(155, 100, 35, 0.12) 100%);
+  /* Phase 4.2 — parchment app/surface gradients retired (gold-free neutral). */
+  --gradient-app: none;
+  --gradient-surface: none;
   --gradient-header: linear-gradient(150deg, #162B1C 0%, #0A1A10 100%);
-  --gradient-sidebar: rgba(12, 32, 20, 0.95);
+
+  /* ─── Foundation 5.0 — Premium Light Material Tokens (Phase 5) ────────────
+     Light-only premium ACCENT material, preserved per D-141 (gold accent
+     family). Phase 4.2 removed --border-gold, --surface-stat-overlay and
+     --card-parchment (parchment surfaces). */
+  --surface-stat: linear-gradient(135deg, #D4A55A 0%, #C9943C 50%, #BF8A30 100%);
+  --surface-tab-pill: linear-gradient(135deg, #E6D2A5 0%, #D8C390 100%);
+  --card-3d-shadow:
+    inset 0 2px 5px rgba(255, 235, 165, 0.65),
+    inset 2px 0 4px rgba(255, 235, 165, 0.25),
+    inset 0 -2px 5px rgba(100, 58, 12, 0.45),
+    inset -1px 0 3px rgba(100, 58, 12, 0.2),
+    5px 6px 0px rgba(105, 62, 15, 0.70),
+    0 12px 28px rgba(60, 28, 5, 0.22);
+  --stat-card-3d-shadow:
+    inset 0 2px 6px rgba(255, 240, 170, 0.70),
+    inset 2px 0 4px rgba(255, 235, 165, 0.30),
+    inset 0 -3px 6px rgba(100, 55, 10, 0.50),
+    inset -1px 0 3px rgba(100, 58, 12, 0.22),
+    5px 6px 0px rgba(105, 62, 15, 0.72),
+    0 12px 28px rgba(60, 28, 5, 0.22);
+  --elevation-carved:
+    inset 0 1px 4px rgba(200, 150, 12, 0.20),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.5),
+    5px 6px 0px rgba(4, 12, 7, 0.90),
+    0 10px 28px rgba(0, 0, 0, 0.35);
+
+  /* ─── Foundation 4.6B — Light Material Calibration ────────────────────── */
+  /* Surface hierarchy: canvas(floor) → primary → secondary → floating → overlay.
+     Phase 4.2 — ladder now resolves through the neutral .light semantic tokens.
+     --surface-nav is intentionally not redeclared here (defined once at :root
+     as var(--bg-nav); the light value resolves through the --bg-nav override). */
+  --surface-canvas: var(--bg-app);
+  --surface-primary: var(--bg-surface);
+  --surface-secondary: var(--bg-elevated);
+  --surface-interactive: var(--bg-hover);
+  --surface-floating: var(--bg-elevated);
+  --surface-overlay: var(--bg-overlay);
+  --surface-hover: var(--bg-hover);
+  --surface-inset: var(--bg-input);
+  --surface-raised: var(--bg-elevated);
+
+  /* Elevation: semantic levels mapped to the neutral shadow system below */
+  --elevation-surface: var(--shadow-ambient);
+  --elevation-raised: var(--shadow-contact);
+
+  /* Shadow: neutral slate, soft, top-biased single system (Phase 4.2 —
+     warm amber shadows retired). */
+  --shadow-ambient: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-contact: 0 2px 5px -1px rgba(15, 23, 42, 0.08);
+  --shadow-pressed: inset 0 2px 5px rgba(15, 23, 42, 0.10);
 
   /* ─── Decorative Tokens ──────────────────────────────────────────────── */
-  --divider-color: rgba(139, 90, 16, 0.3);
+  --divider-color: rgba(15, 23, 42, 0.10);
   --divider-width: 1px;
 
   /* ─── Navigation Semantic Tokens ──────────────────── */
   --bg-nav: rgba(12, 32, 20, 0.95);
   --text-nav: rgba(255, 255, 255, 0.95);
-  --border-nav: rgba(200, 150, 12, 0.35);
-  --text-nav-secondary: rgba(223, 192, 150, 0.7);
+  --border-nav: rgba(200, 150, 12, 0.25);
+  --text-nav-secondary: rgba(212, 168, 75, 0.85);
   --text-nav-hover: rgba(255, 223, 160, 1);
   --bg-nav-hover: rgba(200, 150, 12, 0.1);
-  --bg-nav-active: rgba(200, 150, 12, 0.2);
+  --bg-nav-active: rgba(200, 150, 12, 0.15);
   --text-nav-active: rgba(255, 223, 160, 1);
   --border-nav-indicator: #C8960C;
   --bg-nav-footer: rgba(6, 17, 11, 0.98);
-  --border-nav-footer: rgba(200, 150, 12, 0.3);
-  --icon-nav: rgba(223, 192, 150, 0.7);
+  --border-nav-footer: rgba(200, 150, 12, 0.2);
+  --icon-nav: rgba(212, 168, 75, 0.7);
   --icon-nav-active: rgba(255, 223, 160, 1);
 
   /* ─── Header Semantic Tokens ──────────────────────── */
-  --text-header: rgba(220, 185, 120, 0.92);
+  --text-header: rgba(220, 185, 120, 1);
 
   /* ─── Miscellaneous Semantic Tokens ───────────────── */
-  --bg-accent-surface: #C9A070;
-  --text-emphasis: #3D1F08;
-  --border-accent: #A87828;
-  --glow-warning: rgba(251, 191, 36, 0.2);
-  --glow-danger: rgba(244, 63, 94, 0.2);
-  --opacity-disabled: var(--opacity-60);
-
-  /* ─── Ancient Backward Compatibility (removed Phase 7) ── */
-  --ancient-gold: #A87828;
-  --ancient-brown-deep: #3D1F08;
-  --ancient-brown: #8B5A10;
-  --ancient-cream: #F4E5C4;
-  --ancient-danger: #D32F2F;
-  --ancient-danger-hover: #FFEBEE;
-  --ancient-badge-bg: #FFF8E1;
-  --ancient-badge-border: #FFE082;
-  --ancient-forest: #1C3D28;
-  --ancient-gold-bright: #C8960C;
-  --ancient-amber: #B45309;
-  --ancient-cream-light: #E8D5B0;
+  --bg-accent-surface: #FFFFFF;
+  --text-emphasis: #111827;
+  --border-accent: #166534;
+  --glow-warning: rgba(217, 119, 6, 0.25);
+  --glow-danger: rgba(220, 38, 38, 0.25);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -715,259 +628,213 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
   /* ─── Button Component Tokens ────────────────────────────────────────── */
-  --btn-primary-bg: var(--color-accent);
-  --btn-primary-text: var(--text-on-accent);
-  --btn-primary-border: transparent;
-  --btn-primary-shadow: var(--shadow-sm);
-  --btn-primary-hover-bg: var(--color-accent-hover);
-  --btn-primary-hover-shadow: var(--shadow-md);
-  --btn-primary-active-shadow: var(--shadow-xs);
-  --btn-primary-disabled-bg: var(--bg-disabled);
-  --btn-primary-disabled-text: var(--text-disabled);
 
-  --btn-secondary-bg: transparent;
-  --btn-secondary-text: var(--color-accent);
-  --btn-secondary-border: var(--border-default);
-  --btn-secondary-shadow: none;
-  --btn-secondary-hover-bg: var(--bg-hover);
-  --btn-secondary-hover-border: var(--border-hover);
-  --btn-secondary-active-bg: var(--bg-active);
 
-  --btn-danger-bg: var(--color-danger);
-  --btn-danger-text: var(--text-on-danger);
-  --btn-danger-border: transparent;
-  --btn-danger-shadow: var(--shadow-sm);
-  --btn-danger-hover-bg: var(--color-danger-hover);
-  --btn-danger-hover-shadow: var(--shadow-md);
 
-  --btn-success-bg: var(--color-success);
-  --btn-success-text: var(--text-on-accent);
-  --btn-success-border: transparent;
-  --btn-success-shadow: var(--shadow-sm);
-  --btn-success-hover-bg: var(--color-success-hover);
-  --btn-success-hover-shadow: var(--shadow-md);
 
-  --btn-ghost-bg: transparent;
-  --btn-ghost-text: var(--text-primary);
-  --btn-ghost-border: transparent;
-  --btn-ghost-hover-bg: var(--bg-hover);
-  --btn-ghost-active-bg: var(--bg-active);
 
-  --btn-outline-bg: transparent;
-  --btn-outline-text: var(--color-accent);
-  --btn-outline-border: var(--color-accent);
-  --btn-outline-hover-bg: var(--bg-accent-subtle);
-  --btn-outline-hover-border: var(--color-accent-hover);
 
   /* ─── Card Component Tokens ──────────────────────────────────────────── */
   --card-bg: var(--bg-surface);
-  --card-text: var(--text-primary);
-  --card-border: var(--border-default);
-  --card-shadow: var(--shadow-sm);
-  --card-radius: var(--radius-card);
-  --card-hover-shadow: var(--shadow-md);
-  --card-hover-border: var(--border-hover);
-  --card-header-text: var(--text-primary);
-  --card-body-text: var(--text-secondary);
-  --card-padding: 24px;
-  --card-padding-sm: 16px;
 
-  /* ─── Input Component Tokens ─────────────────────────────────────────── */
-  --input-bg: var(--bg-input);
+  /* ─── Input Component Tokens (D-121 — Input role; re-anchored to certified render) ──
+     Golden: User Panel search Input (`.ancient-input`) + PremiumSelect trigger.
+     `--input-bg` was `var(--bg-input)` and `--input-border` was `var(--border-input)`,
+     but the certified Input renders `--bg-hover`/`--border-subtle`; both had ZERO
+     consumers before, so re-anchoring is render-neutral. */
+  --input-bg: var(--bg-hover);
   --input-text: var(--text-primary);
-  --input-border: var(--border-input);
+  --input-border: var(--border-subtle);
   --input-radius: var(--radius-control);
-  --input-shadow: none;
   --input-focus-border: var(--border-focus);
   --input-focus-shadow: 0 0 0 3px var(--focus-ring-color);
-  --input-disabled-bg: var(--bg-disabled);
-  --input-disabled-text: var(--text-disabled);
-  --input-disabled-border: var(--border-disabled);
-  --input-placeholder: var(--placeholder-color);
-  --input-padding-x: 16px;
   --input-padding-y: 12px;
+  --input-surface-active: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  --input-text-active: var(--color-accent);
+  --input-border-active: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  --input-border-hover-active: color-mix(in srgb, var(--color-accent) 50%, transparent);
+
+  /* ─── Control Family — per-role role tokens (D-121) ─────────────────────
+     Each role owns its namespace; every value is re-anchored to the certified
+     render of its golden owner (identical-render gate, D-120). Components
+     consume ONLY their role tokens, never Surface/Card tokens directly. */
+  --button-surface-secondary: var(--bg-hover);
+  --button-surface-secondary-hover: color-mix(in srgb, var(--bg-hover) 80%, transparent);
+  --button-text-secondary: var(--text-primary);
+  --button-border-secondary: var(--border-subtle);
+  --button-shadow-secondary: none;
+  --button-shadow-secondary-hover: var(--elevation-1);
+  --button-surface-ghost: transparent;
+  --button-surface-ghost-hover: var(--bg-hover);
+  --button-text-ghost: var(--text-secondary);
+  --button-text-ghost-hover: var(--text-primary);
+  --button-border-ghost: transparent;
+
+  --checkbox-surface: var(--bg-hover);
+  --checkbox-border: var(--border-subtle);
+  --checkbox-border-hover: color-mix(in srgb, var(--color-accent) 70%, transparent);
+  --checkbox-border-focus: var(--color-accent);
+  --checkbox-surface-checked: var(--color-accent);
+  --checkbox-border-checked: var(--color-accent);
+
+  --radio-surface: var(--bg-hover);
+  --radio-border: var(--border-subtle);
+  --radio-border-hover: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  --radio-border-checked: var(--color-accent);
+  --radio-dot-checked: var(--color-accent);
+  --radio-track-surface: var(--bg-surface);
+
+  --filter-surface: var(--bg-surface);
+  --filter-border: var(--border-subtle);
+  --filter-text: var(--text-primary);
+  --filter-border-hover: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  --filter-surface-active: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  --filter-text-active: var(--color-accent);
+  --filter-border-active: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  --filter-shadow: var(--elevation-2);
+  --filter-shadow-hover: none;
 
   /* ─── Textarea Component Tokens ──────────────────────────────────────── */
-  --textarea-bg: var(--input-bg);
-  --textarea-text: var(--input-text);
-  --textarea-border: var(--input-border);
-  --textarea-radius: var(--input-radius);
-  --textarea-focus-border: var(--input-focus-border);
-  --textarea-focus-shadow: var(--input-focus-shadow);
-  --textarea-placeholder: var(--placeholder-color);
-  --textarea-padding: var(--input-padding-y);
 
   /* ─── Select Component Tokens ────────────────────────────────────────── */
-  --select-bg: var(--input-bg);
-  --select-text: var(--input-text);
-  --select-border: var(--input-border);
-  --select-radius: var(--input-radius);
-  --select-focus-border: var(--input-focus-border);
-  --select-focus-shadow: var(--input-focus-shadow);
-  --select-option-bg: var(--bg-surface);
-  --select-option-text: var(--text-primary);
-  --select-option-selected-bg: var(--color-accent);
-  --select-option-selected-text: var(--text-on-accent);
 
   /* ─── Modal / Dialog Component Tokens ────────────────────────────────── */
-  --modal-bg: var(--bg-elevated);
-  --modal-text: var(--text-primary);
-  --modal-border: var(--border-default);
-  --modal-shadow: var(--shadow-xl);
-  --modal-radius: var(--radius-container);
-  --modal-overlay: var(--bg-overlay);
-  --modal-header-text: var(--text-primary);
-  --modal-body-text: var(--text-secondary);
-  --modal-padding: 24px;
-  --modal-max-width: 480px;
 
   /* ─── Dropdown Component Tokens ──────────────────────────────────────── */
-  --dropdown-bg: var(--bg-elevated);
-  --dropdown-text: var(--text-primary);
-  --dropdown-border: var(--border-default);
-  --dropdown-shadow: var(--shadow-lg);
-  --dropdown-radius: var(--radius-control);
-  --dropdown-item-hover-bg: var(--bg-hover);
-  --dropdown-item-hover-text: var(--text-primary);
-  --dropdown-item-active-bg: var(--bg-accent-subtle);
-  --dropdown-item-active-text: var(--color-accent);
-  --dropdown-item-padding-x: 16px;
-  --dropdown-item-padding-y: 10px;
 
   /* ─── Tooltip Component Tokens ───────────────────────────────────────── */
-  --tooltip-bg: var(--bg-elevated);
-  --tooltip-text: var(--text-primary);
-  --tooltip-border: var(--border-default);
-  --tooltip-shadow: var(--shadow-md);
-  --tooltip-radius: var(--radius-tooltip);
-  --tooltip-padding-x: 12px;
-  --tooltip-padding-y: 8px;
 
   /* ─── Badge Component Tokens ─────────────────────────────────────────── */
-  --badge-default-bg: var(--bg-elevated);
-  --badge-default-text: var(--text-secondary);
-  --badge-default-border: var(--border-default);
-  --badge-success-bg: var(--bg-success-subtle);
-  --badge-success-text: var(--color-success);
-  --badge-success-border: transparent;
-  --badge-warning-bg: var(--bg-warning-subtle);
-  --badge-warning-text: var(--color-warning);
-  --badge-warning-border: transparent;
-  --badge-danger-bg: var(--bg-danger-subtle);
-  --badge-danger-text: var(--color-danger);
-  --badge-danger-border: transparent;
-  --badge-accent-bg: var(--bg-accent-subtle);
-  --badge-accent-text: var(--color-accent);
-  --badge-accent-border: transparent;
-  --badge-radius: var(--radius-pill);
-  --badge-padding-x: 12px;
-  --badge-padding-y: 4px;
-  --badge-font-size: var(--font-size-caption);
-  --badge-font-weight: var(--font-weight-caption);
 
   /* ─── Chip Component Tokens ──────────────────────────────────────────── */
-  --chip-bg: var(--bg-elevated);
-  --chip-text: var(--text-primary);
-  --chip-border: var(--border-default);
-  --chip-radius: var(--radius-pill);
-  --chip-hover-bg: var(--bg-hover);
-  --chip-selected-bg: var(--bg-accent-subtle);
-  --chip-selected-text: var(--color-accent);
-  --chip-selected-border: var(--color-accent);
-  --chip-padding-x: 12px;
-  --chip-padding-y: 6px;
 
   /* ─── Navigation Component Tokens ────────────────────────────────────── */
-  --nav-text: var(--text-secondary);
-  --nav-text-hover: var(--text-primary);
-  --nav-text-active: var(--color-accent);
-  --nav-bg-hover: var(--bg-hover);
-  --nav-bg-active: var(--bg-accent-subtle);
-  --nav-indicator-active: var(--color-accent);
-  --nav-icon: var(--icon-default);
-  --nav-icon-active: var(--icon-accent);
-  --nav-divider: var(--divider-color);
-  --nav-radius: var(--radius-control);
-  --nav-padding-x: 16px;
-  --nav-padding-y: 12px;
 
   /* ─── Sidebar Component Tokens ───────────────────────────────────────── */
   --sidebar-bg: var(--bg-surface);
-  --sidebar-text: var(--text-primary);
   --sidebar-border: var(--border-default);
-  --sidebar-width: 280px;
-  --sidebar-width-collapsed: 0px;
-  --sidebar-header-text: var(--text-primary);
-  --sidebar-nav-text: var(--text-secondary);
-  --sidebar-nav-text-hover: var(--text-primary);
-  --sidebar-nav-text-active: var(--color-accent);
-  --sidebar-nav-bg-hover: var(--bg-hover);
-  --sidebar-nav-bg-active: var(--bg-accent-subtle);
-  --sidebar-nav-indicator: var(--color-accent);
-  --sidebar-footer-bg: var(--bg-app);
-  --sidebar-footer-border: var(--divider-color);
-  --sidebar-icon: var(--icon-default);
-  --sidebar-icon-active: var(--icon-accent);
 
   /* ─── Header Component Tokens ────────────────────────────────────────── */
   --header-bg: var(--bg-surface);
-  --header-text: var(--text-primary);
   --header-border: var(--border-default);
   --header-shadow: var(--shadow-sm);
-  --header-height: 64px;
-  --header-z-index: 100;
-  --header-icon: var(--icon-default);
-  --header-icon-hover: var(--icon-accent);
 
   /* ─── Footer Component Tokens ────────────────────────────────────────── */
-  --footer-bg: var(--bg-app);
-  --footer-text: var(--text-secondary);
-  --footer-border: var(--border-default);
 
   /* ─── Tabs Component Tokens ──────────────────────────────────────────── */
-  --tab-track-bg: transparent;
-  --tab-track-border: var(--border-default);
-  --tab-track-radius: var(--radius-surface);
-  --tab-text: var(--text-secondary);
-  --tab-text-hover: var(--text-primary);
-  --tab-text-active: var(--color-accent);
-  --tab-bg-hover: var(--bg-hover);
-  --tab-bg-active: var(--bg-accent-subtle);
-  --tab-indicator: var(--color-accent);
-  --tab-pill-bg: var(--bg-elevated);
-  --tab-pill-text: var(--color-accent);
-  --tab-pill-radius: var(--radius-control);
-  --tab-padding-x: 16px;
-  --tab-padding-y: 10px;
-  --tab-gap: 4px;
 
   /* ─── Accordion Component Tokens ─────────────────────────────────────── */
-  --accordion-bg: var(--bg-surface);
-  --accordion-text: var(--text-primary);
-  --accordion-border: var(--border-default);
-  --accordion-radius: var(--radius-control);
-  --accordion-header-bg: var(--bg-surface);
-  --accordion-header-text: var(--text-primary);
-  --accordion-header-hover-bg: var(--bg-hover);
-  --accordion-content-bg: var(--bg-surface);
-  --accordion-content-text: var(--text-secondary);
 
   /* ─── Table Component Tokens ─────────────────────────────────────────── */
-  --table-bg: var(--bg-surface);
-  --table-text: var(--text-primary);
-  --table-border: var(--border-default);
-  --table-radius: var(--radius-surface);
-  --table-header-bg: var(--bg-elevated);
-  --table-header-text: var(--text-secondary);
-  --table-row-hover: var(--bg-hover);
-  --table-row-stripe: var(--bg-app);
-  --table-cell-padding-x: 16px;
-  --table-cell-padding-y: 12px;
 
   /* ─── Statistics Card Component Tokens ───────────────────────────────── */
+
+  /* ─── Question Card Component Tokens ─────────────────────────────────── */
+
+  /* ─── Question Palette Component Tokens ──────────────────────────────── */
+
+  /* ─── Status Board Component Tokens ──────────────────────────────────── */
+
+  /* ─── Exam Header Component Tokens ───────────────────────────────────── */
+
+  /* ─── Exam Timer Component Tokens ────────────────────────────────────── */
+
+  /* ─── Review Card Component Tokens ───────────────────────────────────── */
+
+  /* ─── Toast Component Tokens ─────────────────────────────────────────── */
+
+  /* ─── Alert Component Tokens ─────────────────────────────────────────── */
+
+  /* ─── Progress Component Tokens ──────────────────────────────────────── */
+
+  /* ─── Skeleton Component Tokens ──────────────────────────────────────── */
+
+  /* ─── Loader / Spinner Component Tokens ──────────────────────────────── */
+
+  /* ─── Premium Card Component Tokens ──────────────────────────────────── */
+
+  /* ─── Foundation 4.6A — Card Component Tokens ────────────────────────── */
+  /* Phase 4.1Y — removed dead Foundation-4.6A card tokens that had ZERO consumers
+     (each had a single self-definition, no @theme mapping in index.css, no JSX/JS
+     reference, no getComputedStyle/inline use). Kept only the three that ARE
+     consumed: --card-border (via --color-card-border), --card-shadow (via
+     --shadow-card-shadow), --card-hover-shadow (via --shadow-card-hover-shadow).
+     Removed: --card-text, --card-radius, --card-hover-border, --card-header-text,
+     --card-body-text, --card-padding, --card-padding-sm. Zero rendered effect. */
+  --card-border: rgba(55, 65, 81, 0.5);
+  --card-shadow: var(--elevation-2);
+  --card-hover-shadow: var(--elevation-raised);
+
+  /* ─── COMPONENT MATERIAL TOKENS ──────────────────────────────────────────
+     Single consolidated Semantic Material namespace. Each component owns its
+     material here. Reuses existing primitives/semantic tokens; no new visual
+     values unless a value previously lived only inside a .ancient-* CSS class.
+     Components consume these via @theme mappings (index.css) so they never
+     touch Primitive tokens directly (Engineering Standard V3.1, Principle 4/5).
+     ─────────────────────────────────────────────────────────────────────── */
+
+  /* Card */
+  --material-card-premium-surface: var(--forest-900);
+  /* Phase 4.1Y — removed the dead premium-image material token: its only consumer
+     was the premium-image background utility on the premium variant, which was
+     overridden by the light parchment utility in light and resolved to none in
+     dark (zero rendered effect). Class + token removed together. */
+  /* Phase 4.1X — dark premium border was `var(--border-gold)` which is UNDEFINED
+     in the dark :root scope (border-gold is a .light-only token). CSS fell back
+     to `currentColor`, rendering a visible white/light 1.8px border line on every
+     premium-family card in dark mode. Set to `transparent` to remove the dark
+     border line (the ONE permitted dark change). Light keeps its gold edge via
+     the `.light` override below. */
+  --material-card-premium-border: transparent;
+  --material-card-premium-shadow: var(--elevation-carved);
+
+  /* Light auth card material (DS-001). Token-backed white surface for auth
+     pages — replaces raw `bg-white`. Light = white surface; dark fallback keeps
+     the neutral card surface so the variant is safe if rendered in dark. */
+  --material-card-auth-light-surface: #FFFFFF;
+  --material-card-auth-light-border: #F1F5F9;
+  --material-card-auth-light-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+  --material-card-auth-light-radius: 2.5rem;
+
+  /* Button */
+  /* Phase 4.2 — primary button surface keeps the forest gradient (accent);
+     gold border/carved shadow retired. Text on the dark forest = white. */
+  --material-button-primary-surface: var(--gradient-header);
+  --material-button-primary-border: transparent;
+  --material-button-primary-shadow: var(--elevation-2);
+  --material-button-primary-text: var(--text-on-accent);
+
+  /* Input (DS-003). Semantic Material namespace for new Input variants.
+     Compact = smaller field; violet = branded auth focus ring (replaces raw
+     focus:border-violet-600 focus:shadow-[0_0_0_4px_rgba(124,58,237,0.08)]). */
+  --material-input-compact-height: 40px;
+  --material-input-compact-text: 13px;
+  --material-input-compact-padding: 8px;
+  --material-input-violet-focus-border: #7c3aed;
+  --material-input-violet-focus-shadow: 0 0 0 4px rgba(124, 58, 237, 0.08);
+  --material-input-checkbox-size: 20px;
+  --material-input-checkbox-radius: 6px;
+
+  /* Tabs */
+  /* Phase 4.2 — tab track neutral (was forest gradient + gold border + carved
+     shadow). Active pill keeps the gold accent (premium). */
+  --material-tab-track-surface: var(--bg-surface);
+  --material-tab-track-border: var(--border-subtle);
+  --material-tab-track-shadow: var(--elevation-2);
+  --material-tab-pill-surface: var(--surface-tab-pill);
+  --material-tab-pill-border: var(--gold-300);
+  --material-tab-pill-shadow-light:
+    inset 0 2px 4px rgba(255, 255, 255, 0.6),
+    inset 0 -2px 5px rgba(15, 23, 42, 0.12),
+    0 2px 6px -1px rgba(15, 23, 42, 0.10),
+    0 6px 12px rgba(15, 23, 42, 0.08);
+  --material-tab-text-inactive: var(--text-secondary);
+  --material-tab-text-hover: var(--color-secondary-light);
+
+  /* ─── Foundation 4.6A — Statistic Card Tokens ────────────────────────── */
   --stat-card-bg: var(--bg-surface);
   --stat-card-text: var(--text-primary);
-  --stat-card-border: var(--border-default);
+  --stat-card-border: var(--border-subtle);
   --stat-card-shadow: var(--shadow-sm);
   --stat-card-radius: var(--radius-container);
   --stat-value-text: var(--text-primary);
@@ -976,155 +843,35 @@
   --stat-icon-color: var(--icon-accent);
   --stat-icon-radius: var(--radius-control);
 
-  /* ─── Question Card Component Tokens ─────────────────────────────────── */
-  --qcard-bg: var(--bg-surface);
-  --qcard-text: var(--text-primary);
-  --qcard-border: var(--border-default);
-  --qcard-shadow: var(--shadow-sm);
-  --qcard-radius: var(--radius-card-inner);
-  --qcard-option-bg: var(--bg-surface);
-  --qcard-option-text: var(--text-primary);
-  --qcard-option-border: var(--border-default);
-  --qcard-option-radius: var(--radius-control);
-  --qcard-option-selected-bg: var(--bg-accent-subtle);
-  --qcard-option-selected-text: var(--color-accent);
-  --qcard-option-selected-border: var(--color-accent);
-  --qcard-option-correct-bg: var(--bg-success-subtle);
-  --qcard-option-correct-text: var(--color-success);
-  --qcard-option-correct-border: var(--color-success);
-  --qcard-option-wrong-bg: var(--bg-danger-subtle);
-  --qcard-option-wrong-text: var(--color-danger);
-  --qcard-option-wrong-border: var(--color-danger);
-  --qcard-option-disabled-opacity: var(--opacity-disabled);
+  /* ─── Foundation 4.6A — Button Component Tokens ──────────────────────── */
 
-  /* ─── Question Palette Component Tokens ──────────────────────────────── */
-  --palette-item-size: 36px;
-  --palette-item-radius: var(--radius-tooltip);
-  --palette-item-unanswered-bg: transparent;
-  --palette-item-unanswered-text: var(--text-secondary);
-  --palette-item-unanswered-border: var(--border-default);
-  --palette-item-answered-bg: var(--color-accent);
-  --palette-item-answered-text: var(--text-on-accent);
-  --palette-item-answered-border: transparent;
-  --palette-item-marked-bg: var(--color-warning-subtle);
-  --palette-item-marked-text: var(--color-warning);
-  --palette-item-marked-border: var(--color-warning);
-  --palette-item-current-bg: var(--bg-accent-subtle);
-  --palette-item-current-text: var(--color-accent);
-  --palette-item-current-border: var(--color-accent);
-  --palette-item-correct-bg: var(--color-success);
-  --palette-item-correct-text: var(--text-on-accent);
-  --palette-item-correct-border: transparent;
-  --palette-item-wrong-bg: var(--color-danger);
-  --palette-item-wrong-text: var(--text-on-danger);
-  --palette-item-wrong-border: transparent;
-  --palette-gap: 6px;
+  /* ─── Foundation 4.6A — Input Component Tokens (missing) ─────────────── */
+  --input-padding-x: 16px;
+  --input-placeholder: var(--placeholder-color);
+  --input-shadow: var(--shadow-pressed);
+  --input-disabled-bg: var(--bg-disabled);
+  --input-disabled-text: var(--text-disabled);
+  --input-disabled-border: var(--border-disabled);
 
-  /* ─── Status Board Component Tokens ──────────────────────────────────── */
-  --status-board-text: var(--text-primary);
-  --status-board-label: var(--text-secondary);
-  --status-board-value: var(--text-primary);
-  --status-board-divider: var(--divider-color);
-  --status-board-icon-correct: var(--icon-success);
-  --status-board-icon-wrong: var(--icon-danger);
-  --status-board-icon-marked: var(--icon-warning);
-  --status-board-icon-unanswered: var(--icon-default);
-
-  /* ─── Exam Header Component Tokens ───────────────────────────────────── */
-  --exam-header-bg: var(--bg-surface);
-  --exam-header-text: var(--text-primary);
-  --exam-header-border: var(--border-default);
-  --exam-header-shadow: var(--shadow-sm);
-  --exam-header-timer-text: var(--text-primary);
-  --exam-header-timer-warning: var(--color-warning);
-  --exam-header-timer-danger: var(--color-danger);
-
-  /* ─── Exam Timer Component Tokens ────────────────────────────────────── */
-  --exam-timer-bg: var(--bg-surface);
-  --exam-timer-text: var(--text-primary);
-  --exam-timer-border: var(--border-default);
-  --exam-timer-radius: var(--radius-control);
-  --exam-timer-normal-color: var(--color-success);
-  --exam-timer-warning-color: var(--color-warning);
-  --exam-timer-danger-color: var(--color-danger);
-  --exam-timer-warning-shadow: 0 0 15px var(--glow-warning);
-  --exam-timer-danger-shadow: 0 0 15px var(--glow-danger);
-
-  /* ─── Review Card Component Tokens ───────────────────────────────────── */
-  --review-card-bg: var(--bg-surface);
-  --review-card-text: var(--text-primary);
-  --review-card-border: var(--border-default);
-  --review-card-shadow: var(--shadow-sm);
-  --review-card-radius: var(--radius-card-inner);
-  --review-card-correct-indicator: var(--color-success);
-  --review-card-wrong-indicator: var(--color-danger);
-  --review-card-marked-indicator: var(--color-warning);
-
-  /* ─── Toast Component Tokens ─────────────────────────────────────────── */
-  --toast-bg: var(--bg-elevated);
-  --toast-text: var(--text-primary);
-  --toast-border: var(--border-default);
-  --toast-shadow: var(--shadow-xl);
-  --toast-radius: var(--radius-surface);
-  --toast-success-bg: var(--bg-success-subtle);
-  --toast-success-border: var(--color-success);
-  --toast-success-icon: var(--icon-success);
-  --toast-error-bg: var(--bg-danger-subtle);
-  --toast-error-border: var(--color-danger);
-  --toast-error-icon: var(--icon-danger);
-  --toast-warning-bg: var(--bg-warning-subtle);
-  --toast-warning-border: var(--color-warning);
-  --toast-warning-icon: var(--icon-warning);
-  --toast-info-bg: var(--bg-accent-subtle);
-  --toast-info-border: var(--color-accent);
-  --toast-info-icon: var(--icon-info);
-
-  /* ─── Alert Component Tokens ─────────────────────────────────────────── */
-  --alert-bg: var(--bg-elevated);
-  --alert-text: var(--text-primary);
-  --alert-border: var(--border-default);
-  --alert-radius: var(--radius-control);
-  --alert-success-bg: var(--bg-success-subtle);
-  --alert-success-text: var(--color-success);
-  --alert-success-border: var(--color-success);
-  --alert-error-bg: var(--bg-danger-subtle);
-  --alert-error-text: var(--color-danger);
-  --alert-error-border: var(--color-danger);
-  --alert-warning-bg: var(--bg-warning-subtle);
-  --alert-warning-text: var(--color-warning);
-  --alert-warning-border: var(--color-warning);
-  --alert-info-bg: var(--bg-accent-subtle);
-  --alert-info-text: var(--color-accent);
-  --alert-info-border: var(--color-accent);
-
-  /* ─── Progress Component Tokens ──────────────────────────────────────── */
-  --progress-track-bg: var(--border-default);
-  --progress-track-radius: var(--radius-pill);
-  --progress-track-height: 8px;
-  --progress-fill-bg: var(--color-accent);
-  --progress-fill-radius: var(--radius-pill);
-  --progress-fill-success: var(--color-success);
-  --progress-fill-warning: var(--color-warning);
-  --progress-fill-danger: var(--color-danger);
-
-  /* ─── Skeleton Component Tokens ──────────────────────────────────────── */
-  --skeleton-bg: var(--border-default);
-  --skeleton-radius: var(--radius-tooltip);
-  --skeleton-opacity: 0.5;
-
-  /* ─── Loader / Spinner Component Tokens ──────────────────────────────── */
-  --loader-color: var(--color-accent);
-  --loader-track: var(--border-default);
-  --loader-size: 32px;
-  --loader-speed: 0.8s;
-
-  /* ─── Premium Card Component Tokens ──────────────────────────────────── */
-  --premium-card-bg: var(--bg-surface);
-  --premium-card-border: var(--border-default);
-  --premium-card-shadow: var(--shadow-md);
-  --premium-card-radius: var(--radius-card);
-  --premium-card-hover-border: var(--border-hover);
-  --premium-card-hover-shadow: var(--shadow-lg);
+  /* ─── Management Component Tokens (Phase 3.9 — D-144) ─────────────────────
+     Management Surface Family — additive namespace for management surfaces.
+     DARK values reuse the certified neutral dark tokens EXACTLY (dark rendering
+     stays pixel-identical). LIGHT values are defined in the .light override
+     below as neutral — NO amber/gold in this namespace. Components consume ONLY
+     these tokens via arbitrary-value classes (bg-[var(--management-*)]); no
+     @theme mapping was added, no existing token was mutated. Text on management
+     surfaces uses the existing theme-aware text tokens (neutral in both themes). */
+  --management-surface: var(--bg-surface);
+  --management-surface-muted: var(--bg-elevated);
+  --management-surface-hover: var(--bg-active);
+  --management-surface-active: var(--bg-accent-subtle);
+  --management-border: var(--border-subtle);
+  --management-border-strong: var(--card-border);
+  --management-border-hover: var(--border-hover);
+  --management-border-active: var(--color-accent);
+  --management-shadow: var(--elevation-2);
+  --management-shadow-hover: var(--elevation-3);
+  --management-accent: var(--color-accent);
 
 }
 
@@ -1136,39 +883,75 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 .light {
   /* ─── Sidebar Light Theme Overrides ──────────────────────────────────── */
-  --sidebar-header-text: var(--text-nav);
-  --sidebar-bg: var(--bg-nav);
-  --sidebar-text: var(--text-nav);
-  --sidebar-border: var(--border-nav);
-  --sidebar-nav-text: var(--text-nav-secondary);
-  --sidebar-nav-text-hover: var(--text-nav-hover);
-  --sidebar-nav-bg-hover: var(--bg-nav-hover);
-  --sidebar-nav-bg-active: var(--bg-nav-active);
-  --sidebar-nav-text-active: var(--text-nav-active);
-  --sidebar-nav-indicator: var(--border-nav-indicator);
-  --sidebar-footer-bg: var(--bg-nav-footer);
-  --sidebar-footer-border: var(--border-nav-footer);
-  --sidebar-icon: var(--icon-nav);
-  --sidebar-icon-active: var(--icon-nav-active);
+  --sidebar-bg: var(--gradient-header);
+  --sidebar-border: var(--gold-300);
 
   /* ─── Header Light Theme Overrides ───────────────────────────────────── */
-  --header-bg: var(--bg-nav);
-  --header-text: var(--text-header);
-  --header-border: var(--border-nav);
-  --header-shadow: var(--shadow-sm);
-  --header-icon: var(--icon-nav);
-  --header-icon-hover: var(--icon-nav-active);
+  --header-bg: var(--sidebar-bg);
+  --header-border: var(--sidebar-border);
+  --header-shadow: var(--elevation-carved);
+
+  /* ─── Family B scaled depth (material scale rule: same recipe, smaller size) ──
+     md = medium (Buttons, Tabs track); sm = small (Icon Badge, Progress) */
+  --header-shadow-md:
+    inset 0 1px 3px rgba(200, 150, 12, 0.18),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.45),
+    3px 3px 0px rgba(4, 12, 7, 0.85),
+    0 6px 16px rgba(0, 0, 0, 0.30);
+  --header-shadow-sm:
+    inset 0 1px 2px rgba(200, 150, 12, 0.15),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.40),
+    1px 2px 0px rgba(4, 12, 7, 0.80),
+    0 3px 8px rgba(0, 0, 0, 0.25);
+
+  /* ─── Button Light Theme Overrides (Family B pressed) ─────────────────── */
 
   /* ─── Card and Surface Overrides ─────────────────────────────────────── */
-  --card-border: var(--border-accent);
-  --card-shadow: var(--shadow-sm);
+  /* Phase 4.2 — default card border/shadow neutral. Premium-family cards keep
+     the gold edge via --material-card-premium-border (gold-300 accent). */
+  --card-border: var(--border-subtle);
+  --card-shadow: var(--elevation-2);
+  --material-card-premium-border: var(--gold-300);
+
+  /* ─── Control Family — per-role light overrides (D-121) ──────────────── */
+  --button-surface-secondary: var(--bg-surface);
+  --button-surface-secondary-hover: var(--bg-surface);  /* no bg change on hover (light) */
+  --button-border-secondary: var(--border-subtle);
+  --button-shadow-secondary: var(--elevation-2);
+  --button-shadow-secondary-hover: var(--elevation-3);
+  --checkbox-surface: var(--bg-surface);
+  --checkbox-border: var(--border-subtle);
+  --filter-shadow: var(--elevation-2);
+  --filter-shadow-hover: var(--elevation-3);
 
   /* ─── Stat Card Overrides ────────────────────────────────────────────── */
-  --stat-card-bg: var(--bg-accent-surface);
-  --stat-card-border: var(--border-accent);
-  --stat-card-shadow: var(--shadow-sm);
-  --stat-value-text: var(--text-emphasis);
-  --stat-label-text: var(--border-accent);
+  /* Phase 4.2 — StatCard remains a certified premium-accent surface (D-141):
+     gold gradient + gold-300 edge + carved 3D shadow. */
+  --stat-card-bg: var(--surface-stat);
+  --stat-card-border: var(--gold-300);
+  --stat-card-shadow: var(--stat-card-3d-shadow);
+  --stat-value-text: var(--text-primary);   /* FIX: was var(--brown-900) — primitive bypass. Now semantic typography (Level 3 body/primary). */
+  --stat-label-text: var(--text-muted);     /* FIX: was var(--brown-850) — primitive bypass. Now semantic typography (Level 4 metadata/labels). */
+
+  /* ─── Management Component Tokens — LIGHT (Phase 3.9 — D-144) ──────────
+     Neutral management family in light. Zero amber/gold: surfaces are neutral
+     whites/slate, borders are neutral slate, shadows are neutral (never warm,
+     never gold). The management accent follows the app accent
+     (var(--color-accent)) so active/focus states stay brand-consistent.
+     Phase 5.4A (D-162) — relight: brighter/cleaner/modern/neutral, explicitly
+     NOT white, parchment, amber, yellow, cream, or brown. No hue/saturation/
+     shadow changes. Dark block (above) stays var()-mapped → byte-identical. */
+  --management-surface: #FCFCFD;
+  --management-surface-muted: #F6F8FA;
+  --management-surface-hover: #EDF1F5;
+  --management-surface-active: var(--bg-accent-subtle);
+  --management-border: #E2E8F0;
+  --management-border-strong: #CBD5E1;
+  --management-border-hover: #94A3B8;
+  --management-border-active: var(--color-accent);
+  --management-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --management-shadow-hover: 0 2px 4px rgba(15, 23, 42, 0.06), 0 8px 16px -4px rgba(15, 23, 42, 0.10);
+  --management-accent: var(--color-accent);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

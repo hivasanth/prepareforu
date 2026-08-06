@@ -38,7 +38,7 @@ export function ParsedPreview({ sections, lang }: ParsedPreviewProps) {
             >
               {/* Section header */}
               <div className="px-4 py-2.5 flex items-center gap-2 bg-primary/10">
-                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                   {label || 'Section ' + (si + 1)}
                 </span>
                 <Badge variant="default" className="!text-[8px] !py-0 !px-1.5">

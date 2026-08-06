@@ -1,11 +1,6 @@
-import { Card, Badge, Body, Label } from './AntigravityUI'
+import { Card, Badge, Body, Label, PremiumIconContainer } from './AntigravityUI'
 import { TrendingUp, ChevronRight, type LucideIcon } from 'lucide-react'
-import type { Attempt } from '../../types/exam.types'
-
-export interface AttemptWithRelations extends Attempt {
-  exam_papers?: { paper_name: string };
-  exam_configs?: { name: string };
-}
+import type { AttemptWithRelations } from '../../types/exam.types'
 
 interface AttemptCardBaseProps {
   attempt: AttemptWithRelations;
@@ -34,24 +29,28 @@ export function AttemptCardBase({
   
   return (
     <Card 
-      className="w-full h-full group cursor-pointer flex flex-col"
+      className="w-full h-full group cursor-pointer flex flex-col hover:shadow-card-premium"
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => handleCardKeyDown(e, onClick)}
+      aria-label={`${examName} — ${paperName}, Score ${attempt.score}, ${attempt.accuracy}% accuracy. View full review.`}
     >
       <div className="flex justify-between items-center mb-4">
         <Badge variant="primary">{examName}</Badge>
-        <div className="w-9 h-9 rounded-[10px] bg-hover-bg flex items-center justify-center text-text-secondary lg:group-hover:bg-primary lg:group-hover:text-white transition-all">
-          <Icon size={18} />
-        </div>
+        <PremiumIconContainer
+          icon={Icon}
+          iconSize={18}
+          className="w-9 h-9 rounded-[10px]"
+          darkClassName="bg-hover-bg text-text-secondary lg:group-hover:bg-primary lg:group-hover:text-white"
+        />
       </div>
 
       <div className="flex flex-col md:grid md:grid-cols-[1fr_auto] gap-4">
         <div className="space-y-3">
-          <p className="!text-[13px] md:!text-[14px] font-bold m-0 transition-colors !leading-tight uppercase tracking-tight lg:group-hover:text-primary">
+          <Body className="font-bold leading-tight uppercase tracking-tight transition-colors lg:group-hover:text-primary">
             {paperName}
-          </p>
+          </Body>
           
           <div className="flex items-center justify-between md:justify-start gap-8">
             <div className="flex flex-col">

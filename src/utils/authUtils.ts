@@ -2,16 +2,6 @@ import type { UserProfile, UserRole } from '../types/auth.types';
 import { logError } from './logger';
 
 /**
- * Standardized Role Hierarchy
- * Defines which roles are inherently authorized for specific access levels.
- */
-export const ROLE_ACCESS: Record<UserRole, UserRole[]> = {
-  admin: ['admin', 'sub_admin', 'user'],
-  sub_admin: ['sub_admin', 'user'],
-  user: ['user']
-};
-
-/**
  * Authoritative check for admin role.
  */
 export function isAdmin(user: UserProfile | null | undefined): boolean {
@@ -23,13 +13,6 @@ export function isAdmin(user: UserProfile | null | undefined): boolean {
  */
 export function isSubAdmin(user: UserProfile | null | undefined): boolean {
   return user?.role === 'sub_admin';
-}
-
-/**
- * Checks if the user has any administrative privileges (Admin or Sub-Admin).
- */
-export function hasAdminPrivileges(user: UserProfile | null | undefined): boolean {
-  return isAdmin(user) || isSubAdmin(user);
 }
 
 interface AccessContext {

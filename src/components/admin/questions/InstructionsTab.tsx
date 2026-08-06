@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import { Sparkles, Plus, CheckCircle2, Copy, Check, Edit3, Trash2 } from 'lucide-react'
-import { Button, IconButton, IconBadge } from '../../common/AntigravityUI'
-import type { PromptTemplate } from '../../../hooks/useBulkUpload'
+import { Button, IconButton, IconBadge, Card } from '../../common/AntigravityUI'
+import type { PromptTemplate } from './useBulkUpload'
 
 interface InstructionsTabProps {
   promptBlocks: PromptTemplate[]
@@ -13,12 +14,12 @@ interface InstructionsTabProps {
   onDelete: (id: string) => void
 }
 
-export function InstructionsTab({
+export const InstructionsTab = memo(function InstructionsTab({
   promptBlocks, subjectName, localCopied, copiedPromptId, onCopy, onCreateNew, onEdit, onDelete
 }: InstructionsTabProps) {
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="bg-primary/5 border border-primary/20 p-6 rounded-3xl">
+    <div className="space-y-6 animate-in">
+      <Card variant="subtle" padding={24} className="!bg-primary/5 !border-primary/20">
         <div className="flex items-center gap-3 mb-4">
           <IconBadge
             icon={Sparkles}
@@ -37,8 +38,8 @@ export function InstructionsTab({
             <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Active Template</span>
             <Button
               variant="secondary"
+              size="sm"
               onClick={onCreateNew}
-              className="flex items-center gap-1.5 px-3 py-1 bg-card-bg border border-border-subtle rounded-lg text-[10px] font-black text-primary hover:bg-primary hover:text-white transition-all !h-auto !shadow-none"
             >
               <Plus className="w-3 h-3" />
               Create New
@@ -46,43 +47,41 @@ export function InstructionsTab({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="bg-card-bg border border-border-subtle p-4 rounded-2xl group hover:border-primary/30 transition-all relative shadow-sm">
+            <Card variant="premium-neutral" padding={16} className="group relative">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-black text-primary uppercase tracking-tighter">System Default</span>
-                <CheckCircle2 className="w-3 h-3 text-green-500" />
+                <CheckCircle2 className="w-3 h-3 text-success" />
               </div>
               <p className="text-[11px] font-bold text-text-primary mb-4 line-clamp-2">
                 {subjectName === "History and Culture" ? "Advanced History MCQs (60 Qs)" : "Generic MCQ Extraction"}
               </p>
               <Button
+                variant={localCopied ? 'success' : 'soft'}
+                size="sm"
+                fullWidth
                 onClick={() => onCopy()}
-                className={`w-full py-2 flex items-center justify-center gap-2 rounded-xl text-[10px] font-black transition-all !h-auto !shadow-none hover:!scale-100 ${localCopied ? 'bg-green-500 text-white' : 'bg-primary/20 text-primary border-2 border-primary/30 hover:!bg-primary/20 hover:!text-primary hover:!border-primary/30'}`}
-                whileHover={{ scale: 1 }}
-                whileTap={{ scale: 0.98 }}
               >
                 {localCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                 {localCopied ? 'Copied!' : 'Copy Instructions'}
               </Button>
-            </div>
+            </Card>
 
             {promptBlocks.map(block => (
-              <div key={block.id} className="bg-card-bg border border-border-subtle p-4 rounded-2xl group hover:border-secondary/30 transition-all shadow-sm">
+              <Card variant="premium-neutral" padding={16} className="group">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-black text-secondary uppercase tracking-tighter">{block.topic_name}</span>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <IconButton
+                      variant="ghost"
                       onClick={() => onEdit(block)}
                       aria-label="Edit prompt template"
-                      className="!bg-transparent !text-text-secondary hover:!bg-transparent hover:!text-text-secondary"
-                      whileHover={{ scale: 1 }}
                     >
                       <Edit3 className="w-3 h-3" />
                     </IconButton>
                     <IconButton
+                      variant="ghost"
                       onClick={() => block.id && onDelete(block.id)}
                       aria-label="Delete prompt template"
-                      className="!bg-transparent !text-text-secondary hover:!bg-transparent hover:!text-text-secondary"
-                      whileHover={{ scale: 1 }}
                     >
                       <Trash2 className="w-3 h-3" />
                     </IconButton>
@@ -90,19 +89,19 @@ export function InstructionsTab({
                 </div>
                 <p className="text-[11px] font-bold text-text-primary mb-4 line-clamp-2">{block.prompt_text}</p>
                 <Button
+                  variant={copiedPromptId === block.id ? 'success' : 'soft'}
+                  size="sm"
+                  fullWidth
                   onClick={() => onCopy(block.prompt_text, block.id)}
-                  className={`w-full py-2 flex items-center justify-center gap-2 rounded-xl text-[10px] font-black transition-all !h-auto !shadow-none hover:!scale-100 ${copiedPromptId === block.id ? 'bg-green-500 text-white' : 'bg-secondary/20 text-secondary border-2 border-secondary/30 hover:!bg-secondary/20 hover:!text-secondary hover:!border-secondary/30'}`}
-                  whileHover={{ scale: 1 }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   {copiedPromptId === block.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  {copiedPromptId === block.id ? 'Copied!' : 'Copy Template'}
-                </Button>
-              </div>
-            ))}
-          </div>
+                {copiedPromptId === block.id ? 'Copied!' : 'Copy Template'}
+              </Button>
+            </Card>
+          ))}
         </div>
-      </div>
+        </div>
+      </Card>
     </div>
   )
-}
+})

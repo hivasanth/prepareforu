@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 
-const COLORS = ['#12291C', '#C8960C', '#4E342E', '#A87828', '#1A3316', '#8B5A10']
+const COLORS = ['#166534', '#C8960C', '#475569', '#B45309', '#1A3316', '#64748B']
 
 export function SubjectPieChart({ data }: { data: { subject_name: string; question_count: number }[] }) {
   const chartData = useMemo(() => data.map(s => ({ name: s.subject_name, value: s.question_count })), [data])
@@ -26,7 +26,7 @@ export function SubjectPieChart({ data }: { data: { subject_name: string; questi
             ))}
           </Pie>
           <RechartsTooltip
-            contentStyle={{ borderRadius: '16px', border: 'none', backgroundColor: 'var(--card-bg)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+            contentStyle={{ borderRadius: '16px', border: 'none', backgroundColor: 'var(--surface-floating)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
             itemStyle={{ fontWeight: 900, color: 'var(--text-primary)', fontSize: '10px' }}
           />
         </PieChart>

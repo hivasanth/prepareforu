@@ -4,7 +4,7 @@ import { useSupabaseQuery } from '../../../hooks/useSupabaseQuery'
 import { fetchActiveExams } from '../../../services/examService'
 import { adminService } from '../../../services/adminService'
 import type { ExamPaper, ExamSubject } from '../../../types/exam.types'
-import { Tabs, Stack } from '../../common/AntigravityUI'
+import { Tabs, Stack, SelectionContainer } from '../../common/AntigravityUI'
 import { useAuth } from '../../../context/AuthContext'
 import { isExamAllowed } from '../../../utils/examUtils'
 import { logError } from '../../../utils/logger'
@@ -19,15 +19,14 @@ const APPSC_SUB_TABS = [
 interface AdminSelectionTabsProps {
   selectedExam: string
   setSelectedExam: (val: string) => void
-  selectedPaper: string
-  setSelectedPaper: (val: string) => void
+  selectedPaper?: string
+  setSelectedPaper?: (val: string) => void
   selectedSubject?: string
   setSelectedSubject?: (val: string) => void
   hideAll?: boolean
   showPapers?: boolean
   showSubjects?: boolean
   onContextUpdate?: (labels: { exam: string; paper: string }) => void
-  className?: string
   /** Flatten APPSC groups into individual tabs (no parent "APPSC" tab) */
   flattenAppsc?: boolean
   /** Pre-computed exam tab options (skip internal fetch) */
@@ -36,21 +35,23 @@ interface AdminSelectionTabsProps {
   customPapers?: { label: string; id: string }[]
   /** Pre-computed subject options (skip internal fetch) */
   customSubjects?: { label: string; id: string }[]
+  /** Strip tab row styling and wrap in a single SelectionContainer */
+  bare?: boolean
 }
 
 export function AdminSelectionTabs({
   selectedExam, setSelectedExam,
-  selectedPaper, setSelectedPaper,
+  selectedPaper = 'all', setSelectedPaper = () => {},
   selectedSubject = 'all', setSelectedSubject,
   hideAll = false,
   showPapers = true,
   showSubjects = true,
   onContextUpdate,
-  className = "",
   customExamTabs,
   customPapers,
   customSubjects,
   flattenAppsc = false,
+  bare = false,
 }: AdminSelectionTabsProps) {
   const { user } = useAuth();
   const lastLabelsRef = useRef({ exam: '', paper: '' })
@@ -143,7 +144,7 @@ export function AdminSelectionTabs({
 
   useEffect(() => {
     if (customExamTabs) {
-      setExamTabs(customExamTabs)
+      setExamTabs(prev => (prev === customExamTabs ? prev : customExamTabs))
     }
   }, [customExamTabs])
 
@@ -218,106 +219,252 @@ export function AdminSelectionTabs({
     }
   }, [subjects, subjectsLoading, selectedSubject, setSelectedSubject, hideAll, showSubjects, hasCustomData])
 
+  // Retain the last non-null papers/subjects so the sub-level rows stay mounted
+  // (and keep rendering their tabs) while fresh data is being fetched. This is
+  // what stops the container from collapsing-to-zero and re-expanding on every
+  // exam/paper switch — the root cause of the flicker / visual flash.
+  const [displayPapers, setDisplayPapers] = useState<ExamPaper[] | { label: string; id: string }[] | null>(null)
+  const [displaySubjects, setDisplaySubjects] = useState<ExamSubject[] | { label: string; id: string }[] | null>(null)
+
+  useEffect(() => {
+    if (papers) setDisplayPapers(papers)
+  }, [papers])
+
+  useEffect(() => {
+    if (subjects) setDisplaySubjects(subjects)
+  }, [subjects])
+
+  // Sub-level rows stay open whenever a fetch is in flight (not only when data is
+  // already present) so the control reads as one continuous Premium object.
+  const paperRowOpen =
+    showPapers &&
+    selectedExam !== 'all' &&
+    selectedExam !== 'APPSC_GROUPS' &&
+    (papersLoading || (displayPapers !== null && displayPapers.length > 0))
+
+  const subjectRowOpen =
+    showSubjects &&
+    !!setSelectedSubject &&
+    selectedPaper !== 'all' &&
+    (subjectsLoading || (displaySubjects !== null && displaySubjects.length > 0))
+
   return (
-    <div className={`w-full relative ${className}`}>
-      <div className="w-full pt-2 p-2 rounded-[28px] bg-card-bg/50 border border-border-subtle transition-all duration-500">
-        <Stack gap="sm" className="w-full">
-          {/* LEVEL 1: Main exam tabs */}
-          <div className="w-full flex justify-center lg:justify-start">
-            <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
-                <Tabs 
-                  options={examTabs}
-                  activeId={customExamTabs ? selectedExam : (isAppscActive && !flattenAppsc ? 'APPSC_GROUPS' : selectedExam)}
-                  onChange={setSelectedExam}
-                  variant="primary"
-                  className="w-full"
-                />
-            </div>
-          </div>
+    <div className="w-full relative">
+      {bare ? (
+        <SelectionContainer>
+          <Stack gap="sm" className="w-full">
+              {/* LEVEL 1: Main exam tabs */}
+              <div className="w-full flex justify-center lg:justify-start">
+                <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
+                    <Tabs 
+                      ariaLabel="Select exam"
+                      options={examTabs}
+                      activeId={customExamTabs ? selectedExam : (isAppscActive && !flattenAppsc ? 'APPSC_GROUPS' : selectedExam)}
+                      onChange={setSelectedExam}
+                      variant="primary"
+                      className="w-full"
+                      bare
+                    />
+                </div>
+              </div>
 
-          {/* Sub-level rows */}
-          {(!customExamTabs || showPapers || showSubjects) && (
-          <motion.div
-            initial={false}
-            animate={{ 
-              height: (isAppscActive || (showPapers && papers && papers.length > 0) || (showSubjects && subjects && subjects.length > 0)) ? 'auto' : 0,
-              opacity: (isAppscActive || (showPapers && papers && papers.length > 0) || (showSubjects && subjects && subjects.length > 0)) ? 1 : 0
-            }}
-            transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
-            className="w-full flex flex-col overflow-hidden"
-          >
-            <div className="pt-3 flex flex-col gap-3">
+              {/* Sub-level rows — kept mounted during fetches to avoid flicker */}
+              {(!customExamTabs || showPapers || showSubjects) && (
+              <motion.div
+                initial={false}
+                animate={{ 
+                  height: (isAppscActive || paperRowOpen || subjectRowOpen) ? 'auto' : 0,
+                  opacity: (isAppscActive || paperRowOpen || subjectRowOpen) ? 1 : 0
+                }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
+                className="w-full flex flex-col overflow-hidden"
+              >
+                <div className="pt-3 flex flex-col gap-3">
               {/* Subtle Divider */}
-              <div className="h-px w-full mx-auto opacity-30 bg-border-subtle" />
+                  <div className="h-px w-full mx-auto opacity-30 bg-border-subtle" />
 
-              <div>
-                <Stack gap="sm">
-                  {/* LEVEL 2: APPSC Specific Groups (skip when custom data or flattenAppsc — parent handles grouping) */}
-                  {isAppscActive && !customExamTabs && !flattenAppsc && (
-                    <div className="w-full flex justify-center lg:justify-start">
-                      <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
-                        <Tabs 
-                          options={[
-                            ...(!hideAll ? [{ label: 'ALL GROUPS', id: 'APPSC_GROUPS' }] : []),
-                            ...APPSC_SUB_TABS
-                          ]}
-                          activeId={selectedExam}
-                          onChange={setSelectedExam}
-                          variant="secondary"
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  )}
+                  <div>
+                    <Stack gap="sm">
+                      {/* LEVEL 2: APPSC Specific Groups (skip when custom data or flattenAppsc — parent handles grouping) */}
+                      {isAppscActive && !customExamTabs && !flattenAppsc && (
+                        <div className="w-full flex justify-center lg:justify-start">
+                          <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
+                            <Tabs 
+                              ariaLabel="Select exam group"
+                              options={[
+                                ...(!hideAll ? [{ label: 'ALL GROUPS', id: 'APPSC_GROUPS' }] : []),
+                                ...APPSC_SUB_TABS
+                              ]}
+                              activeId={selectedExam}
+                              onChange={setSelectedExam}
+                              variant="secondary"
+                              className="w-full"
+                              bare
+                            />
+                          </div>
+                        </div>
+                      )}
 
-                  {/* LEVEL 3: Papers */}
-                  {showPapers && papers && papers.length > 0 && selectedExam !== 'all' && selectedExam !== 'APPSC_GROUPS' && (
-                    <div className="w-full flex justify-center lg:justify-start">
-                      <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
-                        <Tabs 
-                          options={[
-                            ...(!hideAll && !customPapers ? [{ label: 'ALL PAPERS', id: 'all' }] : []),
-                            ...papers.map(p => ({
-                              label: ('paper_name' in p ? (p as any).paper_name : (p as any).label).toUpperCase(),
-                              id: p.id
-                            }))
-                          ]}
-                          activeId={selectedPaper}
-                          onChange={setSelectedPaper}
-                          variant="secondary"
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  )}
-  
-                  {/* LEVEL 4: Subjects */}
-                  {showSubjects && subjects && subjects.length > 0 && selectedPaper !== 'all' && setSelectedSubject && (
-                    <div className="w-full flex justify-center lg:justify-start">
-                      <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
-                        <Tabs 
-                          options={[
-                            ...(!hideAll && !customSubjects ? [{ label: 'ALL SUBJECTS', id: 'all' }] : []),
-                            ...subjects.map(s => ({
-                              label: ('subject_name' in s ? (s as any).subject_name : (s as any).label).toUpperCase(),
-                              id: ('subject_name' in s ? (s as any).subject_name : (s as any).id)
-                            }))
-                          ]}
-                          activeId={selectedSubject}
-                          onChange={setSelectedSubject}
-                          variant="secondary"
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </Stack>
+                      {/* LEVEL 3: Papers */}
+                      {paperRowOpen && (
+                        <div className="w-full flex justify-center lg:justify-start">
+                          <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
+                            <Tabs 
+                              ariaLabel="Select paper"
+                              options={[
+                                ...(!hideAll && !customPapers ? [{ label: 'ALL PAPERS', id: 'all' }] : []),
+                                ...(displayPapers ?? []).map(p => ({
+                                  label: (('paper_name' in p ? (p as unknown as Record<string, unknown>).paper_name : (p as unknown as Record<string, unknown>).label) as string).toUpperCase(),
+                                  id: p.id
+                                }))
+                              ]}
+                              activeId={selectedPaper}
+                              onChange={setSelectedPaper}
+                              variant="secondary"
+                              className="w-full"
+                              bare
+                            />
+                          </div>
+                        </div>
+                      )}
+       
+                      {/* LEVEL 4: Subjects */}
+                      {subjectRowOpen && setSelectedSubject && (
+                        <div className="w-full flex justify-center lg:justify-start">
+                          <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
+                            <Tabs 
+                              ariaLabel="Select subject"
+                              options={[
+                                ...(!hideAll && !customSubjects ? [{ label: 'ALL SUBJECTS', id: 'all' }] : []),
+                                ...(displaySubjects ?? []).map(s => ({
+                                  label: (('subject_name' in s ? (s as unknown as Record<string, unknown>).subject_name : (s as unknown as Record<string, unknown>).label) as string).toUpperCase(),
+                                  id: ('subject_name' in s ? (s as unknown as Record<string, unknown>).subject_name : (s as unknown as Record<string, unknown>).id) as string
+                                }))
+                              ]}
+                              activeId={selectedSubject}
+                              onChange={setSelectedSubject}
+                              variant="secondary"
+                              className="w-full"
+                              bare
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </Stack>
+                  </div>
+                </div>
+              </motion.div>
+              )}
+            </Stack>
+        </SelectionContainer>
+      ) : (
+        <SelectionContainer>
+          <Stack gap="sm" className="w-full">
+            {/* LEVEL 1: Main exam tabs */}
+            <div className="w-full flex justify-center lg:justify-start">
+              <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
+                  <Tabs 
+                    ariaLabel="Select exam"
+                    options={examTabs}
+                    activeId={customExamTabs ? selectedExam : (isAppscActive && !flattenAppsc ? 'APPSC_GROUPS' : selectedExam)}
+                    onChange={setSelectedExam}
+                    variant="primary"
+                    className="w-full"
+                    bare
+                  />
               </div>
             </div>
-          </motion.div>
-          )}
-        </Stack>
-      </div>
+
+            {/* Sub-level rows — kept mounted during fetches to avoid flicker */}
+            {(!customExamTabs || showPapers || showSubjects) && (
+            <motion.div
+              initial={false}
+              animate={{ 
+                height: (isAppscActive || paperRowOpen || subjectRowOpen) ? 'auto' : 0,
+                opacity: (isAppscActive || paperRowOpen || subjectRowOpen) ? 1 : 0
+              }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
+              className="w-full flex flex-col overflow-hidden"
+            >
+              <div className="pt-3 flex flex-col gap-3">
+                {/* Subtle Divider */}
+                <div className="h-px w-full mx-auto opacity-30 bg-border-subtle" />
+
+                <div>
+                  <Stack gap="sm">
+                    {/* LEVEL 2: APPSC Specific Groups (skip when custom data or flattenAppsc — parent handles grouping) */}
+                    {isAppscActive && !customExamTabs && !flattenAppsc && (
+                      <div className="w-full flex justify-center lg:justify-start">
+                        <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
+                          <Tabs 
+                            ariaLabel="Select exam group"
+                            options={[
+                              ...(!hideAll ? [{ label: 'ALL GROUPS', id: 'APPSC_GROUPS' }] : []),
+                              ...APPSC_SUB_TABS
+                            ]}
+                            activeId={selectedExam}
+                            onChange={setSelectedExam}
+                            variant="secondary"
+                            className="w-full"
+                            bare
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* LEVEL 3: Papers */}
+                    {paperRowOpen && (
+                      <div className="w-full flex justify-center lg:justify-start">
+                        <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
+                          <Tabs 
+                            ariaLabel="Select paper"
+                            options={[
+                              ...(!hideAll && !customPapers ? [{ label: 'ALL PAPERS', id: 'all' }] : []),
+                              ...(displayPapers ?? []).map(p => ({
+                                label: (('paper_name' in p ? (p as unknown as Record<string, unknown>).paper_name : (p as unknown as Record<string, unknown>).label) as string).toUpperCase(),
+                                id: p.id
+                              }))
+                            ]}
+                            activeId={selectedPaper}
+                            onChange={setSelectedPaper}
+                            variant="secondary"
+                            className="w-full"
+                            bare
+                          />
+                        </div>
+                      </div>
+                    )}
+     
+                    {/* LEVEL 4: Subjects */}
+                    {subjectRowOpen && setSelectedSubject && (
+                      <div className="w-full flex justify-center lg:justify-start">
+                        <div className="w-full max-w-full overflow-x-auto custom-scrollbar">
+                          <Tabs 
+                            ariaLabel="Select subject"
+                            options={[
+                              ...(!hideAll && !customSubjects ? [{ label: 'ALL SUBJECTS', id: 'all' }] : []),
+                              ...(displaySubjects ?? []).map(s => ({
+                                label: (('subject_name' in s ? (s as unknown as Record<string, unknown>).subject_name : (s as unknown as Record<string, unknown>).label) as string).toUpperCase(),
+                                id: ('subject_name' in s ? (s as unknown as Record<string, unknown>).subject_name : (s as unknown as Record<string, unknown>).id) as string
+                              }))
+                            ]}
+                            activeId={selectedSubject}
+                            onChange={setSelectedSubject}
+                            variant="secondary"
+                            className="w-full"
+                            bare
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </Stack>
+                </div>
+              </div>
+            </motion.div>
+            )}
+          </Stack>
+        </SelectionContainer>
+      )}
     </div>
   )
 }

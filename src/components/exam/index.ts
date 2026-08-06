@@ -8,6 +8,6 @@ export { QuestionPalette, MobileQuestionStrip } from './QuestionPalette'
 export { StatusBoard } from './StatusBoard'
 export { SubmitExamModal } from './SubmitExamModal'
 export { QuestionActions } from './QuestionActions'
-export { FixedBackButton } from './FixedBackButton'
+
 export { ReviewLayout } from './ReviewLayout'
 export { ReviewQuestionCard } from './ReviewQuestionCard'

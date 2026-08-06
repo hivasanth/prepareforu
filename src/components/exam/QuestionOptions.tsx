@@ -24,7 +24,7 @@ export const QuestionOptions: FC<QuestionOptionsProps> = ({
   const labels = ['A', 'B', 'C', 'D'];
 
   return (
-    <div className="flex flex-col gap-3.5">
+    <div role="radiogroup" aria-label="Answer options" className="flex flex-col gap-3.5">
       {options.map((optionText, idx) => {
         if (!optionText) return null;
         const label = labels[idx];
@@ -51,9 +51,11 @@ export const QuestionOptions: FC<QuestionOptionsProps> = ({
         return (
           <button
             key={label}
+            type="button"
+            role="radio"
+            aria-checked={isSelected}
             onClick={() => onSelect(label)}
             disabled={disabled}
-            aria-pressed={isSelected}
             className={`w-full flex items-center gap-3 p-3 md:p-3.5 rounded-xl border-2 transition-all duration-200 text-left group ${
               disabled ? 'cursor-default' : 'cursor-pointer'
             } ${borderClass}`}

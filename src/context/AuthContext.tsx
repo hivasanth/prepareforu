@@ -8,7 +8,7 @@ import {
   useMemo,
   type ReactNode,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
+
 import type { Session } from '@supabase/supabase-js'
 import * as authService from '../services/authService'
 import { getProfile }  from '../services/userService'
@@ -68,7 +68,6 @@ function FullLoader() {
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const navigate      = useNavigate()
   const [user,        setUser]        = useState<UserProfile | null>(null)
   const [session,     setSession]     = useState<Session | null>(null)
   const [loading,     setLoading]     = useState(true)
@@ -324,7 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe()
       window.removeEventListener('storage', handleStorageChange)
     }
-  }, [refreshUser, navigate, clearUser])
+  }, [refreshUser, clearUser])
 
   // ─── Visibility & Refresh Storm Protection ────────────────────────────────
   useEffect(() => {

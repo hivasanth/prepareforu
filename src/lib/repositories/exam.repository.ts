@@ -1,5 +1,6 @@
 import { supabase } from '../supabase'
 import type { ExamConfig, ExamPaper, ExamSubject } from '../../types/exam.types'
+import { validateOrThrow } from '../utils/validateOrThrow'
 
 // ─── Domain row types for subset queries ────────────────────────────────────
 
@@ -264,6 +265,16 @@ export async function fetchQuestionCountsByPapers(paperIds: string[]): Promise<Q
 
 // ─── exam_topics table ──────────────────────────────────────────────────────
 
+import { z } from 'zod'
+
+const topicUpsertSchema = z.object({
+  exam_id: z.string().min(1),
+  paper_id: z.string().nullable(),
+  subject_name: z.string().min(1),
+  topic_en: z.string().min(1),
+  topic_te: z.string().nullable(),
+})
+
 export async function upsertTopic(payload: {
   exam_id: string
   paper_id: string | null
@@ -271,6 +282,7 @@ export async function upsertTopic(payload: {
   topic_en: string
   topic_te: string | null
 }): Promise<void> {
+  validateOrThrow(topicUpsertSchema, payload, 'upsertTopic')
   const { error } = await supabase
     .from('exam_topics')
     .upsert([payload], { onConflict: 'exam_id,paper_id,subject_name,topic_en', ignoreDuplicates: true })

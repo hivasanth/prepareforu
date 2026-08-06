@@ -17,7 +17,7 @@ export function SettingsCard({ title, icon: Icon, children, onSave, isSaving }: 
           <div className="p-2 rounded-xl bg-primary/10">
             <Icon className="w-4 h-4 text-primary" />
           </div>
-          <span className="font-black text-sm uppercase tracking-widest text-text-primary">{title}</span>
+          <span className="font-bold text-sm uppercase tracking-widest text-text-primary">{title}</span>
         </div>
         <div className="p-6 flex-1">
           {children}

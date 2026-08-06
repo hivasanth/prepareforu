@@ -8,6 +8,7 @@ import type {
 } from '../types/auth.types'
 import { getProfile } from './userService'
 import { logError, logWarn, logInfo } from '../utils/logger'
+import { passwordSchema } from '../validations/securitySchemas'
 
 // ─── Security Gateway ────────────────────────────────────────────────────────
 /**
@@ -439,10 +440,13 @@ export async function sendPasswordReset(email: string): Promise<ServiceResult> {
 // ─── Update Password ──────────────────────────────────────────────────────────
 export async function updatePassword(newPassword: string): Promise<ServiceResult> {
   try {
-    if (!newPassword || newPassword.length < 8) {
+    // Server-side validation using shared schema (trusted execution path)
+    const validation = passwordSchema.safeParse(newPassword)
+    if (!validation.success) {
+      const firstError = validation.error.issues[0]
       return { 
         success: false, 
-        error: { source: 'auth', code: 'INVALID_CREDENTIALS', field: 'password', message: 'Minimum 8 characters.' } 
+        error: { source: 'auth', code: 'VALIDATION_ERROR', field: 'password', message: firstError.message } 
       }
     }
 

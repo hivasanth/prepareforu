@@ -48,45 +48,20 @@ export async function fetchLeaderboardMetadata(examSelection: string): Promise<L
 export async function fetchTopRanks(
   examId: string, 
   paperId: string, 
-  timeRange: 'all' | '30d' | '7d' | 'today'
+  timeRange: '30d' | '7d' | 'today'
 ): Promise<LeaderboardEntry[]> {
   const cacheKey = `lb_ranks_${examId}_${paperId}_${timeRange}`;
   
   return queryCache.fetchWithDedup(cacheKey, async () => {
     if (examId === 'all') return [];
-    // CASE 1: ALL TIME -> Always use leaderboard table for performance and accuracy
-    if (timeRange === 'all') {
-      const data = await leaderboardRepo.fetchLeaderboardByPaper(examId, paperId);
-      
-      if (data && data.length > 0) {
-        return data.map((item: any) => ({
-          user_id: item.user_id,
-          full_name: (item.users as any)?.full_name || 'Anonymous Student',
-          score: item.best_score,
-          accuracy: item.best_accuracy,
-          rank: item.rank,
-          duration_seconds: item.best_time_secs,
-          submitted_at: item.best_submitted_at
-        }));
-      }
-
-      // Fallback: If leaderboard table is empty, query attempts table without a date threshold
-      // This handles cases where aggregation hasn't run yet.
-    }
-
-    // CASE 2: TIME FILTER (or Fallback for 'all') -> Query attempts table
     const days = timeRange === '7d' ? 7 : (timeRange === '30d' ? 30 : 0);
-    let threshold: string | null = null;
-    
-    if (timeRange !== 'all') {
-      const date = new Date();
-      if (timeRange === 'today') {
-        date.setHours(0, 0, 0, 0);
-      } else {
-        date.setDate(date.getDate() - days);
-      }
-      threshold = date.toISOString();
+    const date = new Date();
+    if (timeRange === 'today') {
+      date.setHours(0, 0, 0, 0);
+    } else {
+      date.setDate(date.getDate() - days);
     }
+    const threshold = date.toISOString();
 
     const attempts = await attemptRepo.fetchCompletedAttemptsByPaper(
       examId, paperId, threshold, 2000
@@ -150,7 +125,7 @@ export async function fetchUserRank(
   userId: string,
   examId: string, 
   paperId: string, 
-  timeRange: 'all' | '30d' | '7d' | 'today'
+  timeRange: '30d' | '7d' | 'today'
 ): Promise<LeaderboardEntry | null> {
   const cacheKey = `lb_user_rank_${userId}_${examId}_${paperId}_${timeRange}`;
   

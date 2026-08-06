@@ -6,7 +6,7 @@ export function getPaletteColor(state: QuestionState): string {
   if (state.isAnswered) return 'bg-[#F59E0B] text-white border-[#F59E0B] shadow-sm shadow-[#F59E0B]/30';
   if (state.isMarked) return 'bg-[#8B5CF6]/60 text-white border-[#8B5CF6]/40 shadow-sm';
   if (state.isSkipped) return 'bg-[#3B82F6] text-white border-[#3B82F6] shadow-sm';
-  return 'bg-transparent text-[#94A3B8] border-[#64748B]';
+  return 'bg-transparent text-[var(--text-muted)] border-[var(--border-subtle)]';
 }
 
 export function getPaletteColorMobile(state: QuestionState): string {
@@ -15,5 +15,5 @@ export function getPaletteColorMobile(state: QuestionState): string {
   if (state.isAnswered) return 'bg-[#F59E0B] text-white border-[#F59E0B]';
   if (state.isMarked) return 'bg-[#8B5CF6]/60 text-white border-[#8B5CF6]/40';
   if (state.isSkipped) return 'bg-[#3B82F6] text-white border-[#3B82F6]';
-  return 'bg-transparent text-[#94A3B8] border-[#64748B]';
+  return 'bg-transparent text-[var(--text-muted)] border-[var(--border-subtle)]';
 }

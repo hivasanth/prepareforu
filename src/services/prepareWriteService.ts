@@ -3,8 +3,8 @@ import * as examRepo from '../lib/repositories/exam.repository';
 import * as questionRepo from '../lib/repositories/question.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
-import { logWarn } from '../utils/logger';
-import type { Question, ExamSubject } from '../types/exam.types';
+import { logDebug, logWarn } from '../utils/logger';
+import type { Question, ExamConfig, ExamPaper, ExamSubject } from '../types/exam.types';
 
 export interface PaperDistribution {
   subjects: ExamSubject[];
@@ -15,12 +15,12 @@ export interface PaperDistribution {
  * Fetches exams allowed for the user.
  * Cached for 10 minutes.
  */
-export async function fetchExams(allowedIds: string[], force = false): Promise<any[]> {
+export async function fetchExams(allowedIds: string[], force = false): Promise<ExamConfig[]> {
   const cacheKey = `exams_config_${allowedIds.join('_')}`;
   
   return queryCache.fetchWithDedup(cacheKey, async () => {
     const data = await examRepo.fetchExamConfigsByIds(allowedIds);
-    return (data || []).sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
+    return (data || []).sort((a: ExamConfig, b: ExamConfig) => (a.name || '').localeCompare(b.name || ''));
   }, 600000, force);
 }
 
@@ -28,7 +28,7 @@ export async function fetchExams(allowedIds: string[], force = false): Promise<a
  * Fetches papers for a specific exam.
  * Cached for 5 minutes.
  */
-export async function fetchPapers(examId: string, allowedIds: string[], force = false): Promise<any[]> {
+export async function fetchPapers(examId: string, allowedIds: string[], force = false): Promise<ExamPaper[]> {
   const cacheKey = `papers_config_${examId}_${allowedIds.join('_')}`;
   
   return queryCache.fetchWithDedup(cacheKey, async () => {
@@ -73,7 +73,15 @@ export async function fetchPrepareQuestions(
       const answeredQuestions = await attemptRepo.findAnsweredQuestionIds(attemptIds);
       
       if (answeredQuestions) {
-        attemptedQuestionIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
+        const rawIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
+        attemptedQuestionIds = [...new Set(rawIds)];
+
+        logDebug('prepareWrite.exclusionMetrics', {
+          rawCount: rawIds.length,
+          uniqueCount: attemptedQuestionIds.length,
+          duplicatesRemoved: rawIds.length - attemptedQuestionIds.length,
+          attemptCount: userAttempts.length,
+        });
       }
     }
   }
@@ -90,11 +98,11 @@ export async function fetchPrepareQuestions(
     if (attemptedQuestionIds.length > 0) {
       subjectQuestionsPool = ((await questionRepo.fetchQuestionsByPaperAndSubjectExcluding(
         '*', paperId, subject.subject_name, examIds, attemptedQuestionIds, poolLimit
-      )) ?? []) as unknown as Question[];
+      )) ?? []) as Question[];
     } else {
       subjectQuestionsPool = ((await questionRepo.fetchQuestionsByPaperAndSubject(
         '*', paperId, subject.subject_name, examIds, poolLimit
-      )) ?? []) as unknown as Question[];
+      )) ?? []) as Question[];
     }
     
     // Shuffle the pool and take the required count
@@ -108,10 +116,10 @@ export async function fetchPrepareQuestions(
       
       const attemptedPoolData = (await questionRepo.fetchQuestionsByPaperAndSubjectIncluding(
         '*', paperId, subject.subject_name, examIds, attemptedQuestionIds, poolLimit
-      )) as unknown as Question[];
+      )) as Question[];
 
       if (attemptedPoolData) {
-        const shuffledAttempted = (attemptedPoolData as Question[])
+        const shuffledAttempted = attemptedPoolData
           .sort(() => Math.random() - 0.5);
         selectedSubjectQuestions.push(...shuffledAttempted.slice(0, remainingNeeded));
       }
@@ -127,7 +135,7 @@ export async function fetchPrepareQuestions(
     // Map visual to diagram if needed (consistency with other modules)
     const mappedQuestions = selectedSubjectQuestions.map(q => ({
       ...q,
-      diagram: q.visual || null
+      diagram: null
     }));
 
     allQuestions.push(...mappedQuestions);
