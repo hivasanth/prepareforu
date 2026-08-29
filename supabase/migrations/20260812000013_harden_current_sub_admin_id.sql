@@ -1,0 +1,23 @@
+-- =============================================================================
+-- MIGRATION: Harden public.current_sub_admin_id() search_path
+-- Date: 2026-08-12
+--
+-- CONTEXT:
+--   The /prepare-write page audit identified that
+--   public.current_sub_admin_id() is SECURITY DEFINER with
+--   `SET search_path TO 'public'` only — missing `pg_temp`.
+--   Other SECURITY DEFINER helpers in the project (is_admin,
+--   is_exam_allowed_for_user, is_sub_admin, the 5 exam RPCs)
+--   already use `'public', 'pg_temp'`. This migration pins the
+--   same hardened search_path on current_sub_admin_id to avoid
+--   a schema-injection attack surface for SECURITY DEFINER
+--   privilege escalation.
+--
+-- FIX:
+--   ALTER FUNCTION public.current_sub_admin_id() SET search_path
+--   = 'public', 'pg_temp'. Idempotent. No change to function body.
+--
+-- APPLIED LIVE on project xbjhlfwqmcyatblsrhxn.
+-- =============================================================================
+
+ALTER FUNCTION public.current_sub_admin_id() SET search_path = 'public', 'pg_temp';

@@ -1,0 +1,30 @@
+-- =============================================================================
+-- MIGRATION: Add 'topic_exam' to public.attempt_source enum
+-- Date: 2026-08-12
+--
+-- CONTEXT:
+--   The /topic-exams page launch flow sends
+--   `createAttempt({ source: 'topic_exam', ... })` from useTopicExams.ts
+--   (src/components/user/topic-exams/useTopicExams.ts:164).
+--   The destination column is public.attempts.source :: attempt_source.
+--   The TypeScript type AttemptSource in src/types/exam.types.ts already
+--   declares 'topic_exam', but the DB enum was never updated.
+--
+--   Live error reproduced:
+--     "Failed to load exam — invalid input value for enum attempt_source:
+--      'topic_exam'"
+--
+-- FIX:
+--   ALTER TYPE ... ADD VALUE 'topic_exam' (if not already in the enum).
+--   PostgreSQL prohibits ADD VALUE inside a transaction block and via
+--   DO $$ ... $$; so this migration must be run as a single top-level
+--   statement (the Supabase CLI's db query does exactly this — each -f
+--   file is executed outside an explicit BEGIN/COMMIT for ADD VALUE).
+--
+--   Idempotency: pg_enum already has the value if previously applied.
+--   ALTER TYPE ... ADD VALUE will error if the value already exists; we
+--   rely on the CLI's behavior to retry by hand if needed. PostgreSQL
+--   12+ allows `IF NOT EXISTS` on ADD VALUE:
+-- =============================================================================
+
+ALTER TYPE public.attempt_source ADD VALUE IF NOT EXISTS 'topic_exam';

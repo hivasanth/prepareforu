@@ -1,0 +1,71 @@
+
+> prepareforu@1.0.0 build
+> tsc -b && vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+Found 7 warnings while optimizing generated CSS:
+
+Issue #1:
+Γöé   .border-\[length\:var\(\.\.\.\)\] {
+Γöé     border-style: var(--tw-border-style);
+Γöé     border-width: var(...);
+Γöå                       ^-- Unexpected token Delim('.')
+Γöå
+Γöé   }
+Γöé   .border-\[length\:var\(ΓÇª\)\] {
+
+Issue #2:
+Γöé   .border-\[length\:var\(ΓÇª\)\] {
+Γöé     border-style: var(--tw-border-style);
+Γöé     border-width: var(ΓÇª);
+Γöå                       ^-- Unexpected token Ident("ΓÇª")
+Γöå
+Γöé   }
+Γöé   .border-\[length\:ΓÇª\] {
+
+Issue #3:
+Γöé   }
+Γöé   .border-\[var\(--border-\*\)\] {
+Γöé     border-color: var(--border-*);
+Γöå                                ^-- Unexpected token Delim('*')
+Γöå
+Γöé   }
+Γöé   .border-\[var\(--border-card-premium\)\] {
+
+Issue #4:
+Γöé   }
+Γöé   .bg-\[var\(--gold-\*\)\] {
+Γöé     background-color: var(--gold-*);
+Γöå                                  ^-- Unexpected token Delim('*')
+Γöå
+Γöé   }
+Γöé   .bg-\[var\(--gold-200\)\] {
+
+Issue #5:
+Γöé   }
+Γöé   .bg-\[var\(--management-\*\)\] {
+Γöé     background-color: var(--management-*);
+Γöå                                        ^-- Unexpected token Delim('*')
+Γöå
+Γöé   }
+Γöé   .bg-\[var\(--management-accent\)\] {
+
+Issue #6:
+Γöé   }
+Γöé   .text-\[var\(--text-\*\)\] {
+Γöé     color: var(--text-*);
+Γöå                       ^-- Unexpected token Delim('*')
+Γöå
+Γöé   }
+Γöé   .text-\[var\(--text-h1\)\] {
+
+Issue #7:
+Γöé   .light\:bg-\[image\:var\(ΓÇª\)\] {
+Γöé     &:where(.light, .light *) {
+Γöé       background-image: var(ΓÇª);
+Γöå                             ^-- Unexpected token Ident("ΓÇª")
+Γöå
+Γöé     }
+Γöé   }
+
