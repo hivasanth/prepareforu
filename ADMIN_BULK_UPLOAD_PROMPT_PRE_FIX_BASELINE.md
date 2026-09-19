@@ -61,6 +61,15 @@ Composed output across all 171 at baseline: contract exactly once ×171, no mark
    - Corrections applied to the seed; migration regenerated; determinism re-verified; `live_md5` keeps each UPDATE guarded against the ORIGINAL live fingerprint (concurrent-edit safety intact).
 4. **Direct-consumer audit + fallback reachability proof**: committed `src/lib/prompts/promptConsumerRouting.test.ts` — pins every `prompt_text` read path through `composeBulkUploadPrompt` (InstructionsTab / AIToolCards / useBulkUpload copy) and the save path through `ensureDynamicContractMarker` (PromptEditorModal), plus module-private `GENERIC_PROMPT`/`HISTORY_PROMPT` stay contract-clean.
 5. **Default-prompt tests**: `src/lib/prompts/promptDefaultPrompts.test.ts` — 33 `is_default` rows: seed self-consistency, at-rest token-freedom, sanitizer idempotency, composition contract. 7/7 pass.
-6. **Full verification**: `npm run build` green; ESLint clean on changed files; prompt suites 8 files / 102 tests green. (Full-suite run has a pre-existing unrelated timing flake in `src/admin-topics-remediation.test.tsx` — passes 14/14 in isolation.)
+6. **Full verification**: `npm run build` green; ESLint clean on changed files; prompt suites 7 files / 101 tests green. (Full-suite run has a pre-existing unrelated timing flake in `src/admin-topics-remediation.test.tsx` — passes 14/14 in isolation.)
 
-Prompt suites now total 8 files / 102 tests. Deploy + live re-verify + final report remain.
+## 7. Commit + live deployment (this session)
+
+| Step | Result |
+|---|---|
+| Commit | `451f922` "Prompts: full 171-row normalization migration, integer-distribution audit, and consumer routing tests" — 32 files (migration, seed, generator, audit script, `src/lib/prompts/` incl. 2 new suites, 5 consumer/repository files, prompt docs). Scoped to the prompt deliverable; scratch probes excluded. |
+| Deploy | `npx supabase db push --linked` → applied `20260921000000_prompts_full_normalization.sql` atomically; migration list shows `20260921000000` on both Local and Remote. |
+| Re-verify live (service-role readback, all 171 rows) | **PASS** — 171/171 bodies carry the marker `[PREPAREFORU_DYNAMIC_OUTPUT_CONTRACT]` exactly once; 0 legacy tokens (`visual_engine`/`render_type`/`headers_en`/`rows_en`/`title_en`/`title_te`/`metadata`/`diagram`); all 171 stored md5s match the migration's normalized-stored fingerprint set; 33 `is_default` rows intact. |
+| Confirm re-run safety | Each UPDATE remains `md5(prompt_text)`-guarded against the ORIGINAL live fingerprint; migration is deterministic (regeneration is byte-identical, SHA256 `412917BB…FFAC0`) — re-running the generator or pushing again is a safe no-op. |
+
+Stored prompt bodies are now marker-bearing and token-free on the live database — today's runtime-only guarantee (composer sanitize-at-copy) is a stored guarantee for all 171 rows.
