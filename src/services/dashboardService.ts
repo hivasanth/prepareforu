@@ -1,16 +1,20 @@
 import * as attemptRepo from '../lib/repositories/attempt.repository';
 import * as dashboardRepo from '../lib/repositories/dashboard.repository';
 import { countQuery } from '../lib/repositories/base.repository';
-import { fetchPerformanceAttempts } from './performanceService';
+import { fetchDashboardRecentAttempts } from './performanceService';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
+import { dashStatsKey, dashRecentKey } from '../utils/cacheKeys';
 import { format, parseISO } from 'date-fns';
-import type { ServiceResult } from '../types/auth.types';
-import type { AttemptWithRelations } from '../types/exam.types';
+import type { ServiceResult, ServiceErrorSource, AuthError } from '../types/auth.types';
+import type { PerformanceAttemptSummary } from '../types/exam.types';
+import type { ErrorCategory } from '../types/error.types';
 import { logError } from '../utils/logger'
+import { classifyError } from '../utils/errorClassification'
 
 export interface DashboardStats {
   daily_streak: number;
+  highest_streak: number;
   exams_taken: number;
   accuracy: number;
   global_rank: string;
@@ -30,32 +34,33 @@ export const dashboardService = {
   },
 
   fetchOverviewCounts: async (selectedExam: string, resolvedIds: string[]) => {
-    const [users, questions, configs, attempts] = await Promise.allSettled([
+    // Fail-fast: a failed required count must surface as an error, never as a
+    // successful zero (ERROR ≠ valid empty). Legitimate 0 rows still resolve.
+    const [users, questions, configs, attempts] = await Promise.all([
       countQuery('users', { is_active: true, role: 'user', ...(selectedExam !== 'all' ? { exam_selection: selectedExam } : {}) }),
       countQuery('questions', { is_active: true, ...(resolvedIds.length ? { exam_id: resolvedIds } : {}) }),
       countQuery('exam_configs', { is_published: true, ...(selectedExam !== 'all' ? { exam_selection: selectedExam } : {}) }),
       countQuery('attempts', { source: 'exam_tab', ...(resolvedIds.length ? { exam_id: resolvedIds } : {}) }),
     ])
     return {
-      users: users.status === 'fulfilled' ? users.value : 0,
-      questions: questions.status === 'fulfilled' ? questions.value : 0,
-      configs: configs.status === 'fulfilled' ? configs.value : 0,
-      attempts: attempts.status === 'fulfilled' ? attempts.value : 0,
+      users,
+      questions,
+      configs,
+      attempts,
     }
   },
 
   // Step 4: Encapsulate cache keys and retrieval
   getCachedStats: (userId: string): DashboardStats | null => {
-    return queryCache.get(`dash_stats_${userId}`);
+    return queryCache.get(dashStatsKey(userId));
   },
   
   getCachedRecentAttempts: (userId: string, examSelection?: string | null) => {
-    const cached = queryCache.get(`perf_attempts_${userId}`);
+    const cached = queryCache.get(dashRecentKey(userId, examSelection));
     if (cached && Array.isArray(cached)) {
       const allowedIds = getAllowedExamIds(examSelection);
       return cached
         .filter(a => allowedIds.includes(a.exam_id))
-        .reverse()
         .slice(0, 5);
     }
     return null;
@@ -64,36 +69,46 @@ export const dashboardService = {
   // Step 1 & 7: Extract API calls into service and wrap in { success, data, error } adapter
   fetchDashboardStats: async (userId: string, force = false): Promise<ServiceResult<DashboardStats>> => {
     try {
-      const statsKey = `dash_stats_${userId}`;
+      const statsKey = dashStatsKey(userId);
       const statsData = await queryCache.fetchWithDedup(statsKey, async () => {
-        return await dashboardRepo.fetchDashboardStatsRpc(userId);
+        const data = await dashboardRepo.fetchDashboardStatsRpc(userId);
+        if (data === null) {
+          // RPC returns NULL when auth.uid() is missing or does not match
+          // p_user_id (identity guard in get_user_dashboard_stats). Surface as
+          // an auth/session failure — never as zeroed stats (DASH-4).
+          throw new Error('Your session has expired. Please sign in again.');
+        }
+        return data;
       }, 300000, force);
-      
-      return { 
-        success: true, 
-        data: statsData || { daily_streak: 0, exams_taken: 0, accuracy: 0, global_rank: 'N/A' } 
-      };
-    } catch (err: any) {
-      logError('dashboardService.fetchDashboardStats.error', { message: err.message });
-      return { success: false, error: { source: 'db', code: 'UNKNOWN', message: err.message || 'Failed to fetch dashboard stats' } };
+
+      return { success: true, data: statsData };
+    } catch (err) {
+      return buildServiceError('dashboardService.fetchDashboardStats.error', err);
     }
   },
 
-  // Step 2: Extract formatting logic (filter, reverse, slice)
-  fetchRecentAttempts: async (userId: string, examSelection?: string | null, force = false): Promise<ServiceResult<AttemptWithRelations[]>> => {
+  // Step 2: Recent attempts (server-side desc + limit 5, USR-PERF-01)
+  fetchRecentAttempts: async (userId: string, examSelection?: string | null, force = false): Promise<ServiceResult<PerformanceAttemptSummary[]>> => {
     try {
-      const attempts = await fetchPerformanceAttempts(userId, force);
-      
-      const allowedIds = getAllowedExamIds(examSelection);
-      const formatted = (attempts || [])
-        .filter(a => allowedIds.includes(a.exam_id ?? ''))
-        .reverse()
-        .slice(0, 5);
-        
-      return { success: true, data: formatted };
-    } catch (err: any) {
-      logError('dashboardService.fetchRecentAttempts.error', { message: err.message });
-      return { success: false, error: { source: 'db', code: 'UNKNOWN', message: err.message || 'Failed to fetch recent attempts' } };
+      const attempts = await fetchDashboardRecentAttempts(userId, examSelection, force);
+
+      return { success: true, data: attempts || [] };
+    } catch (err) {
+      return buildServiceError('dashboardService.fetchRecentAttempts.error', err);
     }
   }
 };
+
+function buildServiceError(event: string, err: unknown): { success: false; error: AuthError } {
+  const rawMessage = err instanceof Error ? err.message : 'Unknown error';
+  logError(event, { message: rawMessage });
+  const classified = classifyError(err);
+  return { success: false, error: { source: errorSourceFromCategory(classified.category), code: classified.code, message: classified.message } };
+}
+
+function errorSourceFromCategory(category: ErrorCategory): ServiceErrorSource {
+  if (category === 'authentication' || category === 'authorization') return 'auth';
+  if (category === 'network' || category === 'offline' || category === 'timeout') return 'network';
+  if (category === 'unknown') return 'unknown';
+  return 'db';
+}

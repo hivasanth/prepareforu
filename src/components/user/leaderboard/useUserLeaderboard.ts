@@ -10,10 +10,12 @@ import {
   getCachedLeaderboardMetadata
 } from '../../../services/leaderboardService'
 import type { LeaderboardEntry, LeaderboardMetadata, TimeRange } from './types'
+import { getAllowedExamIds } from '../../../utils/examUtils'
 
 export function useUserLeaderboard() {
   const { user, loading: authLoading } = useAuth()
   const isAppsc = user?.exam_selection === 'APPSC_GROUPS'
+  const hasExamSelection = !!user?.exam_selection
 
   const [metadata, setMetadata] = useState<LeaderboardMetadata>(() => getCachedLeaderboardMetadata(user?.exam_selection ?? '') || { exams: [], papers: [] })
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
@@ -27,35 +29,44 @@ export function useUserLeaderboard() {
   const [isInitialLoad, setIsInitialLoad] = useState(!getCachedLeaderboardMetadata(user?.exam_selection ?? ''))
   const { nextId, isStale } = useStableFetch()
 
-  useEffect(() => {
-    const init = async () => {
-      if (!user?.id || !user?.exam_selection) return
-      const id = nextId()
-      try {
-        const meta = await fetchLeaderboardMetadata(user.exam_selection)
-        if (isStale(id)) return
-
-        setMetadata(meta || { exams: [], papers: [] })
-        if (meta && meta.exams.length > 0) {
-          const firstExam = meta.exams.sort((a, b) => a.name.localeCompare(b.name))[0]
-          setSelectedExam(firstExam.id)
-
-          if (isAppsc) {
-            const firstExamPapers = meta.papers.filter(p => p.exam_id === firstExam.id).sort((a, b) => a.name.localeCompare(b.name))
-            if (firstExamPapers.length > 0) setSelectedPaper(firstExamPapers[0].id)
-          } else {
-            setSelectedPaper('all')
-          }
-        }
-      } catch (err: unknown) {
-        console.error('Metadata fetch error:', err instanceof Error ? err.message : "Failed to load leaderboard configuration.")
-        if (!isStale(id)) captureNetworkError(err, { retryFn: () => loadLeaderboard(true) })
-      } finally {
-        if (!isStale(id)) setIsInitialLoad(false)
-      }
+  const loadMetadata = useCallback(async (): Promise<boolean> => {
+    if (!user?.id) return false
+    if (!user?.exam_selection) {
+      if (!isStale(nextId())) setIsInitialLoad(false)
+      return true
     }
-    init()
-  }, [user?.id, user?.exam_selection, isAppsc])
+    const id = nextId()
+    try {
+      const meta = await fetchLeaderboardMetadata(user.exam_selection)
+      if (isStale(id)) return false
+
+      setMetadata(meta || { exams: [], papers: [] })
+      if (meta && meta.exams.length > 0) {
+        // Canonical allowed-exam order (not alphabetical pinning) drives the default.
+        const allowedExamIds = getAllowedExamIds(user.exam_selection)
+        const defaultExamId = allowedExamIds.find(eid => meta.exams.some(e => e.id === eid)) ?? meta.exams[0].id
+        setSelectedExam(defaultExamId)
+
+        if (isAppsc) {
+          const firstExamPapers = meta.papers.filter(p => p.exam_id === defaultExamId).sort((a, b) => a.name.localeCompare(b.name))
+          if (firstExamPapers.length > 0) setSelectedPaper(firstExamPapers[0].id)
+        } else {
+          setSelectedPaper('all')
+        }
+      }
+      return true
+    } catch (err: unknown) {
+      console.error('Metadata fetch error:', err instanceof Error ? err.message : "Failed to load leaderboard configuration.")
+      if (!isStale(id)) captureNetworkError(err, { retryFn: () => loadMetadata() })
+      return false
+    } finally {
+      if (!isStale(id)) setIsInitialLoad(false)
+    }
+  }, [user?.id, user?.exam_selection, isAppsc, nextId, isStale, captureNetworkError, setSelectedExam, setSelectedPaper, setIsInitialLoad])
+
+  useEffect(() => {
+    loadMetadata()
+  }, [loadMetadata])
 
   const examOptions = useMemo(() => {
     return metadata.exams
@@ -76,8 +87,8 @@ export function useUserLeaderboard() {
       }))
   }, [metadata.papers, selectedExam])
 
-  const loadLeaderboard = useCallback(async (forceRefresh = false) => {
-    if (selectedExam === 'all') return
+  const loadLeaderboard = useCallback(async (forceRefresh = false): Promise<boolean> => {
+    if (selectedExam === 'all') return false
 
     const id = nextId()
 
@@ -92,12 +103,14 @@ export function useUserLeaderboard() {
         fetchTopRanks(selectedExam, selectedPaper, selectedTimeRange),
         fetchUserRank(user?.id || '', selectedExam, selectedPaper, selectedTimeRange)
       ])
-      if (isStale(id)) return
+      if (isStale(id)) return false
       setLeaderboard(ranks || [])
       setUserRank(currentRank || null)
+      return true
     } catch (err: unknown) {
-      if (isStale(id)) return
+      if (isStale(id)) return false
       captureNetworkError(err, { retryFn: () => loadLeaderboard(true) })
+      return false
     } finally {
       if (!isStale(id)) setLoading(false)
     }
@@ -109,16 +122,21 @@ export function useUserLeaderboard() {
 
   const handleExamChange = useCallback((val: string) => {
     setSelectedExam(val)
-    const firstPaper = metadata.papers
-      .filter(p => p.exam_id === val)
-      .sort((a, b) => a.name.localeCompare(b.name))[0]
-    if (firstPaper) setSelectedPaper(firstPaper.id)
-  }, [metadata.papers])
+    if (isAppsc) {
+      const firstPaper = metadata.papers
+        .filter(p => p.exam_id === val)
+        .sort((a, b) => a.name.localeCompare(b.name))[0]
+      if (firstPaper) setSelectedPaper(firstPaper.id)
+    } else {
+      setSelectedPaper('all')
+    }
+  }, [metadata.papers, isAppsc])
 
   return {
     authLoading,
     isInitialLoad,
     isAppsc,
+    hasExamSelection,
     metadata,
     leaderboard,
     userRank,

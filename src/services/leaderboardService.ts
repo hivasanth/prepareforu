@@ -1,24 +1,13 @@
-import * as attemptRepo from '../lib/repositories/attempt.repository';
 import * as examRepo from '../lib/repositories/exam.repository';
 import * as leaderboardRepo from '../lib/repositories/leaderboard.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
-import { assignRanks, APPSC_GROUPS } from '../utils/rankUtils';
+import type { AdminLeaderboardEntry, LeaderboardEntry, LeaderboardMetadata } from '../types/leaderboard.types';
 
-export interface LeaderboardEntry {
-  user_id: string;
-  full_name: string;
-  score: number;
-  accuracy: number;
-  rank: number;
-  duration_seconds?: number;
-  submitted_at?: string;
-}
-
-export interface LeaderboardMetadata {
-  exams: { id: string; name: string }[];
-  papers: { id: string; exam_id: string; name: string }[];
-}
+/** Single authoritative ceiling for the leaderboard RPC — used by the fetch and
+ *  referenced by the UI skeleton (LEADERBOARD_SKELETON_COUNT) so the two never
+ *  drift apart. */
+export const LEADERBOARD_TOP_LIMIT = leaderboardRepo.LEADERBOARD_TOP_LIMIT;
 
 /**
  * Fetches exams and papers for leaderboard filtering.
@@ -46,75 +35,35 @@ export async function fetchLeaderboardMetadata(examSelection: string): Promise<L
  * Fetches top 50 ranks for a specific paper and time range.
  */
 export async function fetchTopRanks(
-  examId: string, 
-  paperId: string, 
+  examId: string,
+  paperId: string,
   timeRange: '30d' | '7d' | 'today'
 ): Promise<LeaderboardEntry[]> {
   const cacheKey = `lb_ranks_${examId}_${paperId}_${timeRange}`;
-  
+
   return queryCache.fetchWithDedup(cacheKey, async () => {
     if (examId === 'all') return [];
-    const days = timeRange === '7d' ? 7 : (timeRange === '30d' ? 30 : 0);
-    const date = new Date();
-    if (timeRange === 'today') {
-      date.setHours(0, 0, 0, 0);
-    } else {
-      date.setDate(date.getDate() - days);
-    }
-    const threshold = date.toISOString();
+    const mappedRange = timeRange === '30d' ? 'month' : (timeRange === '7d' ? 'week' : timeRange);
 
-    const attempts = await attemptRepo.fetchCompletedAttemptsByPaper(
-      examId, paperId, threshold, 2000
+    // Server-side global ranking (secure RPC). No cross-user attempts are returned to the client.
+    const rows = await leaderboardRepo.fetchLeaderboardTopRpc(
+      examId,
+      paperId === 'all' ? null : paperId,
+      mappedRange,
+      LEADERBOARD_TOP_LIMIT
     );
 
-    // Process best attempts per user manually (No mixing fields!)
-    const userBestMap = new Map<string, any>();
-    
-    (attempts || []).forEach((att: any) => {
-      const existing = userBestMap.get(att.user_id);
-      const score = Number(att.score);
-      const accuracy = Number(att.accuracy);
-      const duration = att.duration_seconds || 0;
-      
-      // Tie-breaker logic: 1. Score DESC, 2. Accuracy DESC, 3. Duration ASC, 4. Time ASC
-      const isBetter = !existing || 
-          score > existing.score || 
-          (score === existing.score && accuracy > existing.accuracy) ||
-          (score === existing.score && accuracy === existing.accuracy && duration < existing.duration) ||
-          (score === existing.score && accuracy === existing.accuracy && duration === existing.duration && att.submitted_at < existing.submitted_at);
+    if (!rows || !Array.isArray(rows)) return [];
 
-      if (isBetter) {
-        userBestMap.set(att.user_id, {
-          user_id: att.user_id,
-          full_name: (att.users as any)?.full_name || 'Anonymous Student',
-          score,
-          accuracy,
-          duration,
-          submitted_at: att.submitted_at
-        });
-      }
-    });
-
-    // Sort and assign ranks
-    return Array.from(userBestMap.values())
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
-        if (a.duration !== b.duration) return a.duration - b.duration;
-        const timeA = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
-        const timeB = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
-        return timeA - timeB;
-      })
-      .slice(0, 50)
-      .map((item, index) => ({
-        user_id: item.user_id,
-        full_name: item.full_name,
-        score: item.score,
-        accuracy: item.accuracy,
-        rank: index + 1,
-        duration_seconds: item.duration,
-        submitted_at: item.submitted_at
-      }));
+    return (rows as Array<Record<string, unknown>>).map((r) => ({
+      user_id: r.user_id as string,
+      full_name: (r.user_name as string) || 'Anonymous Student',
+      score: Number(r.score),
+      accuracy: Number(r.accuracy),
+      rank: Number(r.rank),
+      duration_seconds: (r.duration_seconds as number) ?? 0,
+      submitted_at: r.submitted_at as string,
+    }));
   }, 120000); // 2 min TTL for rankings (shorter than global stats)
 }
 
@@ -166,64 +115,55 @@ export function clearLeaderboardCache() {
 
 // ─── Admin Leaderboard ───────────────────────────────────────────────────────
 
-export async function refreshLeaderboardView(): Promise<void> {
-  await leaderboardRepo.refreshLeaderboardViewRpc();
+/** Single normalization point for participant display names (U-5): the UI can
+ *  assume a safe non-empty string and never guards `user_name` itself. */
+function normalizeParticipantName(name: unknown): string {
+  const trimmed = typeof name === 'string' ? name.trim() : '';
+  return trimmed || 'Unknown';
 }
 
+/**
+ * Fetches one page of the admin leaderboard through the admin-guarded
+ * `get_admin_leaderboard` RPC. The database is the single authority for rank
+ * (global ROW_NUMBER over the same deterministic order used for pagination,
+ * with submitted_at/user_id tiebreakers) — the client never recomputes ranks.
+ * MV refresh is NOT triggered here: it runs server-side via pg_cron
+ * ('refresh-materialized-views', every 10 minutes).
+ */
 export async function fetchAdminLeaderboard(
   selectedExam: string,
   selectedPaper: string,
   page: number,
   pageSize: number
-): Promise<{ entries: any[]; count: number }> {
-  if (selectedPaper !== 'all') {
-    const examId = selectedExam === 'APPSC_GROUPS' ? null : selectedExam;
+): Promise<{ entries: AdminLeaderboardEntry[]; count: number }> {
+  // 'all' → no exam filter; a category such as 'APPSC_GROUPS' → its member exams;
+  // otherwise the specific exam id. Resolved through the one shared mapper rather
+  // than a second local copy of the APPSC list, which is how the four group ids
+  // came to be duplicated in the first place. Both paper-scoped and
+  // exam-aggregate reads share it.
+  const examIds = getAllowedExamIds(selectedExam);
 
-    const offset = page * pageSize;
-    const result = await leaderboardRepo.fetchLeaderboardByPaperPaginated(
-      examId,
-      selectedPaper,
-      APPSC_GROUPS,
-      offset,
-      pageSize
-    );
+  const { entries, count } = await leaderboardRepo.fetchAdminLeaderboardPage({
+    examIds,
+    paperId: selectedPaper === 'all' ? null : selectedPaper,
+    limit: pageSize,
+    offset: page * pageSize,
+  });
 
-    const lbData = result.data ?? [];
-    const userIds = [...new Set(lbData.map((d: any) => d.user_id))];
-    const users = await leaderboardRepo.fetchUserNamesByIds(userIds);
-    const userMap: Record<string, string> = {};
-    for (const u of users || []) {
-      userMap[u.id as string] = u.full_name as string;
-    }
-
-    const examSelection = selectedExam === 'APPSC_GROUPS' || (selectedExam.startsWith?.('APPSC_GROUP_') ?? false)
-      ? 'APPSC_GROUPS'
-      : selectedExam;
-
-    const entries = lbData.map((d: any) => ({
-      user_id: d.user_id,
-      user_name: userMap[d.user_id] || 'Unknown',
-      exam_id: d.exam_id,
-      exam_selection: examSelection,
-      paper_id: d.paper_id,
-      best_score: d.best_score,
-      best_accuracy: d.best_accuracy,
-      best_time_secs: d.best_time_secs,
-      last_attempt_date: d.best_submitted_at,
-      total_attempts: d.attempt_count
-    }));
-
-    return { entries: assignRanks(entries), count: result.count ?? 0 };
-  }
-
-  const isAppscGroups = selectedExam === 'APPSC_GROUPS';
-  const offset = page * pageSize;
-  const result = await leaderboardRepo.fetchLeaderboardView(
-    selectedExam,
-    offset,
-    pageSize,
-    isAppscGroups || selectedExam.startsWith('APPSC_GROUP_')
-  );
-
-  return { entries: assignRanks((result.data ?? []) as any[]), count: result.count ?? 0 };
+  return {
+    entries: entries.map((row) => ({
+      user_id: String(row.user_id),
+      user_name: normalizeParticipantName(row.user_name),
+      exam_id: String(row.exam_id ?? ''),
+      exam_selection: String(row.exam_selection ?? row.exam_id ?? ''),
+      paper_id: (row.paper_id as string | null) ?? null,
+      best_score: Number(row.best_score ?? 0),
+      best_accuracy: Number(row.best_accuracy ?? 0),
+      best_time_secs: Number(row.best_time_secs ?? 0),
+      last_attempt_date: String(row.last_attempt_date ?? ''),
+      total_attempts: Number(row.total_attempts ?? 0),
+      rank: Number(row.rank ?? 0),
+    })),
+    count,
+  };
 }

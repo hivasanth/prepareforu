@@ -17,6 +17,8 @@ import { useNotifications, type AppNotification, type NotificationType } from '.
 import { IconBadge } from './AntigravityUI'
 import { Menu } from './Menu'
 import { LoadingSkeleton } from './SharedComponents'
+import { TRANSITION_INTERACTION, FOCUS_RING, MOTION_DURATION, MOTION_EASE } from './AntigravityMotion'
+import { ROW_HOVER } from './AntigravityCard'
 
 // ─── Icon resolver per type ────────────────────────────────────────────────────
 function typeIconInfo(type: NotificationType): { icon: LucideIcon; color: string } {
@@ -72,11 +74,11 @@ function NotificationRow({
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: 40 }}
-      transition={{ duration: 0.2 }}
-      className={`group relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors
+      transition={{ duration: MOTION_DURATION.normal, ease: MOTION_EASE.standard }}
+      className={`group relative flex items-start gap-3 px-4 py-3 cursor-pointer ${ROW_HOVER} ${FOCUS_RING}
         ${!notification.is_read
-          ? 'bg-primary/5 hover:bg-primary/10'
-          : 'hover:bg-hover-bg/60'
+          ? 'bg-primary/5'
+          : ''
         }`}
       onClick={() => {
         onRead(notification.id)
@@ -125,7 +127,7 @@ function NotificationRow({
         aria-label={`Delete notification: ${notification.title}`}
         className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center 
                    rounded-lg hover:bg-danger/10 text-text-secondary hover:text-danger 
-                   transition-all flex-shrink-0 mt-0.5"
+                   transition-interaction duration-fast ease-standard ${FOCUS_RING} flex-shrink-0 mt-0.5"
       >
         <X size={12} />
       </button>
@@ -158,7 +160,7 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
       animation="scale"
     >
       {/* ── Bell button ─────────────────────────────────────────────────────── */}
-      <Menu.Trigger className={`relative w-9 h-9 flex items-center justify-center rounded-xl transition-all
+      <Menu.Trigger className={`relative w-9 h-9 flex items-center justify-center rounded-xl ${TRANSITION_INTERACTION}
         ${false
           ? 'bg-primary/20 text-primary'
           : 'hover:bg-hover-bg text-text-secondary hover:text-text-primary'
@@ -174,6 +176,7 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
+                  transition={{ duration: MOTION_DURATION.fast, ease: MOTION_EASE.emphasized }}
                   className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 bg-danger rounded-full
                              text-white text-[9px] font-black flex items-center justify-center border-2 border-app-bg"
                 >
@@ -205,7 +208,7 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
                   onClick={refresh}
                   title="Refresh"
                   aria-label="Refresh notifications"
-                  className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-hover-bg text-text-secondary hover:text-text-primary transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-hover-bg text-text-secondary hover:text-text-primary transition-interaction duration-fast ease-standard ${FOCUS_RING}"
                 >
                   <RefreshCcw size={13} />
                 </button>
@@ -214,7 +217,7 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
                     onClick={markAllRead}
                     title="Mark all as read"
                     aria-label="Mark all notifications as read"
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-hover-bg text-text-secondary hover:text-primary transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-hover-bg text-text-secondary hover:text-primary transition-interaction duration-fast ease-standard ${FOCUS_RING}"
                   >
                     <CheckCheck size={13} />
                   </button>
@@ -224,7 +227,7 @@ export function NotificationBell({ align = 'right', onNavigate }: NotificationBe
                     onClick={clearAll}
                     title="Clear all"
                     aria-label="Clear all notifications"
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-danger/10 text-text-secondary hover:text-danger transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-danger/10 text-text-secondary hover:text-danger transition-interaction duration-fast ease-standard ${FOCUS_RING}"
                   >
                     <Trash2 size={13} />
                   </button>

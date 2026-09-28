@@ -1,23 +1,11 @@
 import type { FC } from 'react';
+import { Spinner } from './common/Spinner';
 
-/**
- * Premium Book Loader Component
- * A high-fidelity CSS animation representing a flipping book,
- * tailored for educational and exam preparation contexts.
- */
+/* Phase 5.4F (D-172) — Loader delegates to the ONE Spinner (large). The
+   unstyled book-loader markup was removed (LG-2). The AuthContext/Guards
+   wrappers own their fixed backdrop and centering; consumers are unchanged. */
 const Loader: FC = () => {
-  return (
-    <div className="book-loader-container">
-      <div className="book">
-        <div className="book__pg-shadow" />
-        <div className="book__pg" />
-        <div className="book__pg book__pg--2" />
-        <div className="book__pg book__pg--3" />
-        <div className="book__pg book__pg--4" />
-        <div className="book__pg book__pg--5" />
-      </div>
-    </div>
-  );
+  return <Spinner size="lg" />;
 };
 
 export default Loader;

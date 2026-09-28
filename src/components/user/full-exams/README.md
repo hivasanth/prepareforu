@@ -14,7 +14,7 @@ UserExams (page — composition only, 80 lines)
   │     ├── examService (data access)
   │     └── examUtils (allowed exam IDs)
   └── ExamPaperGrid (presentation — memo'd, 115 lines)
-        ├── ExamGroupBar (APPSC group tabs)
+        ├── Tabs bare (inline APPSC group tabs)
         ├── CarouselDots (mobile nav dots)
         └── ExamPaperCard ×N (memo'd exam cards)
 ```
@@ -60,9 +60,8 @@ useUserExams (hook)
 | `ErrorState` | SharedComponents | Gate/guard error state |
 | `ExamCard` | AntigravityUI | Paper card surface |
 | `MetricBlock` | AntigravityUI | Card metric rows |
-| `Tabs` | AntigravityUI | Group filter tabs (via ExamGroupBar) |
+| `Tabs` | AntigravityUI | Inline APPSC group tabs (inside SectionReveal) |
 | `SectionReveal` | AntigravityAnimation | Entry animations |
-| `ExamGroupBar` | User shared | APPSC group tab bar |
 | `CarouselDots` | User shared | Mobile carousel navigation |
 | `ExamPaperCard` | Common shared | Individual exam paper card |
 | `H2`, `Body` | AntigravityTypography | Typography |

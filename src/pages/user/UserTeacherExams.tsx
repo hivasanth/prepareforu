@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import {
   LoadingSkeleton,
-  ErrorState,
   EmptyState,
 } from '../../components/common/SharedComponents'
+import { Skeleton } from '../../components/common/Skeleton'
 import {
   PageContainer,
   Stack,
@@ -12,19 +12,60 @@ import {
   H2,
   Body,
 } from '../../components/common/AntigravityUI'
-import { ToastContainer, useToast } from '../../hooks/useToast'
+import { Alert } from '../../components/common/Alert'
 import { TeacherLeaderboardModal } from '../../components/user/TeacherLeaderboardModal'
-import { useTeacherExams, TeacherExamCard, TeacherExamFilterBar } from '../../components/user/educator-exams'
+import { useTeacherExams, TeacherExamCard, TeacherExamFilterBar, EducatorLinkCard } from '../../components/user/educator-exams'
+
+function EducatorExamsLoadingSkeleton() {
+  return (
+    <PageContainer>
+      <div role="status" aria-live="polite" aria-label="Loading educator exams" className="w-full">
+        <Stack gap={16}>
+          <div className="flex justify-center w-full">
+            <LoadingSkeleton height={48} width={320} borderRadius={12} />
+          </div>
+          <div className="flex justify-center w-full mb-4">
+            <LoadingSkeleton height={40} width={240} borderRadius={20} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton
+                key={i}
+                type="card"
+                className="h-[220px]"
+                decorative
+              />
+            ))}
+          </div>
+        </Stack>
+      </div>
+    </PageContainer>
+  )
+}
+
+function EducatorExamsDataSkeleton() {
+  return (
+    <div role="status" aria-live="polite" aria-label="Loading educator exams" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Skeleton
+          key={i}
+          type="card"
+          className="h-[220px]"
+          decorative
+        />
+      ))}
+    </div>
+  )
+}
 
 export default function UserTeacherExams() {
   const navigate = useNavigate()
-  const { toasts } = useToast()
 
   const {
     user, authLoading,
     activeTab, setActiveTab,
     filteredExams,
-    loading, now,
+    loading,
     errorState, pageError, retryError,
     selectedMonth, setSelectedMonth,
     monthsList,
@@ -34,32 +75,14 @@ export default function UserTeacherExams() {
   } = useTeacherExams()
 
   if (authLoading) {
-    return (
-      <PageContainer>
-        <Stack gap={16}>
-          <div className="flex justify-center w-full">
-            <LoadingSkeleton height={48} width={320} borderRadius={12} />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
-            {[1, 2, 3].map(i => <LoadingSkeleton key={i} height={240} borderRadius={16} />)}
-          </div>
-        </Stack>
-      </PageContainer>
-    )
+    return <EducatorExamsLoadingSkeleton />
   }
 
   if (!user?.coupon_code_used) {
     return (
-      <PageContainer>
-        <div className="py-12">
-          <ErrorState
-            icon="🔒"
-            title="Educator Portal Locked"
-            message="Access restricted to students with valid educator codes."
-            onRetry={() => navigate('/dashboard')}
-          />
-        </div>
-      </PageContainer>
+      <EducatorLinkCard
+        onLinked={() => navigate('/educator-exams')}
+      />
     )
   }
 
@@ -76,10 +99,10 @@ export default function UserTeacherExams() {
 
         <div className="w-full">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => <LoadingSkeleton key={i} height={300} borderRadius={16} />)}
-            </div>
-          ) : errorState === 'error' && pageError ? (
+            <EducatorExamsDataSkeleton />
+          ) : errorState === 'error' && pageError && filteredExams.length === 0 ? (
+            // Full-page error only when there is no last-good data. M-3: a
+            // refresh/start failure must never replace the grid.
             <ErrorContainer category={pageError.category} severity={pageError.severity}>
               <H2>{pageError.title}</H2>
               <Body>{pageError.message}</Body>
@@ -96,19 +119,32 @@ export default function UserTeacherExams() {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredExams.map(exam => (
-                <TeacherExamCard
-                  key={exam.id}
-                  exam={exam}
-                  activeTab={activeTab}
-                  now={now}
-                  isStarting={isStarting}
-                  onStart={handleStartTeacherExam}
-                  onLeaderboard={setSelectedLeaderboardExam}
-                />
-              ))}
-            </div>
+            <>
+              {errorState === 'error' && pageError && (
+                // Non-destructive inline banner above the grid — data stays
+                // visible and the user can retry without losing it.
+                <Alert variant="warning" className="mb-4">
+                  <div className="flex flex-wrap items-center gap-3 justify-between">
+                    <Body className="text-[13px]">{pageError.message}</Body>
+                    {pageError.retryable && (
+                      <RetryButton onRetry={retryError} size="sm" />
+                    )}
+                  </div>
+                </Alert>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredExams.map(exam => (
+                  <TeacherExamCard
+                    key={exam.id}
+                    exam={exam}
+                    activeTab={activeTab}
+                    isStarting={isStarting}
+                    onStart={handleStartTeacherExam}
+                    onLeaderboard={setSelectedLeaderboardExam}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
 
@@ -120,7 +156,6 @@ export default function UserTeacherExams() {
           />
         )}
       </Stack>
-      <ToastContainer toasts={toasts} />
     </PageContainer>
   )
 }

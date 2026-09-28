@@ -28,7 +28,7 @@ vi.mock('../lib/repositories/question.repository', () => ({
   updateQuestion: vi.fn(async () => {}),
   deleteQuestion: vi.fn(async () => {}),
   bulkDeleteQuestions: vi.fn(async () => {}),
-  listQuestions: vi.fn(async () => ({ data: [], count: 0 })),
+  adminListQuestionsRpc: vi.fn(async () => ({ data: [], count: 0 })),
   countQuestionsByFilter: vi.fn(async () => 0),
   findVelocityReferencedQuestionIds: vi.fn(async () => []),
   deactivateQuestion: vi.fn(async () => {}),
@@ -201,33 +201,37 @@ describe('Security: Authorization enforcement', () => {
 
   // ─── H-15 TEST 16: Sub-admin authorization boundary ────────────────────────
 
-  describe('Sub-admin authorization', () => {
-    it('sub_admin can create question', async () => {
-      await adminQuestionService.createQuestion(makePayload(), { user: subAdminUser })
-
-      expect(questionRepo.upsertQuestion).toHaveBeenCalled()
+  // ROLE-AUDIT v1.0 (§2): the ADMIN question bank is ADMIN-only. Sub-admins are
+  // read-only on it (their exam questions live in teacher_exam_questions, which
+  // they reach through the auth.uid()-scoped create_teacher_exam_atomic + RLS).
+  // These tests positively assert that a sub_admin is DENIED admin-bank C/U/D.
+  describe('Sub-admin authorization (admin bank is admin-only)', () => {
+    it('sub_admin cannot create admin-bank question', async () => {
+      const result = await adminQuestionService.createQuestion(makePayload(), { user: subAdminUser })
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toContain('UNAUTHORIZED')
     })
 
-    it('sub_admin can update question', async () => {
-      await adminQuestionService.updateQuestion('q-123', makePayload(), { user: subAdminUser })
-
-      expect(questionRepo.updateQuestion).toHaveBeenCalled()
+    it('sub_admin cannot update admin-bank question', async () => {
+      const result = await adminQuestionService.updateQuestion('q-123', makePayload(), { user: subAdminUser })
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toContain('UNAUTHORIZED')
     })
 
-    it('sub_admin can bulk insert', async () => {
+    it('sub_admin cannot bulk insert into admin bank', async () => {
       allowBulkTopic()
       const result = await adminQuestionService.bulkInsertQuestions(
         [makePayload()],
         { user: subAdminUser, topicId: CANONICAL_TOPIC.id }
       )
-
-      expect(result.success).toBe(true)
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toContain('UNAUTHORIZED')
     })
 
-    it('sub_admin can delete question', async () => {
-      await adminQuestionService.deleteQuestion('q-123', { user: subAdminUser })
-
-      expect(questionRepo.deleteQuestion).toHaveBeenCalled()
+    it('sub_admin cannot delete admin-bank question', async () => {
+      const result = await adminQuestionService.deleteQuestion('q-123', { user: subAdminUser })
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toContain('UNAUTHORIZED')
     })
   })
 

@@ -1,8 +1,8 @@
-import { H2, H3, Body, Label } from '../common/AntigravityTypography'
+import { Typography } from '../common/Typography'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type WelcomeBannerVariant = 'user' | 'educator' | 'admin'
+type WelcomeBannerVariant = 'user' | 'educator'
 
 interface BannerVariantConfig {
   /** Greeting label — static string or dynamic function */
@@ -50,51 +50,59 @@ const BANNER_VARIANTS: Record<WelcomeBannerVariant, BannerVariantConfig> = {
     heading: 'Create. Assess. Inspire.',
     subtitle: 'Build better assessments for better learning.',
   },
-  admin: {
-    label: getGreeting,
-    role: 'Administrator',
-    heading: 'Manage. Optimize. Lead.',
-    subtitle: 'Drive excellence across your institution.',
-  },
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+/* Phase 6.XB (USR-FND-01 / USR-FND-02) — the hero surface now consumes only
+   certified Layer-2 semantic surface tokens (bg-card-premium-surface in dark,
+   --gradient-header in light, --elevation-2, --border-*) instead of the retired
+   .ancient-card-dark recipe and the Layer-1 --forest-* primitive. Visual
+   hierarchy is preserved via the certified type scale (role="display" for the
+   name).
+   Phase 6.X (Task 1/7) — banner typography refined: greeting/heading/supporting
+   text are pure white high-contrast (inherited from the banner surface — no
+   underlying color token, no inline overrides), name uppercased, and the
+   warning-tint primary chain removed.
+   Divider is a neutral white hairline (decorative only). */
 export function WelcomeBanner({ displayName, variant = 'user' }: WelcomeBannerProps) {
   const config = BANNER_VARIANTS[variant]
   const firstName = extractFirstName(displayName)
   const labelText = typeof config.label === 'function' ? config.label() : config.label
 
   return (
-    <div className="ancient-card-dark overflow-hidden min-h-[200px] relative">
+    <section
+      role="region"
+      aria-label="Welcome"
+      className="relative overflow-hidden min-h-[200px] rounded-2xl bg-card-premium-surface light:bg-[image:var(--gradient-header)] shadow-elevation-2 border border-border-subtle"
+    >
+      {/* Decorative hero image is presentation-only (aria-hidden). */}
       <div
-        className="absolute inset-0 opacity-30 bg-cover bg-center"
+        aria-hidden
+        className="absolute inset-0 opacity-40 bg-cover bg-center"
         style={{ backgroundImage: "url('/bg/hero-banner.jpg')" }}
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-[var(--forest-900)]/95 via-[var(--forest-900)]/70 to-transparent" />
 
-      <div className="p-5 md:p-8 relative z-[2]">
+      <div className="relative z-[2] p-5 md:p-8 text-white">
         <div className="mb-6">
-          <Label className="text-warning tracking-[0.15em] mb-1">
+          <Typography role="label" as="label" color="inherit" className="mb-1">
             {labelText}
-          </Label>
-          <H2 className="text-[clamp(26px,4.5vw,36px)] font-black leading-[1.15] text-text-on-dark">
+          </Typography>
+          <Typography role="display" as="h2" color="inherit" className="uppercase">
             {firstName}
-          </H2>
-          <Body className="italic text-[15px] mt-[6px] text-warning/90">
+          </Typography>
+          <Typography role="body" as="p" color="inherit" className="italic mt-[6px]">
             {config.role}
-          </Body>
+          </Typography>
         </div>
 
-        <div className="w-12 h-[1px] mb-5 bg-warning/35" />
+        <div className="w-12 h-[1px] mb-5 bg-white/40" />
 
-        <H3 className="text-[clamp(18px,3vw,24px)] font-extrabold leading-[1.2] text-warning">
-          {config.heading}
-        </H3>
-        <Body className="text-sm italic mt-[6px] text-warning/60">
+        <Typography role="card-title" as="h3" color="inherit">{config.heading}</Typography>
+        <Typography role="body" as="p" color="inherit" className="text-sm italic mt-[6px]">
           {config.subtitle}
-        </Body>
+        </Typography>
       </div>
-    </div>
+    </section>
   )
 }

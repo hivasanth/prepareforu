@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { MENU_TRANSITION, TRANSITION_INTERACTION, FOCUS_RING } from './AntigravityMotion'
+import { GOLD_LIGHT_MATERIAL } from './AntigravityCard'
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 interface MenuContextValue {
@@ -262,8 +264,8 @@ function MenuContent({
 
   const variant = animationVariants[resolvedAnimation]
   const panelClass = resolvedVariant === 'management'
-    ? 'bg-[var(--management-surface)] border-[var(--management-border)] shadow-[var(--management-shadow)]'
-    : 'bg-[var(--surface-floating)] border-border-subtle ancient-overlay shadow-elevation-4'
+    ? `bg-[var(--management-surface)] border-[var(--management-border)] shadow-[var(--management-shadow)] ${GOLD_LIGHT_MATERIAL}`
+    : `bg-[var(--surface-floating)] border-border-subtle ancient-overlay shadow-elevation-4 ${GOLD_LIGHT_MATERIAL}`
 
   return (
     <AnimatePresence>
@@ -276,7 +278,7 @@ function MenuContent({
           initial={variant.initial}
           animate={variant.animate}
           exit={variant.exit}
-          transition={{ duration: 0.18, ease: 'easeOut' }}
+          transition={MENU_TRANSITION}
           className={`absolute ${resolvedOffset} ${alignmentClasses[resolvedAlign]} ${resolvedZIndex} min-w-[200px] rounded-2xl overflow-hidden border ${panelClass} ${className}`}
           onKeyDown={handleKeyDown}
         >
@@ -312,10 +314,10 @@ function MenuItem({ children, onClick, className = '', disabled = false, selecte
           setOpen(false)
         }
       }}
-      className={`w-full text-left px-4 py-3 text-sm font-semibold transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${
+      className={`w-full text-left px-3 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-lg border border-border-subtle ${TRANSITION_INTERACTION} ${FOCUS_RING} disabled:opacity-50 disabled:pointer-events-none ${
         selected
-          ? 'bg-primary/20 text-primary hover:bg-primary/25 focus:bg-primary/25'
-          : 'text-text-primary hover:bg-hover-bg focus:bg-hover-bg'
+          ? 'bg-primary/20 selection-active-text hover:bg-primary/25 focus:bg-primary/25 light:bg-[image:var(--material-tab-pill-surface)] light:border-[var(--material-tab-pill-border)] light:shadow-tab-pill-light'
+          : 'text-text-primary hover:bg-hover-bg focus:bg-hover-bg light:text-text-secondary light:border-[var(--material-tab-pill-border)] light:hover:text-[var(--material-tab-text-hover)] light:hover:bg-white/5'
       } ${className}`}
     >
       {children}

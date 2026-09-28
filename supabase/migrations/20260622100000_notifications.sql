@@ -4,12 +4,16 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- ── 1. notifications table ────────────────────────────────────────────────────
+-- DDL corrected 2026-09-10 to LIVE-verbatim: this migration was NEVER recorded
+-- on LIVE (LIVE's table was created out-of-band), so the live table is the
+-- ground truth. LIVE: id DEFAULT uuid_generate_v4(), FK to public.users(id)
+-- ON DELETE CASCADE, type TEXT NOT NULL with NO default.
 CREATE TABLE IF NOT EXISTS public.notifications (
-  id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     UUID         NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  id          UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id     UUID         NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   title       TEXT         NOT NULL,
   body        TEXT,
-  type        TEXT         NOT NULL DEFAULT 'info',
+  type        TEXT         NOT NULL,
   -- type values: 'info' | 'success' | 'warning' | 'exam' | 'student' | 'system'
   link        TEXT,
   is_read     BOOLEAN      NOT NULL DEFAULT false,
@@ -20,22 +24,53 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 -- Users may only see and manage their own notifications
-CREATE POLICY "notifications_own_select"
-  ON public.notifications FOR SELECT
-  USING (user_id = auth.uid());
+-- (Each CREATE POLICY is intentionally guarded: this migration was never
+-- recorded on LIVE, so on LIVE-apply these four policies already exist — the
+-- guard makes application a no-op. Fresh replays create them here.)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policy WHERE polname='notifications_own_select'
+                 AND polrelid='public.notifications'::regclass) THEN
+    CREATE POLICY "notifications_own_select"
+      ON public.notifications FOR SELECT
+      USING (user_id = auth.uid());
+  END IF;
+END
+$$;
 
-CREATE POLICY "notifications_own_update"
-  ON public.notifications FOR UPDATE
-  USING (user_id = auth.uid());
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policy WHERE polname='notifications_own_update'
+                 AND polrelid='public.notifications'::regclass) THEN
+    CREATE POLICY "notifications_own_update"
+      ON public.notifications FOR UPDATE
+      USING (user_id = auth.uid());
+  END IF;
+END
+$$;
 
-CREATE POLICY "notifications_own_delete"
-  ON public.notifications FOR DELETE
-  USING (user_id = auth.uid());
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policy WHERE polname='notifications_own_delete'
+                 AND polrelid='public.notifications'::regclass) THEN
+    CREATE POLICY "notifications_own_delete"
+      ON public.notifications FOR DELETE
+      USING (user_id = auth.uid());
+  END IF;
+END
+$$;
 
 -- Service role (Edge Functions / DB triggers) can insert for any user
-CREATE POLICY "notifications_service_insert"
-  ON public.notifications FOR INSERT
-  WITH CHECK (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policy WHERE polname='notifications_service_insert'
+                 AND polrelid='public.notifications'::regclass) THEN
+    CREATE POLICY "notifications_service_insert"
+      ON public.notifications FOR INSERT
+      WITH CHECK (true);
+  END IF;
+END
+$$;
 
 -- ── 3. Indexes ────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id

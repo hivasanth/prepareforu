@@ -14,7 +14,6 @@ export function usePortalPaperState({ examSelection }: PortalPaperStateOptions) 
   });
   const [selectedPaperId, setSelectedPaperId] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string>('');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const isAppsc = examSelection === 'APPSC_GROUPS' || examSelection === 'APPSC';
 
@@ -41,8 +40,6 @@ export function usePortalPaperState({ examSelection }: PortalPaperStateOptions) 
     setSelectedPaperId,
     activeGroup,
     setActiveGroup,
-    isFilterOpen,
-    setIsFilterOpen,
     groupOptions,
     isAppsc,
   };

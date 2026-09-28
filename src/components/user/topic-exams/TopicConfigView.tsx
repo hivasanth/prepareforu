@@ -15,7 +15,7 @@ export function TopicConfigView(props: TopicConfigViewProps) {
   const totalQuestions = props.subjectCounts[props.selectedSubject] || 0;
 
   const options = useMemo(() => {
-    let opts = [10, 20, 30].filter(cnt => cnt <= totalQuestions);
+    const opts = [10, 20, 30].filter(cnt => cnt <= totalQuestions);
     if (totalQuestions > 0 && !opts.includes(totalQuestions) && totalQuestions < 30) {
       opts.push(totalQuestions);
     }

@@ -32,7 +32,7 @@ export const UploadProgressOverlay = memo(function UploadProgressOverlay({ uploa
               strokeDasharray={`${2 * Math.PI * 42}`}
               strokeDashoffset={`${2 * Math.PI * 42 * (1 - percentage / 100)}`}
               strokeLinecap="round"
-              style={{ transition: 'stroke-dashoffset 0.4s ease' }}
+              style={{ transition: 'stroke-dashoffset var(--duration-normal) var(--ease-standard)' }}
             />
           </svg>
           <span className="absolute inset-0 flex items-center justify-center text-lg font-black text-primary">{percentage}%</span>

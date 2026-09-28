@@ -48,17 +48,18 @@ export function useUserExams() {
   }, [papers])
 
   useEffect(() => {
-    async function fetchData() {
-      if (authLoading) return
+    async function fetchData(): Promise<boolean> {
+      if (authLoading) return false
       if (!user?.id || !user?.exam_selection) {
         if (mountedRef.current) setLoading(false)
-        return
+        return false
       }
 
+      if (mountedRef.current) setLoading(true)
       const id = nextId()
       try {
         const filteredPapers = await fetchUserPapers(targetExamIds, false)
-        if (isStale(id)) return
+        if (isStale(id)) return false
 
         setPapers(filteredPapers)
 
@@ -81,14 +82,16 @@ export function useUserExams() {
           const results = await batchCheckAvailability(
             filteredPapers.map((p) => p.id)
           )
-          if (isStale(id)) return
+          if (isStale(id)) return false
           setAvailabilityMap(results)
         }
+        return true
       } catch (err: unknown) {
-        if (isStale(id)) return
+        if (isStale(id)) return false
         captureNetworkError(err, {
           retryFn: () => fetchData(),
         })
+        return false
       } finally {
         if (!isStale(id)) setLoading(false)
       }
@@ -137,13 +140,17 @@ export function useUserExams() {
     ? papers.filter((p) => p.exam_id === activeGroup)
     : papers
 
+  /* UX-1: expose the in-flight retry state so the page can render an actionable
+     spinner on the RetryButton (and prevent double-clicks) while re-fetching. */
+  const isRetrying = errorState === 'retrying'
+
   return {
     user,
-    authLoading,
     loading,
     errorState,
     pageError,
     retryError,
+    isRetrying,
     isAppsc,
     groupOptions,
     activeGroup,

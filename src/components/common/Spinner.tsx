@@ -1,7 +1,7 @@
 import React from 'react'
 
 type SpinnerSize = 'sm' | 'md' | 'lg'
-type SpinnerVariant = 'primary'
+type SpinnerVariant = 'primary' | 'current'
 
 interface SpinnerProps {
   size?: SpinnerSize
@@ -17,6 +17,7 @@ const sizeClasses: Record<SpinnerSize, string> = {
 
 const variantClasses: Record<SpinnerVariant, string> = {
   primary: 'border-primary/20 border-t-primary',
+  current: 'border-current border-t-transparent',
 }
 
 export const Spinner: React.FC<SpinnerProps> = ({

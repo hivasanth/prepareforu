@@ -6,15 +6,31 @@ import {
   H3,
   Body,
   IconBadge,
+  ErrorContainer,
+  RetryButton,
 } from '../common/AntigravityUI';
-import type { UserProfile } from '../../types/auth.types';
+import { StatSkeleton } from '../common/SharedComponents';
+import type { DashboardStats } from '../../services/dashboardService';
 
 interface StatisticsSectionProps {
-  user: UserProfile;
+  examSelection: string;
   getReadableExam: (exam: string) => string;
+  stats: DashboardStats | null;
+  statsLoading: boolean;
+  statsError: string | null;
+  isRetrying: boolean;
+  onRetry: () => void;
 }
 
-export function StatisticsSection({ user, getReadableExam }: StatisticsSectionProps) {
+export function StatisticsSection({
+  examSelection,
+  getReadableExam,
+  stats,
+  statsLoading,
+  statsError,
+  isRetrying,
+  onRetry,
+}: StatisticsSectionProps) {
   return (
     <Stack gap={24}>
       <div className="flex items-center gap-3 px-1">
@@ -25,12 +41,24 @@ export function StatisticsSection({ user, getReadableExam }: StatisticsSectionPr
         </div>
       </div>
 
-      <Grid cols={4} gap={24}>
-        <StatCard icon={BookOpen} label="SELECTED EXAM" value={getReadableExam(user.exam_selection || '')} color="var(--primary)" />
-        <StatCard icon={Target} label="ACCURACY" value={`${user.overall_accuracy ?? 0}%`} color="var(--success)" />
-        <StatCard icon={Flame} label="CURRENT STREAK" value={`${user.streak ?? 0} DAYS`} color="#F59E0B" />
-        <StatCard icon={ShieldCheck} label="HIGHEST STREAK" value={`${user.longest_streak ?? 0} DAYS`} color="#6366F1" />
-      </Grid>
+      {statsLoading ? (
+        <div role="status" aria-live="polite" aria-label="Loading academic statistics">
+          <StatSkeleton decorative columns="grid-cols-2 md:grid-cols-2 lg:grid-cols-4" gap="gap-4 lg:gap-6" />
+        </div>
+      ) : statsError ? (
+        <ErrorContainer category="network" severity="critical">
+          <H3>Failed to load statistics</H3>
+          <Body>{statsError}</Body>
+          <RetryButton onRetry={onRetry} loading={isRetrying} />
+        </ErrorContainer>
+      ) : (
+        <Grid cols={2} md={2} lg={4} gap={24}>
+          <StatCard icon={BookOpen} label="SELECTED EXAM" value={getReadableExam(examSelection || '')} status="accent" />
+          <StatCard icon={Target} label="ACCURACY" value={`${stats?.accuracy ?? 0}%`} status="success" />
+          <StatCard icon={Flame} label="CURRENT STREAK" value={`${stats?.daily_streak ?? 0} DAYS`} status="warning" />
+          <StatCard icon={ShieldCheck} label="HIGHEST STREAK" value={`${stats?.highest_streak ?? 0} DAYS`} status="secondary" />
+        </Grid>
+      )}
     </Stack>
   );
 }

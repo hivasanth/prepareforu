@@ -43,12 +43,16 @@ describe('direct prompt_text consumer audit (routing invariant)', () => {
 
   it('AIToolCards copies ONLY the composed prompt', () => {
     const src = readFileSync(join(ROOT, 'src', 'components', 'admin', 'questions', 'AIToolCards.tsx'), 'utf8')
-    expect(src).toMatch(/navigator\.clipboard\.writeText\(composeBulkUploadPrompt\([^)]*\)\.text\)/)
+    // LAN-ORIGIN FIX: composes the prompt once, then routes the write through
+    // the canonical copyText helper (Clipboard API + legacy fallback), and only
+    // flips to "Copied" after a confirmed success.
+    expect(src).toMatch(/const content = composeBulkUploadPrompt\(topicPrompt, topicIdentity\)\.text/)
+    expect(src).toMatch(/await copyText\(content\)/)
   })
 
   it('useBulkUpload copy handler composes currentPrompt before clipboard', () => {
-    expect(useBulkUploadSrc).toMatch(/const copyText = composeBulkUploadPrompt\(text \|\| currentPrompt, currentTopicIdentity\)\.text/)
-    expect(useBulkUploadSrc).toMatch(/navigator\.clipboard\?\.writeText\(copyText\)/)
+    expect(useBulkUploadSrc).toMatch(/const content = composeBulkUploadPrompt\(text \|\| currentPrompt, currentTopicIdentity\)\.text/)
+    expect(useBulkUploadSrc).toMatch(/await copyText\(content\)/)
   })
 
   it('PromptEditorModal saves ONLY the canonicalized + marker-ensured prompt', () => {

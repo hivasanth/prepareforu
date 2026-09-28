@@ -42,29 +42,37 @@ BEGIN
     WHERE paper_id = v_paper1_id
       AND subject_name IN ('General English', 'General Telugu');
 
-    -- STEP 4: Create Paper 2
-    INSERT INTO public.exam_papers (
-        exam_id, paper_name, stage,
-        total_questions, total_marks, duration_minutes,
-        negative_marking, negative_mark_value, display_order
-    ) VALUES (
-        v_exam_id, 'General English and General Telugu', 'SINGLE',
-        150, 150, 150,
-        false, 0, 2
-    ) RETURNING id INTO v_paper2_id;
+    -- STEP 4-6: Create Paper 2 (guarded — on a fresh chain it does not exist yet
+    -- and is created here; on LIVE it is already provisioned out-of-band, so
+    -- creating it again would duplicate the paper, its subjects, and re-assign
+    -- the English/Telugu questions to the duplicate).
+    IF NOT EXISTS (
+        SELECT 1 FROM public.exam_papers
+        WHERE exam_id = v_exam_id AND paper_name = 'General English and General Telugu'
+    ) THEN
+        INSERT INTO public.exam_papers (
+            exam_id, paper_name, stage,
+            total_questions, total_marks, duration_minutes,
+            negative_marking, negative_mark_value, display_order
+        ) VALUES (
+            v_exam_id, 'General English and General Telugu', 'SINGLE',
+            150, 150, 150,
+            false, 0, 2
+        ) RETURNING id INTO v_paper2_id;
 
-    -- STEP 5: Create subjects for Paper 2 (75 questions each)
-    INSERT INTO public.exam_subjects (
-        exam_id, paper_id, subject_name, question_count, marks_per_question, display_order
-    ) VALUES
-        (v_exam_id, v_paper2_id, 'General English', 75, 1, 1),
-        (v_exam_id, v_paper2_id, 'General Telugu',  75, 1, 2);
+        -- STEP 5: Create subjects for Paper 2 (75 questions each)
+        INSERT INTO public.exam_subjects (
+            exam_id, paper_id, subject_name, question_count, marks_per_question, display_order
+        ) VALUES
+            (v_exam_id, v_paper2_id, 'General English', 75, 1, 1),
+            (v_exam_id, v_paper2_id, 'General Telugu',  75, 1, 2);
 
-    -- STEP 6: Re-assign existing questions to Paper 2 by subject_name
-    UPDATE public.questions
-    SET paper_id = v_paper2_id
-    WHERE exam_id = v_exam_id
-      AND subject_name IN ('General English', 'General Telugu');
+        -- STEP 6: Re-assign existing questions to Paper 2 by subject_name
+        UPDATE public.questions
+        SET paper_id = v_paper2_id
+        WHERE exam_id = v_exam_id
+          AND subject_name IN ('General English', 'General Telugu');
+    END IF;
 
     -- STEP 7: Update exam_configs combined total (300Q/300M/300Min for both papers)
     UPDATE public.exam_configs

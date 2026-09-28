@@ -1,6 +1,10 @@
 import React, { lazy, Suspense, type FC } from 'react';
 import DOMPurify from 'dompurify'
 import type { QuestionVisual } from '../../types/exam.types';
+import { SUPPORTED_VISUAL_TYPES } from '../../types/exam.types';
+import { ROW_HOVER } from './AntigravityCard'
+import VisualErrorBoundary from './visuals/VisualErrorBoundary'
+import { VisualFallback } from './visuals/VisualFallback'
 
 const ChartVisualizer = lazy(() => import('../visualizers/ChartVisualizer').then(m => ({ default: m.ChartVisualizer })));
 const MermaidDiagram = lazy(() => import('../visualizers/MermaidDiagram').then(m => ({ default: m.MermaidDiagram })));
@@ -12,52 +16,76 @@ interface QuestionVisualizerProps {
   className?: string;
 }
 
-// Normalize visual prop to canonical { type, data, title? } format
-function normalizeVisualProp(visual: any): QuestionVisual {
-  if (visual.type && visual.data !== undefined && typeof visual.data === 'object' && !Array.isArray(visual.data)) {
-    return visual as QuestionVisual;
-  }
-  if (visual.type && (visual.x_axis || visual.y_axis || visual.headers || visual.rows || Array.isArray(visual.data))) {
-    const { type, title, ...rest } = visual;
-    return { type, title, data: rest };
-  }
-  if (visual.render_type && visual.metadata !== undefined) {
-    return {
-      type: visual.render_type as QuestionVisual['type'],
-      title: visual.title || undefined,
-      data: visual.metadata,
-    };
-  }
-  if (visual.type && visual.data !== undefined) return visual as QuestionVisual;
-  return visual as QuestionVisual;
-}
-
 const LoadingFallback = () => (
   <div className="w-full h-64 flex items-center justify-center text-text-muted text-sm">
     Loading visualizer...
   </div>
 );
 
-export const QuestionVisualizer: FC<QuestionVisualizerProps> = React.memo(({ visual: rawVisual, className = "" }) => {
-  const visual = normalizeVisualProp(rawVisual);
-  const { type, data, title } = visual;
+const SUPPORTED_SET = new Set<string>(SUPPORTED_VISUAL_TYPES);
+
+function isSupportedType(type: string): boolean {
+  return SUPPORTED_SET.has(type);
+}
+
+function ariaLabelFor(type: string, title?: string | null): string {
+  if (title && title.trim().length > 0) return title.trim()
+  switch (type) {
+    case 'table': return 'Data table'
+    case 'chart': return 'Chart'
+    case 'geometry': return 'Geometry diagram'
+    case 'venn': return 'Venn diagram'
+    case 'mermaid': return 'Flow diagram'
+    case 'latex': return 'Mathematical expression'
+    case 'svg': return 'Diagram'
+    case 'map_overlay': return 'Map with overlay markers'
+    default: return 'Visual'
+  }
+}
+
+export const QuestionVisualizer: FC<QuestionVisualizerProps> = React.memo(({ visual, className = "" }) => {
+  const { type = '', data = {}, title } = visual ?? {};
+
+  if (!type) {
+    return (
+      <div className={`my-6 space-y-4 ${className}`}>
+        <div className="bg-card-bg/30 border border-border-subtle/20 rounded-3xl p-6 flex items-center justify-center min-h-[120px]">
+          <VisualFallback code="INVALID_VISUAL_DATA" label={title ?? undefined} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSupportedType(type)) {
+    return (
+      <div className={`my-6 space-y-4 ${className}`}>
+        <div className="bg-card-bg/30 border border-border-subtle/20 rounded-3xl p-6 flex items-center justify-center min-h-[120px]">
+          <VisualFallback code="UNKNOWN_VISUAL_TYPE" label={title ?? undefined} />
+        </div>
+      </div>
+    );
+  }
+
+  const label = ariaLabelFor(type, title);
 
   return (
     <div className={`my-6 space-y-4 ${className} animate-in`}>
       {title && <h5 className="text-sm font-bold text-text-primary text-center uppercase tracking-wider">{title}</h5>}
-      
-      <div className="bg-card-bg/30 border border-border-subtle/20 rounded-3xl p-6 flex items-center justify-center overflow-hidden min-h-[240px]">
-        <Suspense fallback={<LoadingFallback />}>
-          {type === 'chart' && <ChartVisualizer data={data as never} />}
-          {type === 'table' && renderTable(data)}
-          {type === 'geometry' && renderGeometry(data)}
-          {type === 'venn' && renderVenn(data)}
-          {type === 'mermaid' && <MermaidDiagram code={String(data.code ?? '')} />}
-          {type === 'latex' && <MathBlock expression={String(data.expression ?? data.latex ?? "")} />}
-          {type === 'svg' && renderSVG(data)}
-          {type === 'map_overlay' && <MapVisualizer data={data as never} />}
-        </Suspense>
-      </div>
+
+      <VisualErrorBoundary visualType={type} title={title}>
+        <div className="bg-card-bg/30 border border-border-subtle/20 rounded-3xl p-6 flex items-center justify-center overflow-hidden min-h-[240px]" role="img" aria-label={label}>
+          <Suspense fallback={<LoadingFallback />}>
+            {type === 'chart' && <ChartVisualizer data={data as never} />}
+            {type === 'table' && renderTable(data)}
+            {type === 'geometry' && renderGeometry(data)}
+            {type === 'venn' && renderVenn(data)}
+            {type === 'mermaid' && <MermaidDiagram code={String(data.code ?? '')} />}
+            {type === 'latex' && <MathBlock expression={String(data.expression ?? data.latex ?? "")} />}
+            {type === 'svg' && renderSVG(data)}
+            {type === 'map_overlay' && <MapVisualizer data={data as never} />}
+          </Suspense>
+        </div>
+      </VisualErrorBoundary>
     </div>
   );
 });
@@ -66,20 +94,24 @@ export const QuestionVisualizer: FC<QuestionVisualizerProps> = React.memo(({ vis
 function renderTable(data: any) {
   const headers = data.headers || data.columns || [];
   const rows = data.rows || [];
-  
+
+  if (headers.length === 0) {
+    return <VisualFallback code="INVALID_VISUAL_DATA" />;
+  }
+
   return (
     <div className="w-full overflow-x-auto border border-border-subtle/20 rounded-2xl">
       <table className="w-full text-xs text-left">
         <thead className="bg-hover-bg/40 text-text-secondary font-bold uppercase tracking-tighter">
           <tr>
             {headers.map((h: string, i: number) => (
-              <th key={i} className="px-3 py-2 border-b border-border-subtle/20">{h}</th>
+              <th key={i} scope="col" className="px-3 py-2 border-b border-border-subtle/20">{h}</th>
             ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-border-subtle/10">
           {rows.map((row: any[], i: number) => (
-            <tr key={i} className="hover:bg-hover-bg/40">
+            <tr key={i} className={ROW_HOVER}>
               {row.map((val, j) => (
                 <td key={j} className="px-3 py-2 text-text-primary whitespace-nowrap">{typeof val === 'object' ? JSON.stringify(val) : val}</td>
               ))}
@@ -95,12 +127,21 @@ function renderTable(data: any) {
 function renderSVG(data: any) {
   const svgContent = data.svg_content || data.svg || "";
   const viewBox = data.viewBox || "0 0 300 150";
-  
+
+  if (!svgContent.trim()) {
+    return <VisualFallback code="INVALID_VISUAL_DATA" />;
+  }
+
+  const sanitized = DOMPurify.sanitize(svgContent, { USE_PROFILES: { svg: true, svgFilters: true } });
+  if (!sanitized.trim()) {
+    return <VisualFallback code="INVALID_VISUAL_DATA" />;
+  }
+
   return (
-    <svg 
-      viewBox={viewBox} 
+    <svg
+      viewBox={viewBox}
       className="w-full max-w-md mx-auto"
-      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svgContent) }}
+      dangerouslySetInnerHTML={{ __html: sanitized }}
     />
   );
 }
@@ -135,7 +176,7 @@ function renderGeometry(data: any) {
     );
   }
 
-  return <div className="text-text-muted italic">Unknown shape metadata</div>;
+  return <VisualFallback code="INVALID_VISUAL_DATA" />;
 }
 
 // --- VENN DIAGRAM RENDERING (lightweight, pure SVG) ---
@@ -145,7 +186,7 @@ function renderVenn(data: any) {
     <svg viewBox="0 0 300 150" className="w-full max-w-[300px]">
       <circle cx="110" cy="75" r="60" fill="rgba(99, 102, 241, 0.2)" stroke="#6366f1" strokeWidth="2" />
       <circle cx="190" cy="75" r="60" fill="rgba(244, 63, 94, 0.2)" stroke="#f43f5e" strokeWidth="2" />
-      
+
       <text x="60" y="75" fill="var(--text-primary)" fontSize="12" fontWeight="bold" textAnchor="middle">{setA}</text>
       <text x="240" y="75" fill="var(--text-primary)" fontSize="12" fontWeight="bold" textAnchor="middle">{setB}</text>
       <text x="150" y="75" fill="var(--text-primary)" fontSize="9" textAnchor="middle" className="pointer-events-none">{intersection}</text>

@@ -3,6 +3,7 @@ import { Bot, Notebook, Sparkles, MessagesSquare, Check, Copy } from 'lucide-rea
 import { Card, H3, Button } from '../../common/AntigravityUI'
 import { BUTTON_HOVER, FOCUS_RING } from '../../common/AntigravityMotion'
 import { composeBulkUploadPrompt, type TopicIdentity } from '../../../lib/prompts/promptComposer'
+import { copyText } from '../../../utils/clipboardUtils'
 
 const AI_TOOLS = [
   {
@@ -28,14 +29,24 @@ const AI_TOOLS = [
   },
 ]
 
-export const AIToolCards = memo(({ topicPrompt, topicIdentity }: { topicPrompt: string; topicIdentity: TopicIdentity | null }) => {
+export const AIToolCards = memo(({ topicPrompt, topicIdentity, onCopyError }: {
+  topicPrompt: string
+  topicIdentity: TopicIdentity | null
+  onCopyError?: (message: string) => void
+}) => {
   const [copied, setCopied] = useState(false)
 
-  const handleCopyPrompt = () => {
+  const handleCopyPrompt = async () => {
     // DYNAMIC OUTPUT CONTRACT: the Generate-tab shortcut copies the SAME
     // composed topic prompt as the Instructions tab (fixes the historical
     // contract mismatch where it copied a different, sub-admin prompt).
-    navigator.clipboard.writeText(composeBulkUploadPrompt(topicPrompt, topicIdentity).text)
+    const content = composeBulkUploadPrompt(topicPrompt, topicIdentity).text
+    const ok = await copyText(content)
+    if (!ok) {
+      setCopied(false)
+      onCopyError?.('Unable to copy the prompt to your clipboard. Please select and copy manually.')
+      return
+    }
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }

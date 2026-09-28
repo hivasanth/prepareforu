@@ -1,20 +1,25 @@
-import { Label } from '../common/AntigravityTypography'
+import { Pill } from '../common/AntigravityUI'
+import type { PillVariant } from '../common/AntigravityUI'
 
 interface TagBadgeProps {
   tag: string
 }
 
-const TAG_STYLES: Record<string, string> = {
-  IMP: 'bg-amber-500/15 text-amber-700 border-amber-500/30',
-  TIP: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30',
-  ALERT: 'bg-rose-500/15 text-rose-700 border-rose-500/30',
-  KEY: 'bg-purple-500/15 text-purple-700 border-purple-500/30',
+/* Phase 5.4D: Tag is a Pill role. The legacy raw palette (amber/emerald/rose/
+   purple/sky) is replaced by the semantic token language — no hardcoded amber
+   or Tailwind palette borders remain. IMP→warning, TIP→success, ALERT→danger,
+   KEY→primary, any other tag→secondary. */
+const TAG_VARIANTS: Record<string, PillVariant> = {
+  IMP: 'warning',
+  TIP: 'success',
+  ALERT: 'danger',
+  KEY: 'primary',
 }
 
 export function TagBadge({ tag }: TagBadgeProps) {
   return (
-      <Label className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border leading-none m-0 ${TAG_STYLES[tag] || 'bg-sky-500/15 text-sky-700 border-sky-500/30'}`}>
+    <Pill role="tag" variant={TAG_VARIANTS[tag] || 'secondary'} size="xs" inline>
       {tag}
-    </Label>
+    </Pill>
   )
 }

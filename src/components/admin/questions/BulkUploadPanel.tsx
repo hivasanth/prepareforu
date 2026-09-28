@@ -1,5 +1,5 @@
 import React from 'react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Alert } from '../../common/AntigravityUI'
 import { AIToolCards } from './AIToolCards'
 import { PreviewTab } from './PreviewTab'
@@ -7,6 +7,7 @@ import { UploadProgressOverlay } from './UploadProgressOverlay'
 import { PromptEditorModal } from './PromptEditorModal'
 import { InstructionsTab } from './InstructionsTab'
 import { JsonTab } from './JsonTab'
+
 import { useBulkUpload, type PromptTemplate, type ParsedDataItem } from './useBulkUpload'
 import { useAuth } from '../../../context/AuthContext'
 import { ConfirmModal } from '../../common/SharedComponents'
@@ -21,6 +22,8 @@ interface BulkUploadPanelProps {
   paperId: string
   paperLabel?: string
   subjectName: string
+  /** Scopes prompt retrieval DB-side to one canonical exam_topics.id. */
+  topicId?: string | null
   onSuccess: () => void
   onClose: () => void
   activeTab: 'generate' | 'instructions' | 'json' | 'preview'
@@ -28,7 +31,6 @@ interface BulkUploadPanelProps {
   parsedData: ParsedDataItem[]
   setParsedData: React.Dispatch<React.SetStateAction<ParsedDataItem[]>>
   onIsUploadingChange?: (isUploading: boolean) => void
-  showToast: (message: string, type: 'success' | 'error' | 'warning') => void
 }
 
 export interface BulkUploadPanelHandle {
@@ -36,16 +38,22 @@ export interface BulkUploadPanelHandle {
 }
 
 export const BulkUploadPanel = React.forwardRef<BulkUploadPanelHandle, BulkUploadPanelProps>(({
-  examId, examLabel, paperId, paperLabel, subjectName, onSuccess, onClose, activeTab, setActiveTab, parsedData, setParsedData, onIsUploadingChange, showToast
+  examId, examLabel, paperId, paperLabel, subjectName, topicId, onSuccess, onClose, activeTab, setActiveTab, parsedData, setParsedData, onIsUploadingChange
 }, ref) => {
   const { user: authUser } = useAuth()
 
-  const {
-    jsonText, setJsonText,
+const {
+    jsonText,
+    handleJsonChange,
     errors,
     error, setError,
+    feedback,
+    setFeedback,
     isUploading,
     promptBlocks,
+    topics,
+    currentPrompt,
+    currentTopicIdentity,
     isPromptModalOpen, setIsPromptModalOpen,
     editingPrompt, setEditingPrompt,
     isSavingPrompt,
@@ -53,7 +61,9 @@ export const BulkUploadPanel = React.forwardRef<BulkUploadPanelHandle, BulkUploa
     copiedPromptId,
     duplicateCount,
     uploadProgress,
-    validationSummary,
+    canPreview,
+    topicGuard,
+    syncBlockers,
     isDeletingPrompt, setIsDeletingPrompt,
     setPromptIdToDelete,
     setUploadProgress,
@@ -66,7 +76,7 @@ export const BulkUploadPanel = React.forwardRef<BulkUploadPanelHandle, BulkUploa
     handleSkipRow,
     handleUpload,
   } = useBulkUpload({
-    examId, examLabel, paperId, paperLabel, subjectName, onSuccess, onClose, activeTab, setActiveTab, parsedData, setParsedData, onIsUploadingChange, showToast, authUser
+    examId, examLabel, paperId, paperLabel, subjectName, topicId, onSuccess, onClose, activeTab, setActiveTab, parsedData, setParsedData, onIsUploadingChange, authUser
   })
 
   React.useImperativeHandle(ref, () => ({
@@ -75,22 +85,35 @@ export const BulkUploadPanel = React.forwardRef<BulkUploadPanelHandle, BulkUploa
 
   return (
     <div className="space-y-6">
+      {feedback?.type === 'success' && !isPromptModalOpen && (
+        <Alert
+          variant="success"
+          icon={CheckCircle2}
+          title="Action complete"
+          className="w-full"
+          onDismiss={() => setFeedback(null)}
+        >
+          {feedback.message}
+        </Alert>
+      )}
       {error && !isPromptModalOpen && (
         <Alert variant="error" icon={AlertCircle} title="Action failed">
           {error}
         </Alert>
       )}
       <div className="min-h-[400px]">
-        {activeTab === 'generate' && <AIToolCards setActiveTab={setActiveTab} />}
+        {activeTab === 'generate' && (
+          <AIToolCards topicPrompt={currentPrompt} topicIdentity={currentTopicIdentity} onCopyError={setError} />
+        )}
 
         {activeTab === 'instructions' && (
           <InstructionsTab
             promptBlocks={promptBlocks}
-            subjectName={subjectName}
+            fallbackPrompt={currentPrompt}
+            topicIdentity={currentTopicIdentity}
             localCopied={localCopied}
             copiedPromptId={copiedPromptId}
             onCopy={handleCopy}
-            onCreateNew={handleOpenPromptModal}
             onEdit={handleOpenPromptModal}
             onDelete={handleDeletePrompt}
           />
@@ -99,7 +122,7 @@ export const BulkUploadPanel = React.forwardRef<BulkUploadPanelHandle, BulkUploa
         {activeTab === 'json' && (
           <JsonTab
             jsonText={jsonText}
-            onJsonChange={setJsonText}
+            onJsonChange={handleJsonChange}
             errors={errors}
             isUploading={isUploading}
             onValidate={handleAnalyze}
@@ -107,7 +130,26 @@ export const BulkUploadPanel = React.forwardRef<BulkUploadPanelHandle, BulkUploa
           />
         )}
 
-        {activeTab === 'preview' && <PreviewTab parsedData={parsedData} validationSummary={validationSummary} duplicateCount={duplicateCount} />}
+        {activeTab === 'preview' && (
+          <PreviewTab
+            parsedData={parsedData}
+            setParsedData={setParsedData}
+            duplicateCount={duplicateCount}
+            canPreview={canPreview}
+            topicGuard={topicGuard}
+            syncBlockers={syncBlockers}
+            isUploading={isUploading}
+            onSync={() => { void handleUpload() }}
+            examId={examId}
+            examLabel={examLabel}
+            paperId={paperId}
+            paperLabel={paperLabel}
+            subjectName={subjectName}
+            topicId={topicId}
+            topicEnglish={currentTopicIdentity?.topic_en ?? null}
+            topicTelugu={currentTopicIdentity?.topic_te ?? null}
+          />
+        )}
       </div>
 
       <UploadProgressOverlay
@@ -119,14 +161,16 @@ export const BulkUploadPanel = React.forwardRef<BulkUploadPanelHandle, BulkUploa
         onRetry={React.useCallback(() => setUploadProgress(prev => ({ ...prev, status: 'idle' })), [setUploadProgress])}
       />
 
+
       <PromptEditorModal
         isOpen={isPromptModalOpen}
         editingPrompt={editingPrompt}
+        topics={topics}
         isSaving={isSavingPrompt}
         error={error}
         onSave={async (prompt) => {
           setEditingPrompt(prompt)
-          await handleSavePrompt()
+          await handleSavePrompt(prompt)
         }}
         onDelete={handleDeletePrompt}
         onClose={() => { setError(null); setIsPromptModalOpen(false); setEditingPrompt(null) }}

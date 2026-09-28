@@ -4,6 +4,7 @@ import type { Question } from '../../types/exam.types';
 import { Card } from '../common/AntigravityCard';
 import { QuestionOptions } from './QuestionOptions';
 import { QuestionActions } from './QuestionActions';
+import { QuestionCardHeader } from './QuestionCardHeader';
 
 interface QuestionCardProps {
   question: Question;
@@ -12,11 +13,34 @@ interface QuestionCardProps {
   displayLang: 'en' | 'te';
   onToggleLang: (lang: 'en' | 'te') => void;
   selectedAnswer: string | null | undefined;
-  onSelectOption: (option: string) => void;
-  isMarkedForReview: boolean;
-  onToggleReview: () => void;
+  /** Omit in read-only contexts: answer options render as static rows and are
+   *  not announced as interactive controls (no radio role / pointer cursor). */
+  onSelectOption?: (option: string) => void;
+  /** Exam-taking controls — omit in read-only contexts to hide the
+   *  mark-for-review control from the header actions. */
+  isMarkedForReview?: boolean;
+  onToggleReview?: () => void;
   visualNode?: ReactNode;
   diagramNode?: ReactNode;
+  /** Review/view mode: hides the per-card language toggle AND mark-for-review
+   *  controls entirely (the host page owns language selection). Also renders
+   *  the card as a fully static review surface — the base `Card` drops its
+   *  hover lift (`variant="static"`) and answer options lose transient
+   *  pointer-hover feedback. */
+  readOnly?: boolean;
+  /** Suppress transient pointer-hover feedback on the answer options.
+   *  Defaults to `!readOnly`, so read-only review contexts are static while
+   *  interactive exam-taking consumers keep their hover behavior. */
+  hoverable?: boolean;
+  /** Reveals the correct option (and wrong-selection state when a user answer
+   *  is provided via `selectedAnswer`). */
+  showCorrect?: boolean;
+  correctOption?: string;
+  /** Optional explanation rendered below the options in the canonical
+   *  explanation treatment. Bilingual selection is the caller's duty. */
+  explanation?: string | null;
+  /** Disables option interaction (pure view/review contexts). */
+  optionsDisabled?: boolean;
 }
 
 export const QuestionCard: FC<QuestionCardProps> = ({
@@ -27,50 +51,46 @@ export const QuestionCard: FC<QuestionCardProps> = ({
   onToggleLang,
   selectedAnswer,
   onSelectOption,
-  isMarkedForReview,
+  isMarkedForReview = false,
   onToggleReview,
   visualNode,
   diagramNode,
+  readOnly = false,
+  hoverable,
+  showCorrect = false,
+  correctOption,
+  explanation,
+  optionsDisabled = false,
 }) => {
+  const optionHoverable = hoverable ?? !readOnly;
+
   return (
     <Card
-      variant="elevated"
+      variant={readOnly ? 'static' : 'elevated'}
       padding={0}
-      className="relative overflow-hidden hover:translate-y-0 hover:shadow-elevation-3"
+      className="relative overflow-hidden"
     >
-      <div className="p-4 md:p-6 border-b border-border-subtle/50 bg-hover-bg/30 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg shadow-lg bg-primary text-white shadow-primary/20">
-            {index + 1}
-          </div>
-          <div>
-            <span className="text-[11px] font-bold text-text-muted uppercase tracking-widest">Question</span>
-            <div className="text-sm font-black text-text-primary uppercase">of {total}</div>
-          </div>
-        </div>
-
-        <QuestionActions
-          displayLang={displayLang}
-          onToggleLang={onToggleLang}
-          isMarkedForReview={isMarkedForReview}
-          onToggleReview={onToggleReview}
-        />
-
-        <div className={`
-          px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest border shrink-0
-          ${question.difficulty === 'easy' ? 'bg-success/10 text-success border-success/20' :
-            question.difficulty === 'medium' ? 'bg-warning/10 text-warning border-warning/20' :
-            'bg-danger/10 text-danger border-danger/20'}
-        `}>
-          {question.difficulty}
-        </div>
-      </div>
+      <QuestionCardHeader
+        index={index + 1}
+        total={total}
+        actions={
+          readOnly ? undefined : (
+            <QuestionActions
+              displayLang={displayLang}
+              onToggleLang={onToggleLang}
+              isMarkedForReview={isMarkedForReview}
+              onToggleReview={onToggleReview}
+            />
+          )
+        }
+        difficulty={question.difficulty}
+      />
 
       <div className="p-5 md:p-6">
         {displayLang === 'te' && !question.question_text_te?.trim() ? (
-          <div className="flex items-center gap-3 p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl mb-6">
-            <Globe className="w-4 h-4 text-amber-500/40" />
-            <span className="text-[11px] font-bold text-amber-500 uppercase tracking-widest">Telugu Translation Unavailable</span>
+          <div className="flex items-center gap-3 p-4 bg-warning/5 border border-warning/10 rounded-2xl mb-6">
+            <Globe className="w-4 h-4 text-warning/40" />
+            <span className="text-[11px] font-bold text-warning uppercase tracking-widest">Telugu Translation Unavailable</span>
           </div>
         ) : null}
 
@@ -92,7 +112,20 @@ export const QuestionCard: FC<QuestionCardProps> = ({
           })}
           selectedAnswer={selectedAnswer}
           onSelect={onSelectOption}
+          showCorrect={showCorrect}
+          correctOption={correctOption}
+          disabled={optionsDisabled}
+          hoverable={optionHoverable}
         />
+
+        {explanation?.trim() ? (
+          <div className="mt-6 bg-primary/5 border border-primary/10 rounded-xl p-3 space-y-1">
+            <span className="text-[10px] font-bold text-primary uppercase tracking-widest block">Explanation</span>
+            <p className="text-xs text-text-secondary font-medium leading-relaxed italic">
+              &ldquo;{explanation.trim()}&rdquo;
+            </p>
+          </div>
+        ) : null}
       </div>
     </Card>
   );

@@ -27,6 +27,11 @@
 -- violates WITH CHECK and RLS rejects the update.
 DROP POLICY IF EXISTS rls_users_self_update ON public.users;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_users_self_update' AND polrelid = 'public.users'::regclass
+  ) THEN
 CREATE POLICY "rls_users_self_update"
 ON public.users
 FOR UPDATE
@@ -38,6 +43,9 @@ WITH CHECK (
   AND educator_id = (SELECT educator_id FROM public.users WHERE id = auth.uid()) -- Prevent educator changes
   AND is_active = (SELECT is_active FROM public.users WHERE id = auth.uid())     -- SEC-2: Prevent self status changes
 );
+  END IF;
+END
+$$;
 
 -- ─── 2. SEC-2 (TRIGGER): REVERT NON-ADMIN is_active CHANGES ───────────────────
 -- Extend the existing role-escalation guard so that any non-admin attempt to
@@ -117,7 +125,7 @@ SELECT
 FROM pg_policies
 WHERE schemaname = 'public'
   AND tablename = 'users'
-  AND polname = 'rls_users_self_update'
+  AND policyname = 'rls_users_self_update'
   AND with_check ILIKE '%is_active%';
 
 -- TEST 5.2: prevent_user_role_escalation reverts non-admin is_active changes

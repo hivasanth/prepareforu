@@ -6,7 +6,7 @@ interface UsePortalInitOptions {
   examSelection: string | undefined;
   setLoading: (loading: boolean) => void;
   onError: (message: string) => void;
-  loadData: (force: boolean) => Promise<void>;
+  loadData: (force: boolean) => Promise<boolean>;
 }
 
 export function usePortalInit({

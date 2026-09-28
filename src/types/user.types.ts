@@ -16,6 +16,16 @@ export interface UserRow {
   exam_selection: string | null
   is_active: boolean
   created_at: string
-  streak: number | null
-  total_exams: number | null
+  exams_taken: number | null
+  daily_streak: number | null
+  highest_streak: number | null
+}
+
+export interface EducatorStudentRow {
+  id: string
+  full_name: string | null
+  email: string | null
+  coupon_code: string | null
+  educator_id: string
+  created_at: string
 }

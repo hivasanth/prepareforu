@@ -6,6 +6,7 @@ import { Badge } from './AntigravityData'
 import { Button } from './AntigravityButton'
 import { Body } from './AntigravityTypography'
 import { PremiumIconContainer } from './PremiumIconContainer'
+import { TRANSITION_INTERACTION } from './AntigravityMotion'
 
 export const ExamCard: React.FC<{
   title: string
@@ -29,19 +30,19 @@ export const ExamCard: React.FC<{
   disabledMessage
 }) => {
   return (
-    <Card variant="premium-dark-neutral" className="flex flex-col gap-4 group h-full !p-5 md:!p-6" role="article" aria-label={title}>
+    <Card variant="premium-dark-neutral" padding={20} className="flex flex-col gap-4 group h-full md:p-6" role="article" aria-label={title}>
       <div className="flex justify-between items-start">
         <PremiumIconContainer
           icon={Icon ?? FileText}
           iconSize={24}
-          className="w-12 h-12 rounded-[14px]"
+          className="w-12 h-12 rounded-button-md"
           darkClassName={disabled ? 'bg-hover-bg text-text-secondary' : 'bg-primary/10 text-primary lg:group-hover:bg-primary lg:group-hover:text-white'}
         />
         {status && <Badge variant={disabled ? 'default' : 'primary'}>{status}</Badge>}
       </div>
       
       <div className="flex-1 flex flex-col gap-4">
-        <Body className={`!text-[13px] md:!text-[14px] font-bold mt-2 !leading-tight uppercase tracking-tight line-clamp-2 transition-colors ${!disabled && 'lg:group-hover:text-primary'}`}>
+        <Body className={`!text-[13px] md:!text-[14px] font-bold mt-2 !leading-tight uppercase tracking-tight line-clamp-2 ${TRANSITION_INTERACTION} ${!disabled && 'lg:group-hover:text-primary'}`}>
           {title}
         </Body>
         {description && <Body secondary className="line-clamp-2">{description}</Body>}

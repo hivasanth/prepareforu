@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { adminQuestionService } from '../../../services/adminQuestionService'
 import type { Question } from '../../../types/exam.types'
 import { resolveAdminExamId } from '../../../lib/examUtils'
-import { BulkQuestionSchema } from '../../../validations/questionSchema'
+import { BulkQuestionSchema, SingleQuestionSchema } from '../../../validations/questionSchema'
 import { composeBulkUploadPrompt } from '../../../lib/prompts/promptComposer'
 import type { CanonicalQuestionVisual } from '../../../validations/questionVisualSchemas'
 import { generateQuestionHash } from '../../../utils/hashUtils'
+import { copyText } from '../../../utils/clipboardUtils'
 import { generateRequestId } from '../../../utils/logger'
 import { isAdmin } from '../../../utils/authUtils'
 import { logError } from '../../../utils/logger'
@@ -118,6 +119,67 @@ function isTopicGuardMismatch(
     return item.topic_te != null && item.topic_te.trim() !== ''
   }
   return item.topic_te !== topic.topic_te
+}
+
+/** A pending preview row that would fail the canonical SingleQuestionSchema at
+ *  sync time. Surfaced BEFORE syncing (PreviewTab alert) and enforced as a
+ *  final gate INSIDE handleUpload — the DB is never reached with an invalid
+ *  row, even if the preview UI was bypassed. */
+export interface SyncRowProblem {
+  id: string
+  message: string
+}
+
+interface ValidateSyncContext {
+  examId: string
+  paperId: string
+  subjectName: string
+}
+
+/** Builds the exact payload handleUpload would send for a pending row and runs
+ *  it through the SAME canonical schema as the single-question editor. This is
+ *  the single pre-sync authority for both the PreviewTab block-list and the
+ *  in-flight sync gate — rows edited in Preview can never slip past it. */
+export function validatePendingRowsForSync(
+  rows: ParsedDataItem[],
+  ctx: ValidateSyncContext
+): SyncRowProblem[] {
+  const problems: SyncRowProblem[] = []
+  for (const [index, item] of rows.entries()) {
+    const payload = {
+      exam_id: ctx.examId,
+      paper_id: ctx.paperId,
+      subject_name: ctx.subjectName,
+      question_text_en: item.question,
+      option_a_en: item.options[0],
+      option_b_en: item.options[1],
+      option_c_en: item.options[2],
+      option_d_en: item.options[3],
+      correct_option: item.correct as 'A' | 'B' | 'C' | 'D',
+      explanation_en: item.explanation || '',
+      difficulty: item.difficulty,
+      negative_marks: 0,
+      visual: item.visual,
+      topic_en: item.topic_en || null,
+      topic_te: item.topic_te || null,
+      question_text_te: item.question_text_te || null,
+      option_a_te: item.option_a_te || null,
+      option_b_te: item.option_b_te || null,
+      option_c_te: item.option_c_te || null,
+      option_d_te: item.option_d_te || null,
+      explanation_te: item.explanation_te || null,
+    }
+    const result = SingleQuestionSchema.safeParse(payload)
+    if (!result.success) {
+      const first = result.error.issues[0]
+      const field = first?.path.join('.') || 'row'
+      problems.push({
+        id: item.id,
+        message: `Row ${index + 1} (${field}): ${first?.message ?? 'Invalid question'}`,
+      })
+    }
+  }
+  return problems
 }
 
 export function bulkTabInstruction(tab: BulkTabType): string {
@@ -450,22 +512,30 @@ export function useBulkUpload({
     setPromptIdToDelete(null)
   }, [promptIdToDelete, authUser, fetchPrompts])
 
-  const handleCopy = useCallback((text?: string, id?: string) => {
+  const handleCopy = useCallback(async (text?: string, id?: string) => {
     // DYNAMIC OUTPUT CONTRACT: the copied prompt = topic instructions + the
     // LIVE canonical contract + the current topic's TOPIC IDENTITY block
     // (composed exactly once at copy time).
-    const copyText = composeBulkUploadPrompt(text || currentPrompt, currentTopicIdentity).text
-    // F-11: clipboard can be unavailable (permissions, insecure context).
-    navigator.clipboard?.writeText(copyText)?.catch(() => {})
-
-    if (id) {
-      setCopiedPromptId(id)
-      setTimeout(() => setCopiedPromptId(null), 2000)
-    } else {
-      setLocalCopied(true)
-      setTimeout(() => setLocalCopied(false), 2000)
+    const content = composeBulkUploadPrompt(text || currentPrompt, currentTopicIdentity).text
+    // LAN-ORIGIN FIX: never report "Copied" unless the write actually
+    // succeeded. copyText() resolves true only after the Clipboard API (or the
+    // legacy fallback) performed the write; failures surface as a real error.
+    const ok = await copyText(content)
+    if (ok) {
+      setError(null)
+      if (id) {
+        setCopiedPromptId(id)
+        setTimeout(() => setCopiedPromptId(null), 2000)
+      } else {
+        setLocalCopied(true)
+        setTimeout(() => setLocalCopied(false), 2000)
+      }
+      return
     }
-  }, [currentPrompt, currentTopicIdentity])
+    setCopiedPromptId(null)
+    setLocalCopied(false)
+    setError('Unable to copy content to your clipboard. Please select and copy manually.')
+  }, [currentPrompt, currentTopicIdentity, setError])
 
   useEffect(() => {
     fetchPrompts()
@@ -528,77 +598,86 @@ export function useBulkUpload({
     let dupeCount = 0
     let easy = 0, medium = 0, hard = 0
 
-    for (const [index, item] of data.entries()) {
-      const rowNum = index + 1
+    // LAN-ORIGIN FIX: hashing runs through a Web Crypto → js-sha256 fallback,
+    // but ANY unexpected validation failure must still terminate the validation
+    // state machine instead of leaving the UI stuck at 'validating'.
+    try {
+      for (const [index, item] of data.entries()) {
+        const rowNum = index + 1
 
-      let result: ReturnType<typeof BulkQuestionSchema.safeParse>
-      try {
-        result = BulkQuestionSchema.safeParse(item)
-      } catch (e) {
-        const message = e instanceof Error ? e.message : 'Invalid visual format'
-        newErrors.push({ row: rowNum, message: `Row ${rowNum} (visual): ${message}` })
-        continue
-      }
+        let result: ReturnType<typeof BulkQuestionSchema.safeParse>
+        try {
+          result = BulkQuestionSchema.safeParse(item)
+        } catch (e) {
+          const message = e instanceof Error ? e.message : 'Invalid visual format'
+          newErrors.push({ row: rowNum, message: `Row ${rowNum} (visual): ${message}` })
+          continue
+        }
 
-      if (!result.success) {
-        result.error.issues.forEach(issue => {
-          const field = issue.path.join('.')
-          newErrors.push({
-            row: rowNum,
-            message: `Row ${rowNum}${field ? ` (${field})` : ''}: ${issue.message}`
+        if (!result.success) {
+          result.error.issues.forEach(issue => {
+            const field = issue.path.join('.')
+            newErrors.push({
+              row: rowNum,
+              message: `Row ${rowNum}${field ? ` (${field})` : ''}: ${issue.message}`
+            })
           })
+          continue
+        }
+
+        const validItem = result.data
+        const hash = await generateQuestionHash(validItem as unknown as Parameters<typeof generateQuestionHash>[0])
+
+        if (seenHashes.has(hash)) {
+          dupeCount++
+          continue
+        }
+        seenHashes.add(hash)
+
+        if (validItem.difficulty === 'easy') easy++
+        else if (validItem.difficulty === 'hard') hard++
+        else medium++
+
+        ValidatedQueue.push({
+          id: hash,
+          status: 'pending',
+          question: validItem.question_text_en,
+          options: [validItem.option_a_en, validItem.option_b_en, validItem.option_c_en, validItem.option_d_en],
+          correct: validItem.correct_option,
+          explanation: validItem.explanation_en ?? '',
+          difficulty: validItem.difficulty,
+          visual: validItem.visual,
+          topic_en: validItem.topic_en,
+          topic_te: validItem.topic_te,
+          question_text_te: validItem.question_text_te,
+          option_a_te: validItem.option_a_te,
+          option_b_te: validItem.option_b_te,
+          option_c_te: validItem.option_c_te,
+          option_d_te: validItem.option_d_te,
+          explanation_te: validItem.explanation_te
         })
-        continue
       }
 
-      const validItem = result.data
-      const hash = await generateQuestionHash(validItem as unknown as Parameters<typeof generateQuestionHash>[0])
-
-      if (seenHashes.has(hash)) {
-        dupeCount++
-        continue
+      if (newErrors.length > 0) {
+        setErrors(newErrors)
+        setValidationStatus('invalid')
+      } else if (ValidatedQueue.length === 0) {
+        setErrors([{ row: 0, message: 'No valid questions found after processing.' }])
+        setValidationStatus('invalid')
+      } else {
+        setDuplicateCount(dupeCount)
+        setParsedData(ValidatedQueue)
+        setValidationSummary({ total: ValidatedQueue.length, easy, medium, hard })
+        /* Explicit success — the ONLY path that marks validation valid and
+         * binds the validated dataset to the current workflow context. */
+        setValidatedContext({ examId, paperId, subjectName, topicId })
+        setValidationStatus('valid')
+        setActiveTab('preview')
       }
-      seenHashes.add(hash)
-
-      if (validItem.difficulty === 'easy') easy++
-      else if (validItem.difficulty === 'hard') hard++
-      else medium++
-
-      ValidatedQueue.push({
-        id: hash,
-        status: 'pending',
-        question: validItem.question_text_en,
-        options: [validItem.option_a_en, validItem.option_b_en, validItem.option_c_en, validItem.option_d_en],
-        correct: validItem.correct_option,
-        explanation: validItem.explanation_en ?? '',
-        difficulty: validItem.difficulty,
-        visual: validItem.visual,
-        topic_en: validItem.topic_en,
-        topic_te: validItem.topic_te,
-        question_text_te: validItem.question_text_te,
-        option_a_te: validItem.option_a_te,
-        option_b_te: validItem.option_b_te,
-        option_c_te: validItem.option_c_te,
-        option_d_te: validItem.option_d_te,
-        explanation_te: validItem.explanation_te
-      })
-    }
-
-    if (newErrors.length > 0) {
-      setErrors(newErrors)
+    } catch (err: unknown) {
+      logError('bulk.validation_failed', { error: err instanceof Error ? err.message : String(err) })
+      setErrors([{ row: 0, message: err instanceof Error ? err.message : 'Failed to validate questions. Please try again.' }])
       setValidationStatus('invalid')
-    } else if (ValidatedQueue.length === 0) {
-      setErrors([{ row: 0, message: 'No valid questions found after processing.' }])
-      setValidationStatus('invalid')
-    } else {
-      setDuplicateCount(dupeCount)
-      setParsedData(ValidatedQueue)
-      setValidationSummary({ total: ValidatedQueue.length, easy, medium, hard })
-      /* Explicit success — the ONLY path that marks validation valid and
-       * binds the validated dataset to the current workflow context. */
-      setValidatedContext({ examId, paperId, subjectName, topicId })
-      setValidationStatus('valid')
-      setActiveTab('preview')
     }
   }, [setParsedData, setActiveTab, examId, paperId, subjectName, topicId])
 
@@ -648,6 +727,19 @@ export function useBulkUpload({
     }
     const itemsToUpload = parsedData.filter(item => item.status !== 'success')
     if (itemsToUpload.length === 0) return
+
+    // FINAL GATE (§B): a pending row that fails the canonical single-question
+    // schema (e.g. after an invalid bulk-preview edit) must NEVER reach the
+    // DB. Same authority as the PreviewTab block-list, evaluated fresh here so
+    // no UI state can be bypassed.
+    const blockers = validatePendingRowsForSync(itemsToUpload, { examId, paperId, subjectName })
+    if (blockers.length > 0) {
+      setError(
+        `Sync blocked: ${blockers.length} pending question${blockers.length === 1 ? '' : 's'} ${blockers.length === 1 ? 'is' : 'are'} invalid after validation. Edit or remove ${blockers.length === 1 ? 'it' : 'them'} in Preview, or re-validate the JSON.`
+      )
+      return
+    }
+
     setIsUploading(true)
     setErrors([])
     setError(null)
@@ -777,8 +869,20 @@ export function useBulkUpload({
     return { topicEn: topic.topic_en, topicTe: topic.topic_te ?? null, mismatched, pending: pendingItems.length }
   }, [topicId, topics, parsedData])
 
+  /* §B — LIVE pre-sync block-list: every pending row that would fail the
+   * canonical SingleQuestionSchema at sync time. Surfaced in Preview BEFORE
+   * syncing (and re-checked inside handleUpload as the final gate). Empty when
+   * there is nothing pending or every pending row is valid. */
+  const syncBlockers = useMemo<SyncRowProblem[]>(() => {
+    const pendingItems = parsedData.filter(i => i.status !== 'success')
+    if (pendingItems.length === 0) return []
+    return validatePendingRowsForSync(pendingItems, { examId, paperId, subjectName })
+  }, [parsedData, examId, paperId, subjectName])
+
   return {
     jsonText, setJsonText, handleJsonChange,
+    parsedData,
+    setParsedData,
     errors,
     error, setError,
     feedback,
@@ -797,6 +901,7 @@ export function useBulkUpload({
     validationStatus,
     canPreview,
     topicGuard,
+    syncBlockers,
     isDeletingPrompt, setIsDeletingPrompt,
     promptIdToDelete, setPromptIdToDelete,
     currentPrompt,

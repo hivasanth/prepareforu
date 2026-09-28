@@ -31,15 +31,15 @@ export function NotificationSection({
         <Stack gap="md">
           <div className="flex items-center justify-between">
             <Body>Notify on student attempts</Body>
-            <Switch checked={notifyAttempt} onChange={onNotifyAttemptChange} />
+            <Switch checked={notifyAttempt} onChange={onNotifyAttemptChange} disabled={saving} aria-label="Notify on student attempts" />
           </div>
           <div className="flex items-center justify-between">
             <Body>Notify on exam closure</Body>
-            <Switch checked={notifyCompletion} onChange={onNotifyCompletionChange} />
+            <Switch checked={notifyCompletion} onChange={onNotifyCompletionChange} disabled={saving} aria-label="Notify on exam closure" />
           </div>
           <div className="flex items-center justify-between">
             <Body>Notify on new student signup</Body>
-            <Switch checked={notifyNewStudent} onChange={onNotifyNewStudentChange} />
+            <Switch checked={notifyNewStudent} onChange={onNotifyNewStudentChange} disabled={saving} aria-label="Notify on new student signup" />
           </div>
           {saving && (
             <Body secondary className="text-xs">Saving...</Body>

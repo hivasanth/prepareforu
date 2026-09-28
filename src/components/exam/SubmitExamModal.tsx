@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button, IconBadge } from '../common/AntigravityUI';
 import { AdminModal } from '../common/AdminModal';
+import { Card } from '../common/AntigravityCard';
 
 interface SubmitExamModalProps {
   isOpen: boolean;
@@ -14,6 +15,14 @@ interface SubmitExamModalProps {
   isAutoSubmit?: boolean;
 }
 
+/**
+ * Submit confirmation modal.
+ *
+ * Visual:
+ *   Light: white stats surface (bg-app-bg), no elevated bg-hover-bg container.
+ *   Auto-submit: gentle pulse animation instead of animate-bounce.
+ *   Uses canonical AdminModal (never custom overlay).
+ */
 export const SubmitExamModal: FC<SubmitExamModalProps> = ({
   isOpen,
   onClose,
@@ -37,8 +46,8 @@ export const SubmitExamModal: FC<SubmitExamModalProps> = ({
           <p className="font-bold mb-8 text-text-secondary">
             Your time is over. Your responses are being saved automatically.
           </p>
-          <div className="flex items-center justify-center gap-3 text-danger font-bold italic animate-bounce">
-            <span className="w-2 h-2 rounded-full bg-danger" />
+          <div className="flex items-center justify-center gap-3 text-danger font-bold">
+            <span className="w-2 h-2 rounded-full bg-danger animate-[pulse_2s_ease-in-out_infinite]" />
             Submitting...
           </div>
         </div>
@@ -79,29 +88,29 @@ export const SubmitExamModal: FC<SubmitExamModalProps> = ({
         <p className="font-bold text-text-secondary">
           Are you sure you want to submit your exam?
         </p>
-        <div
-          role="status"
-          className="mt-6 rounded-2xl border border-border-subtle bg-hover-bg divide-y divide-border-subtle text-left"
+        <Card
+          variant="elevated"
+          className="mt-6 text-left overflow-hidden"
         >
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Total Questions</span>
             <span className="font-black text-text-primary tabular-nums">{totalCount}</span>
           </div>
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Answered</span>
-            <span className="font-black text-text-primary tabular-nums">{answeredCount}</span>
+            <span className="font-black text-success tabular-nums">{answeredCount}</span>
           </div>
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Unanswered</span>
-            <span className="font-black text-text-primary tabular-nums">{Math.max(0, totalCount - answeredCount)}</span>
+            <span className="font-black text-danger tabular-nums">{Math.max(0, totalCount - answeredCount)}</span>
           </div>
           {markedCount !== undefined && (
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Marked for Review</span>
-              <span className="font-black text-text-primary tabular-nums">{markedCount}</span>
+              <span className="font-black text-purple-500 tabular-nums">{markedCount}</span>
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </AdminModal>
   );

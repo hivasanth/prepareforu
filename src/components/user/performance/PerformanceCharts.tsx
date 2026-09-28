@@ -4,6 +4,7 @@ import {
   PieChart, Pie, Cell, Legend
 } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
+import { BarChart3 } from 'lucide-react'
 import { useTheme } from '../../../context/ThemeContext'
 import { Body, Label } from '../../common/AntigravityTypography'
 import { EmptyState } from '../../common/SharedComponents'
@@ -15,32 +16,69 @@ interface ChartProps {
   hasEnoughData?: boolean;
 }
 
-const CustomTooltip = ({ active, payload, label }: Partial<TooltipContentProps>) => {
+interface CustomTooltipProps extends Partial<TooltipContentProps> {
+  chartType?: 'trend' | 'distribution'
+  distributionTotal?: number
+}
+
+const CustomTooltip = ({ active, payload, label, chartType = 'trend', distributionTotal = 0 }: CustomTooltipProps) => {
   const { isDark } = useTheme()
-  if (active && payload && payload.length) {
-    const p = payload[0];
-    const pt = p.payload;
-    const formattedLabel = label
-      ? new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      : '';
+
+  if (!active || !payload || payload.length === 0) return null
+
+  const item = payload[0]
+  const entry = item.payload as Record<string, unknown> | undefined
+
+  const tooltipShell =
+    `${isDark ? 'bg-slate-900/95 border-white/10' : 'light:stat-card-surface light:shadow-premium-card light:border-card-premium-border'} backdrop-blur-xl border p-3 rounded-2xl shadow-2xl`
+
+  if (chartType === 'distribution') {
+    const name = typeof entry?.name === 'string' && entry.name ? entry.name : String(item.name ?? '')
+    const rawValue = typeof entry?.value === 'number' ? entry.value : item.value
+    const value = Number(rawValue)
+    const pct = distributionTotal > 0 ? Math.round((value / distributionTotal) * 100) : 0
+
     return (
-      <div className={`${isDark ? 'bg-slate-900/95 border-white/10 text-text-muted/40' : 'bg-white/95 border-black/10 text-text-muted/40'} backdrop-blur-xl border p-3 rounded-2xl shadow-2xl`}>
-        <Label className={`text-[10px] font-bold uppercase tracking-widest mb-2 border-b pb-2 m-0 ${isDark ? 'text-text-muted/40 border-white/5' : 'text-text-muted/40 border-black/5'}`}>{formattedLabel}</Label>
+      <div className={tooltipShell}>
+        <Label className={`text-[10px] font-bold uppercase tracking-widest mb-2 border-b pb-2 m-0 ${isDark ? 'text-text-muted/40 border-white/5' : 'text-text-muted/40 border-black/5'}`}>{name}</Label>
         <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: typeof entry?.color === 'string' ? entry.color : 'var(--primary)' }} />
           <Body className="text-[11px] font-bold uppercase tracking-tight text-text-primary m-0">
-            Accuracy: <span className="text-primary">{Number(pt?.accuracy ?? p.value).toFixed(1)}%</span>
+            {Number.isFinite(value) ? `${value} questions` : 'No data'} <span className="text-text-muted/70">{Number.isFinite(value) && distributionTotal > 0 ? `· ${pct}%` : ''}</span>
           </Body>
         </div>
-        {pt && (
-          <Body className={`text-[10px] font-semibold m-0 ${isDark ? 'text-text-muted/50' : 'text-text-muted/50'}`}>
-            Score: {pt.score}
-          </Body>
-        )}
       </div>
     )
   }
-  return null
+
+  const timestamp = typeof label === 'number' ? label : Number(Date.parse(String(label ?? '')))
+  const formattedLabel = Number.isFinite(timestamp)
+    ? new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : String(label ?? '')
+
+  const accuracyRaw = typeof entry?.accuracy === 'number' ? entry.accuracy : item.value
+  const accuracy = Number(accuracyRaw)
+  const accuracyText = Number.isFinite(accuracy) ? `${accuracy.toFixed(1)}%` : 'N/A'
+
+  const scoreRaw = entry?.score
+  const scoreText = typeof scoreRaw === 'number' ? String(scoreRaw) : typeof scoreRaw === 'string' ? scoreRaw : null
+
+  return (
+    <div className={tooltipShell}>
+      <Label className={`text-[10px] font-bold uppercase tracking-widest mb-2 border-b pb-2 m-0 ${isDark ? 'text-text-muted/40 border-white/5' : 'text-text-muted/40 border-black/5'}`}>{formattedLabel || '—'}</Label>
+      <div className="flex items-center gap-3">
+        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: typeof entry?.color === 'string' ? entry.color : 'var(--primary)' }} />
+        <Body className="text-[11px] font-bold uppercase tracking-tight text-text-primary m-0">
+          Accuracy: <span className="text-primary">{accuracyText}</span>
+        </Body>
+      </div>
+      {scoreText !== null && (
+        <Body className={`text-[10px] font-semibold m-0 ${isDark ? 'text-text-muted/50' : 'text-text-muted/50'}`}>
+          Score: {scoreText}
+        </Body>
+      )}
+    </div>
+  )
 }
 
 const PerformanceCharts: React.FC<ChartProps> = ({
@@ -53,7 +91,7 @@ const PerformanceCharts: React.FC<ChartProps> = ({
   if (!data || data.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <EmptyState icon="📊" title="No data" subtitle="Complete exams to see analytics." />
+        <EmptyState icon={<BarChart3 size={48} aria-hidden />} title="No data" subtitle="Complete exams to see analytics." />
       </div>
     )
   }
@@ -94,7 +132,7 @@ const legendFormatter = (value: string) => <Label className="text-text-secondary
               domain={[0, 100]}
               tickFormatter={formatPercentTick}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip chartType="trend" />} />
             <Line
               type="monotone"
               dataKey="accuracy"
@@ -118,12 +156,15 @@ const legendFormatter = (value: string) => <Label className="text-text-secondary
   }
 
   if (type === 'distribution') {
+    const slices = data as DistributionSlice[]
+    const distributionTotal = slices.reduce((sum, s) => sum + (Number(s.value) || 0), 0)
+
     return (
       <div className="w-full h-full min-w-0" role="img" aria-label="Score distribution pie chart">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data as DistributionSlice[]}
+              data={slices}
               cx="50%"
               cy="50%"
               innerRadius="60%"
@@ -132,11 +173,11 @@ const legendFormatter = (value: string) => <Label className="text-text-secondary
               dataKey="value"
               isAnimationActive={false}
             >
-              {(data as DistributionSlice[]).map((entry, index) => (
+              {slices.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip chartType="distribution" distributionTotal={distributionTotal} />} />
             <Legend
               verticalAlign="bottom"
               align="center"

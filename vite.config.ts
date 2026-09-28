@@ -27,6 +27,7 @@ export default defineConfig({
     pure: ['console.debug'],
   },
   build: {
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: {

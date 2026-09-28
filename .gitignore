@@ -32,3 +32,14 @@ vite.config.ts.timestamp-*.mjs
 
 # Local auth/debug data — must not be committed
 users_auth.json
+
+# Playwright browser-test artifacts (regenerated on every run)
+test-results/
+playwright-report/
+blob-report/
+
+# One-off diagnostic/attack-probe scripts (contain local test credentials)
+scratch/
+
+# Local shared test-credential registry - reads password from env
+scripts/panel-creds.mjs

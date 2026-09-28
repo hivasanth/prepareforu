@@ -1,4 +1,4 @@
-import { Search, Calendar, RefreshCcw } from 'lucide-react'
+import { Search, Calendar, CalendarDays, RefreshCcw } from 'lucide-react'
 import { FilterBar, Input, FilterSelect, IconButton } from './AntigravityUI'
 
 interface SelectOption {
@@ -11,6 +11,9 @@ interface AdminFilterBarProps {
   searchAriaLabel?: string
   searchValue: string
   onSearchChange: (value: string) => void
+  yearValue?: string
+  onYearChange?: (value: string) => void
+  yearOptions?: SelectOption[]
   monthValue: string
   onMonthChange: (value: string) => void
   monthOptions: SelectOption[]
@@ -24,6 +27,9 @@ export function AdminFilterBar({
   searchAriaLabel = 'Search',
   searchValue,
   onSearchChange,
+  yearValue,
+  onYearChange,
+  yearOptions,
   monthValue,
   onMonthChange,
   monthOptions,
@@ -31,6 +37,7 @@ export function AdminFilterBar({
   onRefresh,
   loading,
 }: AdminFilterBarProps) {
+  const hasYear = yearValue !== undefined && onYearChange !== undefined && Array.isArray(yearOptions)
   return (
     <FilterBar>
       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -44,13 +51,24 @@ export function AdminFilterBar({
             className="w-full"
           />
         </div>
+        {hasYear && (
+          <FilterSelect
+            icon={CalendarDays}
+            value={yearValue ?? ''}
+            onChange={(v) => onYearChange?.(v)}
+            options={yearOptions ?? []}
+            label="Year"
+            className="min-w-[110px] shrink-0"
+          />
+        )}
         <FilterSelect
           icon={Calendar}
           placeholder={monthPlaceholder}
           value={monthValue}
           onChange={onMonthChange}
           options={monthOptions}
-          className="min-w-[140px] shrink-0"
+          label="Month"
+          className="min-w-[110px] shrink-0"
         />
       </div>
       <IconButton onClick={onRefresh} loading={loading} className="shrink-0" aria-label="Refresh data">

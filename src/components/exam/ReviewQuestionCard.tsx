@@ -3,6 +3,8 @@ import { Check, X, Brain } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { computeAnswerStatus } from '../../utils/examStateCalculator';
 import type { Question, AttemptAnswer } from '../../types/exam.types';
+import { Card } from '../common/AntigravityCard';
+import { NumberBadge } from '../common/NumberBadge';
 
 interface ReviewQuestionCardProps {
   question: Question;
@@ -13,6 +15,14 @@ interface ReviewQuestionCardProps {
   diagramNode?: React.ReactNode;
 }
 
+/**
+ * Review question card:
+ *   Uses Card variant="static" — NO hover lift for read-only content.
+ *   Question number uses NumberBadge variant="question".
+ *   Option surfaces use bg-option-surface (white in light, dark in dark).
+ *   No hover on non-interactive review options.
+ *   Technical Rationale section labeled.
+ */
 export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
   question,
   answer,
@@ -24,19 +34,22 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
   const { status, isCorrect } = computeAnswerStatus(answer);
 
   return (
-    <div className="space-y-8 relative">
+    <Card variant="static" className="space-y-8 relative">
       <div className="flex gap-5">
-        <span className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-[14px] font-black border ${
-          status === 'correct' ? 'bg-success/10 text-success border-success/30' :
-          status === 'wrong' ? 'bg-danger/10 text-danger border-danger/30' :
-          'bg-hover-bg text-text-disabled border-border-subtle'
-        }`}>
-          {index + 1}
-        </span>
+        <NumberBadge
+          value={index + 1}
+          variant="question"
+          className={`w-10 h-10 text-[14px] ${
+            status === 'correct' ? 'text-success' :
+            status === 'wrong' ? 'text-danger' :
+            status === 'skipped' ? 'text-warning' :
+            'text-text-disabled'
+          }`}
+        />
         <div className="space-y-6 flex-grow min-w-0">
           {displayLang === 'te' && !question.question_text_te?.trim() && (
-            <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
-              <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Telugu Translation Unavailable</span>
+            <div className="p-3 bg-warning/5 border border-warning/10 rounded-xl">
+              <span className="text-[10px] font-bold text-warning uppercase tracking-widest">Telugu Translation Unavailable</span>
             </div>
           )}
 
@@ -56,6 +69,7 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
         </div>
       </div>
 
+      {/* Status pill */}
       <div className="flex gap-2 sm:pl-16">
         <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
           status === 'correct' ? 'bg-success/10 text-success' :
@@ -63,12 +77,13 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
           status === 'skipped' ? 'bg-warning/10 text-warning' :
           'bg-hover-bg text-text-secondary'
         }`}>
-          {status === 'correct' ? 'Validated Correct' :
-           status === 'wrong' ? 'Critical Error' :
+          {status === 'correct' ? 'Correct' :
+           status === 'wrong' ? 'Incorrect' :
            status === 'skipped' ? 'Skipped' : 'Not Visited'}
         </span>
       </div>
 
+      {/* Options grid — no hover, read-only */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:pl-16">
         {['A', 'B', 'C', 'D'].map((opt) => {
           const label = opt as 'A' | 'B' | 'C' | 'D';
@@ -82,14 +97,14 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
 
           if (!optionText) return null;
 
-          let stateClass = 'bg-hover-bg/20 border-transparent text-text-disabled opacity-60';
+          let stateClass = 'bg-option-surface border-border-subtle text-text-disabled opacity-60';
           if (isRealCorrect) stateClass = 'bg-success/10 border-success/20 text-success font-bold';
           else if (isUserChoice && !isCorrect) stateClass = 'bg-danger/10 border-danger/20 text-danger font-bold';
 
           return (
             <div
               key={label}
-              className={`p-4 rounded-[14px] border-2 flex items-center justify-between text-[14px] ${stateClass}`}
+              className={`p-4 rounded-button-md border-2 lg:border-[3px] flex items-center justify-between text-[14px] lg:text-[15px] lg:font-semibold ${stateClass}`}
             >
               <span
                 className="line-clamp-2 leading-relaxed flex-1"
@@ -112,7 +127,8 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
         })}
       </div>
 
-      <div className="sm:ml-16 p-8 rounded-[20px] border relative overflow-hidden bg-primary/5 border-primary/10 shadow-sm">
+      {/* Technical Rationale */}
+      <div className="sm:ml-16 p-8 rounded-[20px] border relative overflow-hidden bg-option-surface border-border-subtle shadow-sm">
         <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
         <div className="flex items-center gap-3 mb-2">
           <Brain size={18} className="text-primary" />
@@ -124,6 +140,6 @@ export const ReviewQuestionCard: FC<ReviewQuestionCardProps> = ({
             : (question.explanation_te?.trim() || "తెలుగు వివరణ అందుబాటులో లేదు. (No Telugu explanation provided.)")}
         </p>
       </div>
-    </div>
+    </Card>
   );
 };

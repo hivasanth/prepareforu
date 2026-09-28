@@ -10,21 +10,12 @@ export interface SubAdminRecentExams {
   title: string
   status: string
   total_questions: number
+  total_marks: number
   duration_minutes: number
   created_at: string
-}
-
-export interface SubAdminRecentAttempt {
-  id: string
-  score: number
-  created_at: string
-  users?: {
-    full_name?: string
-  }
 }
 
 export interface SubAdminDashboardData {
   stats: SubAdminDashboardStats | null
   recentExams: SubAdminRecentExams[]
-  recentAttempts: SubAdminRecentAttempt[]
 }

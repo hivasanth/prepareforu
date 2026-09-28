@@ -14,13 +14,17 @@ interface PerformanceAnalyticsSectionProps {
   hasEnoughTrendData: boolean
   distribution: DistributionSlice[]
   subjectStats: SubjectStat[]
+  subjectStatsLoading: boolean
+  subjectStatsError: string | null
 }
 
 export const PerformanceAnalyticsSection = memo(function PerformanceAnalyticsSection({
   trendData,
   hasEnoughTrendData,
   distribution,
-  subjectStats
+  subjectStats,
+  subjectStatsLoading,
+  subjectStatsError
 }: PerformanceAnalyticsSectionProps) {
   return (
     <section className="grid gap-6 grid-cols-1 lg:grid-cols-3">
@@ -28,7 +32,7 @@ export const PerformanceAnalyticsSection = memo(function PerformanceAnalyticsSec
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
             <PerformanceSectionHeader title="Accuracy Trend" subtitle="Accuracy percentage over time" />
-            <IconBadge icon={TrendingUp} size="xl" shape="rounded" className="group-hover:scale-110 transition-transform duration-500" />
+            <IconBadge icon={TrendingUp} size="xl" shape="rounded" className="transition-interaction duration-slow ease-standard" />
           </div>
           <div className="h-[260px] lg:h-[300px] animate-in">
             <Suspense fallback={<LoadingSkeleton height="100%" borderRadius={16} />}>
@@ -47,7 +51,11 @@ export const PerformanceAnalyticsSection = memo(function PerformanceAnalyticsSec
         </div>
       </Card>
 
-      <SubjectInsightsCard subjectStats={subjectStats} />
+      <SubjectInsightsCard
+        subjectStats={subjectStats}
+        loading={subjectStatsLoading}
+        error={subjectStatsError}
+      />
     </section>
   )
 })

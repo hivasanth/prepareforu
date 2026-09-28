@@ -1,13 +1,14 @@
 import { lazy, Suspense } from 'react';
-import { LoadingSkeleton } from '../../components/common/SharedComponents';
 import {
   PageContainer,
   ErrorContainer,
   RetryButton,
+  Button,
   H2,
   Body,
 } from '../../components/common/AntigravityUI';
-import { PortalLoadingSkeleton } from '../../components/common/PortalLoadingSkeleton';
+import { SubjectTestsLoadingSkeleton } from '../../components/user/subject-tests/SubjectTestsLoadingSkeleton';
+import { SubjectConfigSkeleton } from '../../components/user/subject-tests/SubjectConfigSkeleton';
 import { useSubjectTests } from '../../components/user/subject-tests/useSubjectTests';
 
 const SubjectPortalView = lazy(() => import('../../components/user/subject-tests/SubjectPortalView').then(m => ({ default: m.SubjectPortalView })));
@@ -16,6 +17,7 @@ const SubjectConfigView = lazy(() => import('../../components/user/subject-tests
 export default function UserSubjectTests() {
   const {
     loading,
+    paperLoading,
     errorState,
     pageError,
     retryError,
@@ -39,7 +41,7 @@ export default function UserSubjectTests() {
     handleBack,
   } = useSubjectTests();
 
-  if (loading) return <PortalLoadingSkeleton />;
+  if (loading || paperLoading) return <SubjectTestsLoadingSkeleton isAppsc={isAppsc} />;
 
   if (errorState === 'error' && pageError) {
     return (
@@ -50,44 +52,53 @@ export default function UserSubjectTests() {
           {pageError.retryable && (
             <RetryButton onRetry={retryError} />
           )}
+          {pageError.category === 'business' && (
+            <Button fullWidth variant="primary" size="xl" onClick={handleBack} className="mt-4">
+              Back to Subject List
+            </Button>
+          )}
         </ErrorContainer>
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
+    <>
       {view === 'PORTAL' && (
-        <Suspense fallback={<LoadingSkeleton height={500} borderRadius={24} />}>
-          <SubjectPortalView
-            isAppsc={isAppsc}
-            groupOptions={groupOptions}
-            papers={papers}
-            activeGroup={activeGroup}
-            selectedPaperId={selectedPaperId}
-            onExamChange={handleExamChange}
-            onPaperChange={handlePaperChange}
-            subjects={subjects}
-            subjectCounts={subjectCounts}
-            minQuestions={minQuestions}
-            onSubjectClick={handleSubjectClick}
-          />
+        <Suspense fallback={<SubjectTestsLoadingSkeleton isAppsc={isAppsc} />}>
+          <PageContainer className="py-6 md:py-10">
+            <SubjectPortalView
+              isAppsc={isAppsc}
+              groupOptions={groupOptions}
+              papers={papers}
+              activeGroup={activeGroup}
+              selectedPaperId={selectedPaperId}
+              onExamChange={handleExamChange}
+              onPaperChange={handlePaperChange}
+              subjects={subjects}
+              subjectCounts={subjectCounts}
+              minQuestions={minQuestions}
+              onSubjectClick={handleSubjectClick}
+            />
+          </PageContainer>
         </Suspense>
       )}
 
       {view === 'CONFIG' && selectedSubject && (
-        <Suspense fallback={<LoadingSkeleton height={400} borderRadius={24} />}>
-          <SubjectConfigView
-            selectedSubject={selectedSubject}
-            subjectCounts={subjectCounts}
-            questionCount={questionCount}
-            setQuestionCount={setQuestionCount}
-            isLaunching={isLaunching}
-            onLaunch={handleLaunch}
-            onBack={handleBack}
-          />
+        <Suspense fallback={<SubjectConfigSkeleton />}>
+          <PageContainer className="py-6 md:py-10">
+            <SubjectConfigView
+              selectedSubject={selectedSubject}
+              subjectCounts={subjectCounts}
+              questionCount={questionCount}
+              setQuestionCount={setQuestionCount}
+              isLaunching={isLaunching}
+              onLaunch={handleLaunch}
+              onBack={handleBack}
+            />
+          </PageContainer>
         </Suspense>
       )}
-    </PageContainer>
+    </>
   );
 }

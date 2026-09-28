@@ -1,7 +1,4 @@
-export { useAdminSettings } from './useAdminSettings'
-export { SettingsCard } from './SettingsCard'
+/* Barrel trimmed to the sole barrel-consumed export (verified repo-wide:
+ * every other symbol is imported through its deep module path by the page,
+ * panels and tests). */
 export { AddExamModal } from './AddExamModal'
-export { SubjectDistributionPanel } from './SubjectDistributionPanel'
-export { ExamParamsForm } from './ExamParamsForm'
-export { SubjectPieChart } from './SubjectPieChart'
-export { SubjectCardItem } from './SubjectCardItem'

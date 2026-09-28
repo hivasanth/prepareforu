@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { ChevronRight, Save, PenSquare, AlertCircle } from 'lucide-react'
 import { BilingualToggle } from '../../../common/BilingualToggle'
+import { AdminModal } from '../../../common/AdminModal'
 import { Button, Badge, Alert } from '../../../common/AntigravityUI'
-import type { Question, QuestionVisual, VisualType } from '../../../../types/exam.types'
+import type { Question, QuestionVisual } from '../../../../types/exam.types'
 import { adminQuestionService } from '../../../../services/adminQuestionService'
+import { normalizeVisualInput } from '../../../../services/questions/visualNormalizer'
 import { useAuth } from '../../../../context/AuthContext'
 import { SingleQuestionSchema } from '../../../../validations/questionSchema'
 import { isAdmin } from '../../../../utils/authUtils'
-import { AdminModal } from '../../../common/AdminModal'
-import { generateRequestId } from '../../../../utils/logger'
+import { classifyError } from '../../../../utils/errorClassification'
+import { generateRequestId, logError } from '../../../../utils/logger'
 import { QuestionForm } from '../QuestionForm'
 
 type ModalMode = 'view' | 'add' | 'edit'
@@ -23,8 +25,21 @@ interface SingleQuestionModalProps {
   paperId: string
   paperLabel?: string
   subjectName: string
+  /** Manual-entry topic context — identity + bilingual labels of the clicked
+   *  LIVE topic card. Seeds the draft so the save persists topic_en/topic_te;
+   *  not user-editable (the backend trigger validates the relationship). */
+  topicId?: string | null
+  topicEnglish?: string | null
+  topicTelugu?: string | null
   onSuccess: () => void
   onModeChange?: (mode: ModalMode) => void
+  /** LOCAL-ONLY mode (Bulk Preview editor): the canonical SingleQuestionSchema
+   *  validates the form exactly as the DB path would, but nothing is ever
+   *  written to the database. `onLocalSave` receives the same normalized
+   *  payload the DB path would send — the caller merges it into its own local
+   *  workspace (parsed preview rows). */
+  localOnly?: boolean
+  onLocalSave?: (payload: Partial<Question>) => void
 }
 
 type SingleQuestionFieldErrors = Partial<Record<
@@ -37,7 +52,8 @@ const FIELD_ERROR_KEYS: (keyof SingleQuestionFieldErrors)[] = [
 ]
 
 export function SingleQuestionModal({
-  isOpen, onClose, mode, question, examId, examLabel, paperId, paperLabel, subjectName, onSuccess, onModeChange
+  isOpen, onClose, mode, question, examId, examLabel, paperId, paperLabel, subjectName,
+  topicId, topicEnglish, topicTelugu, onSuccess, onModeChange, localOnly = false, onLocalSave
 }: SingleQuestionModalProps) {
   const { user } = useAuth()
   
@@ -58,23 +74,23 @@ export function SingleQuestionModal({
           difficulty: 'medium',
           correct_option: 'A',
           negative_marks: 0,
+          // Topic context from the clicked live topic card (manual entry).
+          // Seeded ONLY when provided so non-topic flows keep the previous
+          // untagged draft shape.
+          ...(topicEnglish ? { topic_en: topicEnglish, topic_te: topicTelugu ?? null } : {}),
           // Initialize _en fields empty (admin must fill)
           question_text_en: '', option_a_en: '', option_b_en: '', option_c_en: '', option_d_en: '', explanation_en: '',
           // Initialize _te fields null (optional)
           question_text_te: null, option_a_te: null, option_b_te: null, option_c_te: null, option_d_te: null, explanation_te: null,
         })
       } else if (question) {
-        // Normalize visual_engine → visual (handles DB records with either format)
-        let normalizedVisual = question.visual || (question as Partial<Question> & { visual_engine?: unknown }).visual_engine || null
-        if (normalizedVisual && typeof normalizedVisual === 'object') {
-          const legacy = normalizedVisual as { render_type?: unknown; metadata?: unknown; title?: unknown }
-          if (legacy.render_type != null && legacy.metadata !== undefined) {
-            normalizedVisual = {
-              type: legacy.render_type as VisualType,
-              title: (legacy.title as string) || undefined,
-              data: legacy.metadata,
-            }
-          }
+        let normalizedVisual: QuestionVisual | null | undefined
+        try {
+          normalizedVisual = normalizeVisualInput(
+            question.visual ?? (question as Partial<Question> & { visual_engine?: unknown }).visual_engine ?? null
+          )
+        } catch {
+          normalizedVisual = null
         }
 
         // Edit/View: populate modern bilingual fields
@@ -100,7 +116,7 @@ export function SingleQuestionModal({
       setFieldErrors({})
       submittedRef.current = false
     }
-  }, [isOpen, mode, question, examId, paperId, subjectName])
+  }, [isOpen, mode, question, examId, paperId, subjectName, topicId, topicEnglish, topicTelugu])
 
   if (!isOpen) return null
   const isReadOnly = mode === 'view'
@@ -125,7 +141,7 @@ export function SingleQuestionModal({
 
   const handleSubmit = async () => {
     try {
-      if (!isAdmin(user)) throw new Error('Unauthorized: Admin privileges required')
+      if (!localOnly && !isAdmin(user)) throw new Error('Unauthorized: Admin privileges required')
       
       setIsSubmitting(true)
       setError(null)
@@ -138,9 +154,8 @@ export function SingleQuestionModal({
       }
       
       const validated = validationResult.data
-      const requestId = generateRequestId(mode === 'add' ? 'create_q' : 'update_q')
 
-      // Nullify empty Telugu strings for clean DB storage
+      // Nullify empty Telugu strings for clean storage
       const teluguNullified = {
         question_text_te: validated.question_text_te?.trim() || null,
         option_a_te: validated.option_a_te?.trim() || null,
@@ -156,16 +171,40 @@ export function SingleQuestionModal({
         updated_at: new Date().toISOString()
       }
 
+      /* LOCAL-ONLY mode (Bulk Preview editor): the exact normalized payload the
+       * DB path would send is handed back to the caller, which merges it into
+       * its own unsynced workspace. NO database read or write ever happens. */
+      if (localOnly) {
+        onLocalSave?.(payload)
+        setError(null)
+        onClose()
+        return
+      }
+
       if (mode === 'add' && user) {
         payload.created_by = user.id
       }
 
+      const requestId = generateRequestId(mode === 'add' ? 'create_q' : 'update_q')
+
       if (mode === 'add') {
-        const createResult = await adminQuestionService.createQuestion(payload, { requestId, user })
-        if (!createResult.success) throw new Error(createResult.error?.message || 'Failed to insert question')
+        const createResult = await adminQuestionService.createQuestion(payload, { requestId, user, topicId: topicId ?? undefined })
+        if (!createResult.success) {
+          // F-7: raw DB message stays internal; UI receives canonical copy.
+          logError('question.create_failed', { requestId, message: createResult.error?.message || 'Unknown error' })
+          throw new Error(classifyError(createResult.error ?? 'Failed to insert question').message)
+        }
+        // DEF-5: explicit duplicate feedback
+        if (createResult.data?.status === 'duplicate') {
+          setError('Question already exists (duplicate detected).')
+          return
+        }
       } else if (mode === 'edit' && formData.id) {
         const updateResult = await adminQuestionService.updateQuestion(formData.id, payload, { requestId, user })
-        if (!updateResult.success) throw new Error(updateResult.error?.message || 'Failed to update question')
+        if (!updateResult.success) {
+          logError('question.update_failed', { requestId, id: formData.id, message: updateResult.error?.message || 'Unknown error' })
+          throw new Error(classifyError(updateResult.error ?? 'Failed to update question').message)
+        }
       }
 
       onSuccess()
@@ -250,6 +289,7 @@ export function SingleQuestionModal({
           setFormData={setFormData}
           isReadOnly={isReadOnly}
           displayLang={displayLang}
+          onDisplayLangChange={setDisplayLang}
           fieldErrors={fieldErrors}
           onFieldBlur={handleFieldBlur}
         />

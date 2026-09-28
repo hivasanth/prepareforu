@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, RefreshCw, LogOut, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import * as authService from '../services/authService';
@@ -24,7 +24,15 @@ const t = (s: string) => s;
 export default function VerifyEmailPage() {
   const { isEmailVerified, session, user, refreshUser, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isOpen: isSignOutOpen, openDialog: openSignOut, closeDialog: closeSignOut, handleConfirm: confirmSignOut } = useSignOutConfirmation(logout);
+
+  // Email resolution priority:
+  //   1. Router state (signup handoff — works without an authenticated session)
+  //   2. Authenticated session email
+  //   3. null (fallback messaging)
+  const handoffEmail = (location.state as { email?: string } | null)?.email;
+  const userEmail = handoffEmail || session?.user?.email || null;
 
   const [checking, setChecking]     = useState(false);
   const [verified, setVerified]     = useState(false);
@@ -50,9 +58,16 @@ export default function VerifyEmailPage() {
     setChecking(true);
     setError(null);
     try {
-      // Force a fresh server-side user fetch to pick up email_confirmed_at
-      await authService.getCurrentUser();
+      // Force a fresh server-side user fetch to pick up email_confirmed_at.
+      // The client must NEVER fabricate a verified state — only Supabase's
+      // server-confirmed email_confirmed_at proves verification.
+      const { data: { user: authUser } } = await authService.getCurrentUser();
       await refreshUser();
+      if (authUser?.email_confirmed_at) {
+        setVerified(true);
+      } else {
+        setError(t('Your email is not verified yet. Click the link in the email you received, then try again.'));
+      }
     } catch {
       setError(t('Could not confirm verification. Please try again.'));
     } finally {
@@ -63,7 +78,7 @@ export default function VerifyEmailPage() {
   // ── Resend verification email ─────────────────────────────────────────────
   const handleResend = useCallback(async () => {
     if (resending || resendCooldown > 0) return;
-    const email = session?.user?.email;
+    const email = userEmail;
     if (!email) return;
 
     setResending(true);
@@ -77,7 +92,7 @@ export default function VerifyEmailPage() {
     } finally {
       setResending(false);
     }
-  }, [resending, resendCooldown, session]);
+  }, [resending, resendCooldown, userEmail]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -86,8 +101,6 @@ export default function VerifyEmailPage() {
     }, 1000);
     return () => clearInterval(timer);
   }, [resendCooldown]);
-
-  const userEmail = session?.user?.email;
 
   // ── Verified state (brief success flash) ─────────────────────────────────
   const verifiedContent = (

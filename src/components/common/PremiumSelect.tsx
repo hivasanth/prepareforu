@@ -2,10 +2,56 @@ import { useState, useRef, useEffect, useCallback, useId } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import { ChevronDown, Check } from 'lucide-react'
+import { SELECT_POPUP_TRANSITION, GHOST_HOVER, FOCUS_RING } from './AntigravityMotion'
+import { SelectionContainer } from './AntigravityLayout'
+import { Portal } from './Floating'
+import { useAnchoredFloating } from './useAnchoredFloating'
 
 interface PremiumSelectOption {
   id: string
   name: string
+}
+
+/* Shared option button — eliminates copy-paste between placeholder and option items.
+   Module scope so it is not re-created on every render (react-hooks rule). */
+function OptionButton({
+  isSelected,
+  isHighlighted,
+  onClick,
+  onMouseEnter,
+  children,
+}: {
+  isSelected: boolean
+  isHighlighted: boolean
+  onClick: () => void
+  onMouseEnter: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      role="option"
+      aria-selected={isSelected}
+      data-option
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      className={`
+        w-full text-left px-3 h-[40px] my-1 flex items-center justify-between
+        text-[10px] font-bold uppercase tracking-widest
+        ${GHOST_HOVER} ${FOCUS_RING}
+        rounded-lg
+        ${
+          isSelected
+            ? 'selection-active-text nav-active-surface'
+            : isHighlighted
+              ? 'text-text-secondary light:text-[var(--gold-300)] border border-border-subtle light:border-[var(--material-tab-pill-border)] light:hover:text-[var(--material-tab-text-hover)] light:hover:bg-white/5'
+              : 'text-text-secondary light:text-[var(--gold-300)] border border-border-subtle light:border-[var(--material-tab-pill-border)] light:hover:text-[var(--material-tab-text-hover)] light:hover:bg-white/5'
+        }
+      `}
+    >
+      {children}
+    </button>
+  )
 }
 
 interface PremiumSelectProps {
@@ -45,11 +91,17 @@ export function PremiumSelect({
   const optionHeight = 44
   const popupMaxHeight = maxVisible * optionHeight
 
-  const close = useCallback(() => {
+  const dismiss = useCallback(() => {
     setIsOpen(false)
     setHighlightedIndex(-1)
-    triggerRef.current?.focus()
   }, [])
+
+  const close = useCallback(() => {
+    dismiss()
+    /* Focus returns to the trigger without scroll-jumping the page (the
+       trigger may be far off-screen when a scroll dismissed the menu). */
+    triggerRef.current?.focus({ preventScroll: true })
+  }, [dismiss])
 
   const selectOption = useCallback(
     (optId: string) => {
@@ -57,6 +109,21 @@ export function PremiumSelect({
       close()
     },
     [onChange, close],
+  )
+
+  /* Highlight index → option id. Index 0 is the placeholder row when present. */
+  const selectAt = useCallback(
+    (idx: number) => {
+      if (idx < 0) return
+      if (placeholder && idx === 0) {
+        selectOption('all')
+        return
+      }
+      const optIdx = placeholder ? idx - 1 : idx
+      const opt = options[optIdx]
+      if (opt) selectOption(String(opt.id))
+    },
+    [options, placeholder, selectOption],
   )
 
   useEffect(() => {
@@ -79,10 +146,11 @@ export function PremiumSelect({
     if (!isOpen) return
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close()
+      else if (e.key === 'Tab') dismiss()
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [isOpen, close])
+  }, [isOpen, close, dismiss])
 
   useEffect(() => {
     if (isOpen && highlightedIndex >= 0 && listRef.current) {
@@ -93,15 +161,55 @@ export function PremiumSelect({
 
   const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return
+    const total = options.length + (placeholder ? 1 : 0)
+    /* Index of the currently-selected row (placeholder-aware) — the combobox
+       convention when opening via keyboard is to highlight the selection. */
+    const selectedIdx = () => {
+      const optIdx = options.findIndex(o => String(o.id) === String(value))
+      if (optIdx >= 0) return placeholder ? optIdx + 1 : optIdx
+      return 0
+    }
     switch (e.key) {
       case 'Enter':
       case ' ':
         e.preventDefault()
-        setIsOpen(prev => !prev)
+        if (isOpen) {
+          if (highlightedIndex >= 0) selectAt(highlightedIndex)
+          else dismiss()
+        } else {
+          setHighlightedIndex(selectedIdx())
+          setIsOpen(true)
+        }
         break
       case 'ArrowDown':
         e.preventDefault()
-        if (!isOpen) setIsOpen(true)
+        if (!isOpen) {
+          setHighlightedIndex(selectedIdx())
+          setIsOpen(true)
+        } else if (total > 0) {
+          setHighlightedIndex(prev => (prev + 1) % total)
+        }
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        if (!isOpen) {
+          setHighlightedIndex(selectedIdx())
+          setIsOpen(true)
+        } else if (total > 0) {
+          setHighlightedIndex(prev => (prev - 1 + total) % total)
+        }
+        break
+      case 'Home':
+        if (isOpen) {
+          e.preventDefault()
+          setHighlightedIndex(0)
+        }
+        break
+      case 'End':
+        if (isOpen) {
+          e.preventDefault()
+          setHighlightedIndex(total - 1)
+        }
         break
     }
   }
@@ -128,21 +236,14 @@ export function PremiumSelect({
       case 'Enter':
       case ' ':
         e.preventDefault()
-        if (highlightedIndex >= 0) {
-          if (placeholder && highlightedIndex === 0) {
-            selectOption('all')
-          } else {
-            const optIdx = placeholder ? highlightedIndex - 1 : highlightedIndex
-            if (options[optIdx]) selectOption(String(options[optIdx].id))
-          }
-        }
+        selectAt(highlightedIndex)
         break
       case 'Escape':
         e.preventDefault()
         close()
         break
       case 'Tab':
-        close()
+        dismiss()
         break
     }
   }
@@ -150,136 +251,131 @@ export function PremiumSelect({
   const listboxId = `${instanceId}-listbox`
   const listboxLabel = label || placeholder || 'Options'
 
-  return (
-    <div className={`relative inline-block ${className}`}>
-      <button
-        ref={triggerRef}
-        type="button"
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-        aria-controls={isOpen ? listboxId : undefined}
-        aria-label={listboxLabel}
-        disabled={disabled}
-        onClick={() => {
-          if (!disabled) setIsOpen(prev => !prev)
-        }}
-        onKeyDown={handleTriggerKeyDown}
-        className={`
-          w-full h-[44px] md:h-[48px] rounded-xl transition-all duration-200 flex items-center justify-between px-4 md:px-3.5 gap-2
-          text-[11px] font-bold uppercase tracking-widest focus:outline-none
-          border focus:border-primary
-          ${disabled ? 'opacity-40 pointer-events-none' : ''}
-          ${
-            isActive
-              ? 'bg-input-surface-active text-input-text-active border-input-border-active'
-              : 'bg-input-bg text-input-text border-input-border hover:border-input-border-hover-active'
-          }
-        `}
-      >
-        <div className="flex items-center gap-2 overflow-hidden">
-          {Icon && (
-            <Icon
-              size={16}
-              className={`shrink-0 ${isActive ? 'text-primary' : 'text-text-secondary'}`}
-            />
-          )}
-          <span className="truncate">{selectedOption?.name}</span>
-        </div>
-        <ChevronDown
-          size={14}
-          className={`transition-transform duration-200 shrink-0 ${
-            isOpen ? 'rotate-180' : ''
-          } ${isActive ? 'text-primary' : 'text-text-muted'}`}
-        />
-      </button>
+  /* The menu portals to <body> (Floating layer) so no ancestor overflow or
+     stacking context can clip or bury it. Position is computed against the
+     trigger rect with viewport collision handling; the canonical --z-dropdown
+     layer keeps it above cards/toolbars/modals but below guards/toasts. */
+  const floating = useAnchoredFloating(isOpen, triggerRef, listRef, {
+    capHeight: popupMaxHeight + 8,
+    offset: 4,
+    margin: 8,
+    onAnchorExitViewport: close,
+  })
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            ref={listRef}
-            role="listbox"
-            aria-label={listboxLabel}
-            id={listboxId}
-            tabIndex={-1}
-            onKeyDown={handleListKeyDown}
-            initial={{ opacity: 0, y: -4, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.97 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className={`
-              absolute left-0 mt-1 z-[1000] min-w-full w-full
-              rounded-2xl overflow-hidden
-              bg-[var(--surface-floating)] border border-border-subtle
-              shadow-elevation-4
-            `}
-            style={{ maxHeight: popupMaxHeight + 8 }}
-          >
+  return (
+    <>
+      <div className={`relative inline-block ${className}`}>
+      <SelectionContainer className="p-1">
+        <button
+          ref={triggerRef}
+          type="button"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-controls={isOpen ? listboxId : undefined}
+          aria-label={listboxLabel}
+          disabled={disabled}
+          onClick={() => {
+            if (!disabled) setIsOpen(prev => !prev)
+          }}
+          onKeyDown={handleTriggerKeyDown}
+          className={`
+            relative w-full h-[44px] md:h-[48px] rounded-xl ${GHOST_HOVER} ${FOCUS_RING} flex items-center justify-between px-4 md:px-3.5 gap-2
+            text-[11px] font-bold uppercase tracking-widest focus:outline-none
+            ${disabled ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+            ${isActive ? '' : 'text-text-secondary border border-border-subtle light:border-[var(--material-tab-pill-border)] light:hover:text-[var(--material-tab-text-hover)] light:hover:bg-white/5'}
+          `}
+        >
+          {isActive && (
+            <div className="absolute inset-0 rounded-xl nav-active-surface" />
+          )}
+          <div className="relative z-10 flex items-center gap-2 overflow-hidden">
+            {Icon && (
+              <Icon
+                size={16}
+                className={`shrink-0 ${isActive ? 'selection-active-text' : 'text-text-secondary'}`}
+              />
+            )}
+            <span className={`truncate ${isActive ? 'selection-active-text light:text-[var(--text-nav-active)] tracking-tight' : 'text-text-secondary light:text-[var(--gold-300)]'}`}>{selectedOption?.name}</span>
+          </div>
+          <ChevronDown
+            size={14}
+            className={`relative z-10 transition-transform duration-fast ease-standard shrink-0 ${
+              isOpen ? 'rotate-180' : ''
+            } ${isActive ? 'selection-active-text' : 'text-text-muted'}`}
+          />
+        </button>
+      </SelectionContainer>
+      </div>
+
+      <Portal>
+        <AnimatePresence>
+          {isOpen && (
+            /* Positional wrapper — owns fixed coordinates + layer token.
+               The animated surface below keeps the approved menu appearance. */
             <div
-              className="overflow-y-auto overflow-x-hidden py-1 custom-scrollbar"
+              ref={listRef}
+              className="fixed z-[var(--z-dropdown)] min-w-max max-w-72"
+              style={{
+                top: floating?.y,
+                left: floating?.x,
+                ...(floating?.placement === 'top' ? { transform: 'translateY(-100%)' } : null),
+              }}
+            >
+              <motion.div
+                role="listbox"
+                aria-label={listboxLabel}
+                id={listboxId}
+                tabIndex={-1}
+                onKeyDown={handleListKeyDown}
+                initial={{ opacity: 0, y: floating?.placement === 'top' ? 4 : -4, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: floating?.placement === 'top' ? 4 : -4, scale: 0.97 }}
+                transition={SELECT_POPUP_TRANSITION}
+                className="
+                  rounded-2xl overflow-hidden p-2
+                  selection-surface
+                  shadow-elevation-4
+                "
+                style={{ maxHeight: floating?.maxHeight }}
+              >
+            <div
+              className="overflow-y-auto overflow-x-hidden p-2 custom-scrollbar"
               style={{ maxHeight: popupMaxHeight }}
             >
               {placeholder && (
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={value === 'all'}
-                  data-option
+                <OptionButton
+                  isSelected={value === 'all'}
+                  isHighlighted={highlightedIndex === 0}
                   onClick={() => selectOption('all')}
                   onMouseEnter={() => setHighlightedIndex(0)}
-                  className={`
-                    w-full text-left px-4 h-[44px] flex items-center justify-between
-                    text-[10px] font-bold uppercase tracking-widest
-                    transition-colors duration-150
-                    border-b border-border-subtle/50 last:border-b-0
-                    ${
-                      value === 'all'
-                        ? 'bg-primary/20 text-primary'
-                        : highlightedIndex === 0
-                          ? 'bg-hover-bg/80 text-text-primary'
-                          : 'text-text-primary hover:bg-hover-bg/60'
-                    }
-                  `}
                 >
                   {placeholder}
                   {value === 'all' && <Check size={14} className="text-primary shrink-0" />}
-                </button>
+                </OptionButton>
               )}
               {options.map((opt, idx) => {
                 const isSelected = String(value) === String(opt.id)
                 const itemIdx = placeholder ? idx + 1 : idx
                 return (
-                  <button
+                  <OptionButton
                     key={`${opt.id}-${idx}`}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    data-option
+                    isSelected={isSelected}
+                    isHighlighted={highlightedIndex === itemIdx}
                     onClick={() => selectOption(String(opt.id))}
                     onMouseEnter={() => setHighlightedIndex(itemIdx)}
-                    className={`
-                      w-full text-left px-4 h-[44px] flex items-center justify-between
-                      text-[10px] font-bold uppercase tracking-widest
-                      transition-colors duration-150
-                      border-b border-border-subtle/50 last:border-b-0
-                      ${
-                        isSelected
-                          ? 'bg-primary/20 text-primary'
-                          : highlightedIndex === itemIdx
-                            ? 'bg-hover-bg/80 text-text-primary'
-                            : 'text-text-primary hover:bg-hover-bg/60'
-                      }
-                    `}
                   >
-                    {opt.name}
-                    {isSelected && <Check size={14} className="text-primary shrink-0" />}
-                  </button>
+                    <span className="truncate">{opt.name}</span>
+                    {isSelected && <Check size={14} className="selection-active-text shrink-0" />}
+                  </OptionButton>
                 )
               })}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </Portal>
+    </>
   )
 }

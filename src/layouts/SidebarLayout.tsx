@@ -5,22 +5,27 @@ import type { LucideIcon } from 'lucide-react'
 import {
   LogOut, Menu, X, Sun, Moon, LayoutDashboard,
 } from 'lucide-react'
-import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
+import { ErrorBoundary } from 'react-error-boundary'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useSignOutConfirmation } from '../hooks/useSignOutConfirmation'
 import { ConfirmModal } from '../components/common/SharedComponents'
-import type { NavItem } from '../config/navigation'
+import { isNavItemActive, type NavItem } from '../config/navigation'
 import { LogoSVG } from '../components/Logo'
 import { AdminPageTitle, IconButton, Button, ThemeToggle, Navigation, NavigationContext, useSidebarMode } from '../components/common/AntigravityUI'
 import { Spinner } from '../components/common/Spinner'
 import { NotificationBell } from '../components/common/NotificationPanel'
+import { MOTION_DURATION, DRAWER_SPRING } from '../components/common/AntigravityMotion'
 
-function ErrorFallback({ error }: FallbackProps) {
+function ErrorFallback() {
   return (
-    <div role="alert" className="p-10 text-red-500">
-      <p className="font-bold">Something went wrong:</p>
-      <pre className="text-sm mt-2">{error instanceof Error ? error.message : String(error)}</pre>
+    <div role="alert" aria-live="assertive" className="min-h-[50vh] flex items-center justify-center p-6">
+      <div className="max-w-md w-full rounded-2xl border border-danger/20 bg-danger/5 p-8 text-center space-y-3">
+        <p className="text-lg font-bold text-text-primary">An Error Occurred</p>
+        <p className="text-sm font-sans text-text-secondary">
+          We encountered an unexpected issue. Our team has been notified.
+        </p>
+      </div>
     </div>
   )
 }
@@ -28,7 +33,9 @@ function ErrorFallback({ error }: FallbackProps) {
 // ─── Page Title (isolated route subscription) ────────────────────────────────
 function PageTitleDisplay({ navConfig }: { navConfig: NavItem[] }) {
   const location = useLocation()
-  const current = navConfig.find(item => item.path === location.pathname)
+  // L-2: section-level match (exact, descendant, or attributed detail paths)
+  // so nested/detail routes keep their owning section title.
+  const current = navConfig.find(item => isNavItemActive(item, location.pathname))
   if (!current) return null
   return (
     <AdminPageTitle icon={current.icon || LayoutDashboard}>
@@ -103,7 +110,7 @@ export default function SidebarLayout({
         onToggleCollapse={toggleCollapse}
       >
         {/* Logo */}
-        <div className={`p-4 flex items-center border-b border-border-subtle transition-all duration-300 ${isExpanded ? 'gap-3 justify-start' : 'justify-center'}`}>
+        <div className={`p-4 flex items-center border-b border-border-subtle transition-all duration-slow ${isExpanded ? 'gap-3 justify-start' : 'justify-center'}`}>
           <LogoSVG size={36} className="shadow-lg" />
           {isExpanded && (
             <span className="text-text-primary font-black text-lg tracking-tight whitespace-nowrap">
@@ -127,7 +134,7 @@ export default function SidebarLayout({
 
         {/* Footer */}
         <div className="p-4 border-t border-border-subtle bg-hover-bg/30 space-y-2 sidebar-footer-container">
-          <div className={`flex items-center p-2 rounded-xl overflow-hidden transition-all duration-300 ${isExpanded ? 'gap-3 justify-start' : 'justify-center'}`}>
+          <div className={`flex items-center p-2 rounded-xl overflow-hidden transition-all duration-slow ${isExpanded ? 'gap-3 justify-start' : 'justify-center'}`}>
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
               {initials}
             </div>
@@ -153,7 +160,7 @@ export default function SidebarLayout({
               title={isDark ? 'Light Mode' : 'Dark Mode'}
               className="w-full justify-center"
             >
-              <span className="w-[28px] h-[28px] rounded-full nav-active-surface flex items-center justify-center transition-transform duration-300">
+              <span className="w-[28px] h-[28px] rounded-full nav-active-surface flex items-center justify-center transition-transform duration-slow">
                 {isDark ? <Moon size={14} /> : <Sun size={14} />}
               </span>
             </IconButton>
@@ -166,7 +173,7 @@ export default function SidebarLayout({
             title={!isExpanded ? 'Sign Out' : undefined}
             className={`w-full ${isExpanded ? 'justify-start' : 'justify-center'}`}
           >
-            <LogOut size={16} className="lg:group-hover:translate-x-1 transition-transform flex-shrink-0" />
+            <LogOut size={16} className="lg:group-hover:translate-x-1 flex-shrink-0" />
             {isExpanded && <span className="text-xs font-bold uppercase tracking-tight">Sign Out</span>}
           </Button>
         </div>
@@ -183,14 +190,14 @@ export default function SidebarLayout({
           <motion.div
             initial={false}
             animate={{ opacity: isDrawerOpen ? 1 : 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: MOTION_DURATION.normal }}
             className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] pointer-events-none"
           />
 
           <motion.aside
             initial={false}
             animate={{ x: isDrawerOpen ? 0 : '-100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+            transition={DRAWER_SPRING}
             role={isDrawerOpen ? 'dialog' : undefined}
             aria-modal={isDrawerOpen ? 'true' : undefined}
             aria-label={isDrawerOpen ? 'Navigation menu' : undefined}
@@ -252,7 +259,7 @@ export default function SidebarLayout({
                 onClick={() => { setIsDrawerOpen(false); openSignOut() }}
                 className="w-full justify-start"
               >
-                <LogOut size={16} className="lg:group-hover:translate-x-1 transition-transform" />
+                <LogOut size={16} className="lg:group-hover:translate-x-1" />
                 <span className="text-xs font-bold">Sign Out</span>
               </Button>
             </div>
@@ -264,7 +271,7 @@ export default function SidebarLayout({
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative z-10">
 
         {/* Mobile header */}
-        <header className={`relative z-50 flex items-center h-16 border-b pl-2 pr-2 md:px-8 shadow-sm flex-shrink-0 transition-all duration-300 ${!isDark ? 'ancient-header' : 'bg-card-bg/80 backdrop-blur-xl border-border-subtle'}`}>
+        <header className={`relative z-50 flex items-center h-16 border-b pl-2 pr-2 md:px-8 shadow-sm flex-shrink-0 transition-all duration-slow ${!isDark ? 'ancient-header' : 'bg-card-bg/80 backdrop-blur-xl border-border-subtle'}`}>
           <IconButton
             variant="ghost"
             size="md"
@@ -293,7 +300,7 @@ export default function SidebarLayout({
         </header>
 
         {/* Page content */}
-        <main id="main-content" className="flex-1 overflow-hidden bg-app-bg transition-colors duration-300" style={{ contain: 'content' }}>
+        <main id="main-content" className="flex-1 overflow-hidden bg-app-bg transition-colors duration-slow" style={{ contain: 'content' }}>
           <div className="custom-scrollbar h-full overflow-y-auto overflow-x-hidden">
             <div className="w-full max-w-full mb-12 sm:mb-16 lg:mb-20">
               <ErrorBoundary FallbackComponent={ErrorFallback}>

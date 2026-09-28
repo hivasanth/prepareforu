@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { GOLD_LIGHT_MATERIAL } from '../common/AntigravityCard';
 
 interface ExamHeaderProps {
   title: string;
@@ -16,7 +17,7 @@ export const ExamHeader: FC<ExamHeaderProps> = ({
   rightActions,
 }) => {
   return (
-    <header className="h-[60px] flex items-center justify-between px-4 sm:px-6 z-50 shadow-sm transition-colors duration-300 mx-4 sm:mx-6 max-sm:mx-[10px] mt-4 mb-2 max-sm:mt-[10px] max-sm:mb-[6px] rounded-2xl max-sm:rounded-xl bg-card-bg border-b border-border-subtle">
+    <header className={`h-[60px] flex items-center justify-between px-4 sm:px-6 z-50 shadow-sm transition-interaction duration-slow ease-standard mx-4 sm:mx-6 max-sm:mx-[10px] mt-4 mb-2 max-sm:mt-[10px] max-sm:mb-[6px] rounded-2xl max-sm:rounded-xl bg-card-bg border-b border-border-subtle ${GOLD_LIGHT_MATERIAL}`}>
       <div className="flex items-center gap-4 min-w-0 flex-1">
         {leftActions}
         <div className="hidden sm:block min-w-0 flex-1 max-w-[420px]">

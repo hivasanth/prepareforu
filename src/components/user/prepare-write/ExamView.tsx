@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, type FC } from 'react';
-import { Maximize2, Minimize2, Timer, XCircle } from 'lucide-react';
+import { Maximize2, Minimize2, Timer, XCircle, Info } from 'lucide-react';
 import { IconButton, ProgressBar } from '../../common/AntigravityUI';
 import { Body } from '../../common/AntigravityTypography';
 import { DiagramRenderer } from '../../common/DiagramRenderer';
@@ -9,7 +9,6 @@ import {
   QuestionActions,
   QuestionCard,
   SubmitExamModal,
-  MobileQuestionStrip,
   QuestionNavigator,
   MobileActionBar,
   StatusBoard,
@@ -23,6 +22,7 @@ interface ExamViewProps {
   currentIndex: number;
   answers: Record<string, 'A' | 'B' | 'C' | 'D' | null>;
   markedForReview: Record<string, boolean>;
+  visitedQuestions: string[];
   startTime: number | null;
   onExit: () => void;
   onSubmit: () => void;
@@ -39,6 +39,7 @@ export const ExamView: FC<ExamViewProps> = ({
   currentIndex,
   answers,
   markedForReview,
+  visitedQuestions,
   startTime,
   onExit,
   onSubmit,
@@ -51,6 +52,7 @@ export const ExamView: FC<ExamViewProps> = ({
   const [displayLang, setDisplayLang] = useState<'en' | 'te'>('en');
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showStatusBoard, setShowStatusBoard] = useState(false);
   const handleAnswer = (option: string) => {
     const q = questions[currentIndex];
     if (q) onAnswer(q.id, option as 'A' | 'B' | 'C' | 'D');
@@ -77,8 +79,8 @@ export const ExamView: FC<ExamViewProps> = ({
     [markedForReview]
   );
   const visitedSet = useMemo(
-    () => new Set(questions.map(q => q.id)),
-    [questions]
+    () => new Set(visitedQuestions),
+    [visitedQuestions]
   );
   const examStats = useMemo(
     () => computeExamStatistics(questions, answers, markedSet, visitedSet, undefined, paper?.duration_minutes ? paper.duration_minutes * 60 : undefined),
@@ -116,7 +118,18 @@ export const ExamView: FC<ExamViewProps> = ({
     <div className="flex-1 flex flex-col min-h-0">
       <ExamHeader
         title="Examination"
-        subtitle={paper?.paper_name}
+        subtitle={
+          <>
+            {paper?.paper_name}
+            <span
+              role="status"
+              aria-label="Practice mode — answers are shown to support self-learning; results are not recorded as official attempts"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 border border-primary/30 text-primary text-[9px] font-black uppercase tracking-widest whitespace-nowrap ml-2 align-middle"
+            >
+              Practice Mode
+            </span>
+          </>
+        }
         timerSlot={
           <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-border-subtle bg-hover-bg">
             <Timer size={16} className="text-primary" />
@@ -124,9 +137,19 @@ export const ExamView: FC<ExamViewProps> = ({
           </div>
         }
         leftActions={
-          <IconButton variant="danger" onClick={onExit} aria-label="Exit exam">
-            <XCircle size={20} />
-          </IconButton>
+          <>
+            <IconButton variant="danger" onClick={onExit} aria-label="Exit exam">
+              <XCircle size={20} />
+            </IconButton>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowStatusBoard(prev => !prev)}
+              aria-label={showStatusBoard ? 'Hide status board' : 'Show status board'}
+            >
+              <Info size={18} />
+            </IconButton>
+          </>
         }
         rightActions={
           <>
@@ -142,6 +165,13 @@ export const ExamView: FC<ExamViewProps> = ({
           </>
         }
       />
+
+      {showStatusBoard && (
+        <div
+          className="fixed inset-0 z-30 bg-app-bg/60 backdrop-blur-sm md:hidden"
+          onClick={() => setShowStatusBoard(false)}
+        />
+      )}
 
       <main className="flex-1 flex overflow-hidden max-w-[1360px] mx-auto w-full">
         <section className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-6 custom-scrollbar scroll-smooth min-w-0">
@@ -186,17 +216,10 @@ export const ExamView: FC<ExamViewProps> = ({
           fullscreenViolations={0}
           onJumpTo={onJumpToQuestion}
           stats={examStats}
+          isVisible={showStatusBoard}
+          onToggleVisibility={() => setShowStatusBoard(prev => !prev)}
         />
       </main>
-
-      <MobileQuestionStrip
-        questions={questions}
-        currentIdx={currentIndex}
-        selectedAnswers={answers as Record<string, string | null>}
-        markedForReview={markedSet}
-        visitedQuestions={visitedSet}
-        onJumpTo={onJumpToQuestion}
-      />
 
       <MobileActionBar
         isFirstQuestion={isFirstQuestion}

@@ -35,7 +35,11 @@ export default function AdminOverview() {
         <section className="grid gap-6 grid-cols-1">
           <SectionReveal delay={0.1}>
             <Card variant="premium-neutral" padding={24} className="group">
-              <Suspense fallback={<LoadingSkeleton height={300} borderRadius={16} />}>
+              <Suspense fallback={
+                <div role="status" aria-label="Loading daily attempts chart">
+                  <LoadingSkeleton height={300} borderRadius={16} />
+                </div>
+              }>
                 <DailyAttemptsChart selectedExam={selectedExam} resolvedIds={resolvedIds} />
               </Suspense>
             </Card>

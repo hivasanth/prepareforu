@@ -1,15 +1,14 @@
 import { useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { AlertCircle, Search } from 'lucide-react'
-import { H1, PageContainer, Stack, SectionReveal, Alert, Label } from '../../components/common/AntigravityUI'
+import { AlertCircle, CheckCircle2, Search } from 'lucide-react'
+import { H1, PageContainer, Stack, SectionReveal, Alert, Label, RetryButton } from '../../components/common/AntigravityUI'
 import { AdminText } from '../../components/common/AdminText'
-import { ToastContainer } from '../../hooks/useToast'
 import { ConfirmModal, EmptyState } from '../../components/common/SharedComponents'
 import { AdminSelectionTabs } from '../../components/admin/shared/AdminSelectionTabs'
 import { EXAM_TABS } from '../../components/admin/shared/examPresets'
 import { UsersActions } from '../../components/admin/users/UsersActions'
 import { UsersTable } from '../../components/admin/users/UsersTable'
-import { useAdminUsers } from '../../components/admin/users/useAdminUsers'
+import { USERS_PAGE_SIZE, useAdminUsers } from '../../components/admin/users/useAdminUsers'
 
 export default function AdminUsers() {
   const h = useAdminUsers()
@@ -43,9 +42,17 @@ export default function AdminUsers() {
           </div>
         </SectionReveal>
 
+        {h.actionSuccess && (
+          <SectionReveal>
+            <Alert variant="success" icon={CheckCircle2} title="User updated" className="w-full" onDismiss={h.clearActionSuccess}>
+              {h.actionSuccess}
+            </Alert>
+          </SectionReveal>
+        )}
+
         {h.actionError && (
           <SectionReveal>
-            <Alert variant="error" icon={AlertCircle} title="Action failed" className="w-full">
+            <Alert variant="error" icon={AlertCircle} title="User update failed" className="w-full">
               {h.actionError}
             </Alert>
           </SectionReveal>
@@ -53,8 +60,19 @@ export default function AdminUsers() {
 
         {h.usersError && (
           <SectionReveal>
+            {/* AU-1: the retry control lives on the error surface itself so it
+                is available even when stale rows are still displayed. fetchData
+                re-runs against current exam/status/search/page state. */}
             <Alert variant="error" icon={AlertCircle} title="Failed to load users" className="w-full">
-              {h.usersError}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <span className="flex-1">{h.usersError}</span>
+                <RetryButton
+                  label="Retry"
+                  onRetry={h.handleRetry}
+                  loading={h.isUsersLoading}
+                  className="sm:w-auto"
+                />
+              </div>
             </Alert>
           </SectionReveal>
         )}
@@ -70,9 +88,13 @@ export default function AdminUsers() {
 
         <SectionReveal delay={0.1}>
           <div aria-live="polite" aria-label="Users list">
+            {h.totalUsers > 0 && (
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">
+                Showing {(h.page - 1) * USERS_PAGE_SIZE + 1}–{Math.min(h.page * USERS_PAGE_SIZE, h.totalUsers)} of {h.totalUsers}
+              </p>
+            )}
             <UsersTable
               users={h.users}
-              totalUsers={h.totalUsers}
               loading={h.isUsersLoading}
               page={h.page}
               totalPages={h.totalPages}
@@ -136,7 +158,6 @@ export default function AdminUsers() {
         onConfirm={h.handleConfirmToggle}
         onCancel={() => h.setConfirmToggle(null)}
       />
-      <ToastContainer toasts={h.toasts} variant="management" />
     </PageContainer>
   )
 }

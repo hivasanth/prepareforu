@@ -1,5 +1,6 @@
 import { useTheme } from '../../../context/ThemeContext'
 import { Stack, Button } from '../../common/AntigravityUI'
+import { GOLD_LIGHT_MATERIAL } from '../../common/AntigravityCard'
 import { Trash2 } from 'lucide-react'
 import { AdminText } from '../../common/AdminText'
 
@@ -17,7 +18,7 @@ export function BulkActionBar({ selectedCount, onDelete, onCancel }: BulkActionB
   return (
     <div className="fixed bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in w-[95vw] max-w-max">
       <div className={`
-        ${!isDark ? 'bg-[var(--management-surface)] border-border-subtle' : 'bg-card-bg border-border-subtle'} 
+        ${!isDark ? `bg-[var(--management-surface)] border-border-subtle ${GOLD_LIGHT_MATERIAL}` : 'bg-card-bg border-border-subtle'} 
         border rounded-3xl px-4 sm:px-8 py-3 sm:py-4 shadow-2xl flex items-center gap-3 sm:gap-8 backdrop-blur-xl w-full
       `}>
         <Stack gap="xs">
@@ -30,7 +31,7 @@ export function BulkActionBar({ selectedCount, onDelete, onCancel }: BulkActionB
         <Button variant="danger" onClick={onDelete} className="!h-9 sm:!h-10 px-4 sm:px-6 text-xs sm:text-sm">
           <Trash2 size={16} className="mr-1.5 sm:mr-2" /> Delete
         </Button>
-        <Button variant="secondary" onClick={onCancel} className="!bg-transparent !border-none !h-9 sm:!h-10 text-xs sm:text-sm !text-text-secondary hover:!text-text-primary">
+        <Button variant="ghost" onClick={onCancel} className="!h-9 sm:!h-10 text-xs sm:text-sm">
           Cancel
         </Button>
       </div>

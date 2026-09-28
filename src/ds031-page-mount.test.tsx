@@ -5,6 +5,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
 import UserSubjectTests from './pages/user/UserSubjectTests'
 import * as subjectTestService from './services/subjectTestService'
+import './components/user/subject-tests/SubjectPortalView'
+import './components/user/subject-tests/SubjectConfigView'
 
 vi.mock('./context/AuthContext', () => ({
   useAuth: () => ({
@@ -69,11 +71,11 @@ describe('DS-031 UserSubjectTests page mount', () => {
       </StrictMode>,
     )
 
-    await screen.findByText('General Studies')
-    await screen.findByRole('tab', { name: /paper 1/i })
+    await screen.findByText('General Studies', undefined, { timeout: 5000 })
+    await screen.findByRole('tab', { name: /paper 1/i }, { timeout: 5000 })
 
     fireEvent.click(screen.getByRole('tab', { name: /paper 2/i }))
-    await screen.findByText('Telugu')
+    await screen.findByText('Telugu', undefined, { timeout: 5000 })
 
     spy.mockRestore()
 

@@ -71,7 +71,7 @@ export function CreateStepPublish({ examConfig, questions, onPublish, onBack, is
 
       <div className="flex justify-center">
         <Button
-          variant="secondary"
+          variant="soft"
           onClick={onBack}
           disabled={isPublishing}
           className="h-10"

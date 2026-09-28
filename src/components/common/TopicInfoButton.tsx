@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Info } from 'lucide-react'
 import { useCanHover } from '../../hooks/useCanHover'
 import { ConfirmModal } from './SharedComponents'
+import { MOTION_DURATION, MOTION_EASE, FOCUS_RING } from './AntigravityMotion'
 
 interface TopicInfoButtonProps {
   displayTitle: string
@@ -52,21 +53,20 @@ export function TopicInfoButton({ displayTitle, heading = 'Topic Name' }: TopicI
         <button
           type="button"
           aria-label={`Show full ${heading.toLowerCase()}`}
-          className="
+          className={`
             p-2.5 rounded-lg
             bg-gradient-to-br from-primary/15 to-primary/5
             border border-primary/20
             text-primary/70
-            shadow-sm shadow-primary/5
+            shadow-[var(--elevation-1)] shadow-primary/5
             hover:bg-primary/20 hover:border-primary/40 hover:text-primary
-            hover:shadow-md hover:shadow-primary/10
-            active:shadow-sm active:translate-y-[1px]
-            transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-out
+            active:brightness-95
+            transition-interaction duration-fast ease-standard
             cursor-pointer pointer-events-auto relative z-10
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
-          "
+            ${FOCUS_RING}
+          `}
         >
-          <Info size={16} className="transition-transform duration-200 group-hover:scale-110" />
+          <Info size={16} />
         </button>
 
         <AnimatePresence>
@@ -75,14 +75,14 @@ export function TopicInfoButton({ displayTitle, heading = 'Topic Name' }: TopicI
               initial={{ opacity: 0, scale: 0.92, y: -4 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: -4 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
+              transition={{ duration: MOTION_DURATION.fast, ease: MOTION_EASE.enter }}
               role="tooltip"
               aria-label={displayTitle}
               className="
                 absolute top-full right-0 mt-2 z-50
                 bg-card-bg border border-primary/20 rounded-xl p-3
                 shadow-xl shadow-primary/10
-                min-w-[200px] max-w-[280px]
+                min-w-[200px] max-w-[min(280px,calc(100vw-2rem))]
                 pointer-events-none
                 ancient-overlay
               "
@@ -104,17 +104,17 @@ export function TopicInfoButton({ displayTitle, heading = 'Topic Name' }: TopicI
         onClick={(e) => { e.stopPropagation(); setIsDialogOpen(true) }}
         onKeyDown={handleKeyDown}
         aria-label={`Show full ${heading.toLowerCase()}`}
-        className="
+        className={`
           p-1.5 rounded-lg
           bg-gradient-to-br from-primary/15 to-primary/5
           border border-primary/20
           text-primary/70
-          shadow-sm shadow-primary/5
-          active:shadow-sm active:translate-y-[1px]
-          transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-out
+          shadow-[var(--elevation-1)] shadow-primary/5
+          active:brightness-95
+          transition-interaction duration-fast ease-standard
           cursor-pointer pointer-events-auto relative z-10
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
-        "
+          ${FOCUS_RING}
+        `}
       >
         <Info size={16} />
       </button>

@@ -11,7 +11,7 @@ import {
   getCachedMetadata,
   type PerformanceMetadata,
 } from '../../services/performanceService';
-import type { AttemptWithRelations } from '../../types/exam.types';
+import type { PerformanceAttemptSummary } from '../../types/exam.types';
 
 export function useHistory() {
   const { user, loading: authLoading } = useAuth();
@@ -19,7 +19,7 @@ export function useHistory() {
 
   const isAppsc = user?.exam_selection === 'APPSC_GROUPS' || user?.exam_selection === 'APPSC';
 
-  const [allAttempts, setAllAttempts] = useState<AttemptWithRelations[]>(() => {
+  const [allAttempts, setAllAttempts] = useState<PerformanceAttemptSummary[]>(() => {
     return getCachedAttempts(user?.id || '');
   });
   const [metadata, setMetadata] = useState<PerformanceMetadata>(() => {
@@ -36,16 +36,24 @@ export function useHistory() {
   const [selectedPaperId, setSelectedPaperId] = useState<string>('');
   const { nextId, isStale } = useStableFetch();
 
-  const loadHistory = useCallback(async (force = false) => {
-    if (authLoading) return;
-    if (!user?.id || !user?.exam_selection) return;
+  const isRetrying = errorState === 'retrying';
+  const isLoading = loading || isRetrying;
+
+  const loadHistory = useCallback(async (force = false): Promise<boolean> => {
+    if (authLoading) return false;
+    if (!user?.id || !user?.exam_selection) return false;
     const id = nextId();
 
     if (force) {
       clearPerformanceCache(user.id);
     }
 
-    if (!force && (!getCachedAttempts(user?.id || '')?.length || !getCachedMetadata(user?.exam_selection || '')?.exams?.length)) {
+    // BUG-2 fix: keep the loading gate closed during a forced retry. Without
+    // this, the force path skipped `setLoading(true)` so the moment
+    // `resetError()` cleared the 'retrying' state the page fell through to
+    // `loading=false + error=null + data=[]` — an empty/content flash (cold
+    // cache) or stale-content-as-success (warm cache) mid-retry.
+    if (force || !getCachedAttempts(user?.id || '')?.length || !getCachedMetadata(user?.exam_selection || '')?.exams?.length) {
       setLoading(true);
     }
 
@@ -54,16 +62,18 @@ export function useHistory() {
     try {
       const [historyData, metaData] = await Promise.all([
         fetchPerformanceAttempts(user.id, force),
-        fetchPerformanceMetadata(user.exam_selection),
+        fetchPerformanceMetadata(user.exam_selection, false),
       ]);
 
-      if (isStale(id)) return;
+      if (isStale(id)) return false;
 
       setAllAttempts(historyData || []);
       setMetadata(metaData || { exams: [], papers: [], subjects: [] });
+      return true;
     } catch (err: unknown) {
-      if (isStale(id)) return;
+      if (isStale(id)) return false;
       captureNetworkError(err, { retryFn: () => loadHistory(true) });
+      return false;
     } finally {
       if (!isStale(id)) {
         setLoading(false);
@@ -71,22 +81,41 @@ export function useHistory() {
     }
   }, [authLoading, user?.id, user?.exam_selection]);
 
+  // BUG-4 fix: reconcile selection against metadata whenever it changes.
+  // A valid selection is preserved; an invalid one (stale exam after an
+  // in-session `exam_selection` change, or a paper that no longer exists for
+  // the selected exam) is re-derived. The old effect only ran while
+  // `selectedExamId` was empty, so an in-session metadata change never
+  // re-synced the selection.
   useEffect(() => {
-    if (metadata.exams.length > 0 && !selectedExamId) {
-      const sorted = [...metadata.exams].sort((a, b) => a.name.localeCompare(b.name));
-      const first = sorted[0].id;
-      setSelectedExamId(first);
+    if (metadata.exams.length === 0) return;
+
+    const examValid = metadata.exams.some(e => e.id === selectedExamId);
+
+    if (!examValid) {
+      const firstExamId = [...metadata.exams].sort((a, b) => a.name.localeCompare(b.name))[0].id;
+      setSelectedExamId(firstExamId);
 
       if (isAppsc) {
         const firstPaper = metadata.papers
-          .filter(p => p.exam_id === first)
+          .filter(p => p.exam_id === firstExamId)
           .sort((a, b) => a.name.localeCompare(b.name))[0];
         setSelectedPaperId(firstPaper?.id ?? '');
       } else {
         setSelectedPaperId('');
       }
+      return;
     }
-  }, [metadata, selectedExamId, isAppsc]);
+
+    if (isAppsc) {
+      const papers = metadata.papers.filter(p => p.exam_id === selectedExamId);
+      if (papers.length > 0 && !papers.some(p => p.id === selectedPaperId)) {
+        setSelectedPaperId([...papers].sort((a, b) => a.name.localeCompare(b.name))[0].id);
+      }
+    } else if (selectedPaperId) {
+      setSelectedPaperId('');
+    }
+  }, [metadata, selectedExamId, selectedPaperId, isAppsc]);
 
   useEffect(() => {
     loadHistory();
@@ -124,6 +153,10 @@ export function useHistory() {
     });
   }, [allAttempts, selectedExamId, selectedPaperId]);
 
+  // BUG-5 fix: distinguish a genuinely empty history (no attempts at all)
+  // from a filter-empty result (attempts exist, none match the selection).
+  const isEmptyFilter = filteredAttempts.length === 0 && allAttempts.length > 0;
+
   const handleExamChange = useCallback((val: string) => {
     setSelectedExamId(val);
     const firstPaper = metadata.papers
@@ -134,7 +167,8 @@ export function useHistory() {
   }, [metadata.papers]);
 
   return {
-    loading,
+    isLoading,
+    authLoading,
     errorState,
     pageError,
     retryError,
@@ -148,5 +182,6 @@ export function useHistory() {
     examOptions,
     paperOptions,
     filteredAttempts,
+    isEmptyFilter,
   };
 }

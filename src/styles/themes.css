@@ -302,6 +302,14 @@
   --divider-color: #374151;
   --divider-width: 1px;
 
+  /* Premium border width — canonical hairline for the premium/management
+     surface family (SelectionContainer, PREMIUM_SURFACE, MANAGEMENT_SURFACE).
+     Previously consumed but never defined, so border-[var(--border-premium-width)]
+     compiled to a color declaration and the premium border rendered at
+     preflight width 0. Defined here so the certified recipes render their
+     intended 1px edge (matches the row/card `border` = 1px geometry). */
+  --border-premium-width: 1px;
+
   /* ─── Semantic Radius Tokens ──────────────────────── */
   --radius-card: var(--radius-3xl);
   --radius-container: var(--radius-2xl);
@@ -395,15 +403,18 @@
      reviewable wave). */
 
   /* ─── Foundation 4.6A — Semantic Z-Index Layer Scale ─────────────────────── */
-  /* P2 Wave 5 — architecture completion only (render-neutral). Consumption of
-     these layers is a separate, reviewable wave; no component reads them yet.
-     Dropdown layer is already served by --dropdown-z (themes.css) and is
-     intentionally not duplicated here. */
   --z-canvas: 0;
   --z-content: 10;
   --z-sticky: 30;
   --z-drawer: 70;
   --z-modal: 100;
+  /* Transient anchored surfaces (PremiumSelect dropdown / popover menus) portal
+     to <body> and must float ABOVE every surface they can be launched from —
+     including portaled modals (AdminModal z-50, legacy z-[1000] overlays) and
+     sticky toolbars. Only one menu is open at a time, so this layer cannot
+     stack-conflict with itself; it stays below route guards/auth overlays
+     (9999) and toast (99999). */
+  --z-dropdown: 5000;
   --z-toast: 99999;
 
   /* ─── Ancient Backward Compatibility (Phase 4.2 remap) ─
@@ -440,6 +451,7 @@
   --bg-warning-subtle: rgba(115, 50, 6, 0.15);
   --bg-danger-subtle: rgba(122, 12, 12, 0.15);
   --bg-accent-subtle: rgba(22, 101, 52, 0.1);
+  --badge-light-bg: #FFFFFF; /* DS-005 light-mode Pill surface (white for readability) */
 
   /* ─── Text Tokens ────────────────────────────────────────────────────── */
   /* Phase 4.2 — near-black browns retired. Neutral gray typography. */
@@ -590,6 +602,9 @@
   --divider-color: rgba(15, 23, 42, 0.10);
   --divider-width: 1px;
 
+  /* Premium border width — light theme mirror of the :root definition. */
+  --border-premium-width: 1px;
+
   /* ─── Navigation Semantic Tokens ──────────────────── */
   --bg-nav: rgba(12, 32, 20, 0.95);
   --text-nav: rgba(255, 255, 255, 0.95);
@@ -628,6 +643,10 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
   /* ─── Button Component Tokens ────────────────────────────────────────── */
+  --button-radius-xs: 10px;
+  --button-radius-sm: 12px;
+  --button-radius-md: 14px;
+  --button-radius-xl: 16px;
 
 
 
@@ -661,14 +680,21 @@
   --button-surface-secondary: var(--bg-hover);
   --button-surface-secondary-hover: color-mix(in srgb, var(--bg-hover) 80%, transparent);
   --button-text-secondary: var(--text-primary);
-  --button-border-secondary: var(--border-subtle);
-  --button-shadow-secondary: none;
-  --button-shadow-secondary-hover: var(--elevation-1);
+  --button-border-secondary: var(--gold-300);
+  --button-shadow-secondary: var(--elevation-carved);
+  --button-shadow-secondary-hover: var(--elevation-3);
   --button-surface-ghost: transparent;
   --button-surface-ghost-hover: var(--bg-hover);
   --button-text-ghost: var(--text-secondary);
   --button-text-ghost-hover: var(--text-primary);
   --button-border-ghost: transparent;
+  /* Action icon-button role (IconButton variant="action") — high-contrast
+     outline control. Border anchors to the certified primary-text neutral:
+     near-black in light (#111827), near-white in dark (#F9FAFB). */
+  --button-surface-action: var(--bg-hover);
+  --button-surface-action-hover: var(--bg-active);
+  --button-text-action: var(--text-primary);
+  --button-border-action: var(--text-primary);
 
   --checkbox-surface: var(--bg-hover);
   --checkbox-border: var(--border-subtle);
@@ -748,6 +774,12 @@
   /* ─── Progress Component Tokens ──────────────────────────────────────── */
 
   /* ─── Skeleton Component Tokens ──────────────────────────────────────── */
+  /* DS-019 certified skeleton material (dark baseline aliases) — restored:
+     the token definitions were lost from this file, leaving every
+     bg-[var(--skeleton-block)] placeholder transparent. */
+  --skeleton-surface: var(--bg-elevated);
+  --skeleton-block: var(--border-input);
+
 
   /* ─── Loader / Spinner Component Tokens ──────────────────────────────── */
 
@@ -764,6 +796,9 @@
   --card-border: rgba(55, 65, 81, 0.5);
   --card-shadow: var(--elevation-2);
   --card-hover-shadow: var(--elevation-raised);
+
+  /* ─── Glow shadow tokens (FIX-13) ──────────────────────────────────────── */
+  --glow-danger: 0 0 15px rgba(244, 63, 94, 0.2);
 
   /* ─── COMPONENT MATERIAL TOKENS ──────────────────────────────────────────
      Single consolidated Semantic Material namespace. Each component owns its
@@ -798,10 +833,10 @@
 
   /* Button */
   /* Phase 4.2 — primary button surface keeps the forest gradient (accent);
-     gold border/carved shadow retired. Text on the dark forest = white. */
+     3D carved shadow + gold border for premium depth (SelectionContainer style). */
   --material-button-primary-surface: var(--gradient-header);
-  --material-button-primary-border: transparent;
-  --material-button-primary-shadow: var(--elevation-2);
+  --material-button-primary-border: var(--gold-300);
+  --material-button-primary-shadow: var(--elevation-carved);
   --material-button-primary-text: var(--text-on-accent);
 
   /* Input (DS-003). Semantic Material namespace for new Input variants.
@@ -882,6 +917,10 @@
    Only component tokens that differ in light theme.
    ═══════════════════════════════════════════════════════════════════════════ */
 .light {
+  /* DS-019 certified skeleton material (light hexes) — restored */
+  --skeleton-surface: #F1F5F9;
+  --skeleton-block: #E2E8F0;
+
   /* ─── Sidebar Light Theme Overrides ──────────────────────────────────── */
   --sidebar-bg: var(--gradient-header);
   --sidebar-border: var(--gold-300);
@@ -923,6 +962,8 @@
   --checkbox-border: var(--border-subtle);
   --filter-shadow: var(--elevation-2);
   --filter-shadow-hover: var(--elevation-3);
+  --button-surface-action: var(--bg-surface);
+  --button-surface-action-hover: var(--bg-hover);
 
   /* ─── Stat Card Overrides ────────────────────────────────────────────── */
   /* Phase 4.2 — StatCard remains a certified premium-accent surface (D-141):

@@ -1,6 +1,4 @@
 import { useAuth } from '../../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
-import { LoadingSkeleton, ErrorState } from '../../components/common/SharedComponents'
 import {
   PageContainer,
   Stack,
@@ -9,17 +7,17 @@ import {
   H2,
   Body,
 } from '../../components/common/AntigravityUI'
-import { useUserExams, ExamPaperGrid } from '../../components/user/full-exams'
+import { useUserExams, ExamPaperGrid, ExamGridSkeleton, ExamSelectionSkeleton } from '../../components/user/full-exams'
 
 export default function UserExams() {
-  const navigate = useNavigate()
-  const { user, loading: authLoading } = useAuth()
+  const { loading: authLoading } = useAuth()
 
   const {
     loading,
     errorState,
     pageError,
     retryError,
+    isRetrying,
     isAppsc,
     groupOptions,
     activeGroup,
@@ -34,36 +32,21 @@ export default function UserExams() {
     scrollContainerRef,
   } = useUserExams()
 
-  if (authLoading) {
-    return (
-      <PageContainer>
-        <Stack gap="lg">
-          <div className="flex justify-center">
-            <LoadingSkeleton height={44} width={320} borderRadius={14} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 w-full">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-              <LoadingSkeleton key={i} height={320} borderRadius={18} />
-            ))}
-          </div>
-        </Stack>
-      </PageContainer>
-    )
-  }
+  /* EX-3: only APPSC users get the Exam Selection tabs, so the selection
+     skeleton must not render for non-APPSC users. While auth is still loading
+     the identity/exam selection is unknown, so keep the original structure
+     (selection + grid) until the user type is known. */
+  const renderLoadingContent = () => (
+    <PageContainer>
+      <Stack gap="lg">
+        {(authLoading || isAppsc) && <ExamSelectionSkeleton />}
+        <ExamGridSkeleton />
+      </Stack>
+    </PageContainer>
+  )
 
-  if (!user?.exam_selection) {
-    return (
-      <PageContainer>
-        <div className="py-12">
-          <ErrorState
-            icon="📋"
-            title="No Exam Selection"
-            message="You haven't selected any exams yet. Please visit your profile to choose your exams."
-            onRetry={() => navigate('/dashboard')}
-          />
-        </div>
-      </PageContainer>
-    )
+  if (authLoading) {
+    return renderLoadingContent()
   }
 
   if (errorState === 'error' && pageError) {
@@ -73,7 +56,7 @@ export default function UserExams() {
           <H2>{pageError.title}</H2>
           <Body>{pageError.message}</Body>
           {pageError.retryable && (
-            <RetryButton onRetry={retryError} />
+            <RetryButton onRetry={retryError} loading={isRetrying} />
           )}
         </ErrorContainer>
       </PageContainer>
@@ -81,20 +64,7 @@ export default function UserExams() {
   }
 
   if (loading) {
-    return (
-      <PageContainer>
-        <Stack gap="lg">
-          <div className="flex justify-center">
-            <LoadingSkeleton height={44} width={320} borderRadius={14} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 w-full">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-              <LoadingSkeleton key={i} height={320} borderRadius={18} />
-            ))}
-          </div>
-        </Stack>
-      </PageContainer>
-    )
+    return renderLoadingContent()
   }
 
   return (

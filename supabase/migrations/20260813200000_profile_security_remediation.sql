@@ -77,12 +77,20 @@ DROP POLICY IF EXISTS "Allow user to insert own profile" ON public.users;
 --    self-referential subqueries). Field-level protection is enforced by the
 --    column privileges revoked in section 5.
 -- -----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_users_self_update' AND polrelid = 'public.users'::regclass
+  ) THEN
 CREATE POLICY "rls_users_self_update"
 ON public.users
 FOR UPDATE
 TO authenticated
 USING (auth.uid() IS NOT NULL AND id = auth.uid())
 WITH CHECK (auth.uid() IS NOT NULL AND id = auth.uid());
+  END IF;
+END
+$$;
 
 -- -----------------------------------------------------------------------------
 -- 4. Support — update_updated_at() becomes SECURITY DEFINER. The trigger
@@ -330,13 +338,36 @@ SELECT
   ) THEN 'PASS' ELSE 'FAIL' END AS result;
 
 -- TEST 8.5: writable columns keep UPDATE for authenticated
+--
+-- CORRECTED BY P0-02 (20261004000000_p0_02_server_owned_exam_entitlements.sql).
+-- This assertion originally required all THREE of
+-- full_name / exam_selection / last_activity_date to stay writable, because
+-- exam_selection was assumed to be an inert profile preference. It was not
+-- inert: is_exam_allowed_for_user() read it, so writing it granted an account
+-- access to a whole exam category. P0-02 revoked UPDATE(exam_selection) and
+-- moved authorization into public.user_exam_entitlements; the preference is
+-- now written only through the validated set_preferred_exam() RPC.
+--
+-- full_name and last_activity_date remain self-writable: neither can confer
+-- content access, and revoking them would break the profile page and the
+-- activity heartbeat for no security benefit.
+--
+-- NOTE: this migration is already applied, so this edit does not re-run against
+-- production. The authoritative, enforced check is in
+-- supabase/tests/p0_02_exam_entitlements.sql; this is kept accurate so the
+-- historical file does not assert a grant that must no longer exist.
 SELECT
-  'TEST 8.5: full_name/exam_selection/last_activity_date UPDATE kept (auth)' AS test_name,
+  'TEST 8.5: full_name/last_activity_date UPDATE kept, exam_selection revoked (auth)' AS test_name,
   CASE WHEN (SELECT COUNT(*) FROM information_schema.column_privileges
              WHERE table_schema = 'public' AND table_name = 'users'
                AND grantee = 'authenticated'
-               AND column_name IN ('full_name', 'exam_selection', 'last_activity_date')
-               AND privilege_type = 'UPDATE') = 3
+               AND column_name IN ('full_name', 'last_activity_date')
+               AND privilege_type = 'UPDATE') = 2
+        AND NOT EXISTS (SELECT 1 FROM information_schema.column_privileges
+                        WHERE table_schema = 'public' AND table_name = 'users'
+                          AND grantee = 'authenticated'
+                          AND column_name = 'exam_selection'
+                          AND privilege_type = 'UPDATE')
     THEN 'PASS' ELSE 'FAIL' END AS result;
 
 -- TEST 8.6: update_updated_at is SECURITY DEFINER

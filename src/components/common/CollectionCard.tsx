@@ -32,7 +32,11 @@ export interface CollectionCardProps {
   subtitle?: ReactNode
   /** Metadata region (badges / chips), rendered as a wrapped token row. */
   metadata?: ReactNode
-  /** Main body slot. In `grid` layout it grows to pin the footer. */
+  /** Main body slot. In `grid` layout it grows to pin the footer. With
+   *  `layout="row"` + `innerClassName` it renders as direct children of the
+   *  caller's grid (between `leading` and `title`) so a row can declare more
+   *  columns than the four slots — e.g. QuestionsTable's dedicated number
+   *  column. */
   content?: ReactNode
   /** Footer slot (left side of the footer row in `grid` layout). */
   footer?: ReactNode
@@ -52,6 +56,10 @@ export interface CollectionCardProps {
   titleAs?: CollectionCardTitleTag
   ariaLabel?: string
   className?: string
+  /** Override the internal row layout with a custom grid/flex container.
+   *  When provided, leading, title, trailing, and actions render as direct
+   *  grid children instead of the default flex row structure. */
+  innerClassName?: string
 }
 
 type CardSurface = 'default' | 'subtle' | 'premium-dark-neutral' | 'management'
@@ -91,6 +99,7 @@ export const CollectionCard = memo(function CollectionCard({
   titleAs = 'h2',
   ariaLabel,
   className = '',
+  innerClassName = '',
 }: CollectionCardProps) {
   const resolved = VARIANT_MAP[variant]
   const resolvedPadding = padding ?? resolved.padding
@@ -175,7 +184,17 @@ export const CollectionCard = memo(function CollectionCard({
     </div>
   )
 
-  const rowBody = (
+  const rowBody = innerClassName ? (
+    <div className={innerClassName}>
+      {leading}
+      {content}
+      <div className="flex-1 min-w-0">
+        {title && <TitleTag className={titleClass}>{title}</TitleTag>}
+      </div>
+      {trailing}
+      {actions}
+    </div>
+  ) : (
     <>
       <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
         <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">

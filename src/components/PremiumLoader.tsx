@@ -1,23 +1,11 @@
 import type { FC } from 'react';
+import { LoadingOverlay } from './common/SharedComponents';
 
+/* Phase 5.4F (D-172) — PremiumLoader delegates to the ONE LoadingOverlay
+   (inline variant). The gold duplicate spinner was removed (LG-1). The
+   App.tsx PageLoader consumer is unchanged. */
 const PremiumLoader: FC = () => {
-  return (
-    <div role="status" aria-live="polite" aria-label="Loading" className="flex flex-col items-center justify-center p-8">
-      <div className="relative w-16 h-16">
-        {/* Outer Ring */}
-        <div className="absolute inset-0 rounded-full border-4 border-[#2c4c3b]/20"></div>
-        {/* Spinning Ring */}
-        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#d4af37] border-r-[#d4af37] animate-spin"></div>
-        {/* Inner Core */}
-        <div className="absolute inset-3 bg-[#2c4c3b] rounded-full flex items-center justify-center animate-pulse">
-          <div className="w-2 h-2 bg-[#f4ebd8] rounded-full"></div>
-        </div>
-      </div>
-      <p className="mt-4 font-cinzel text-[var(--premium-green)] font-semibold tracking-widest text-sm uppercase animate-pulse">
-        Loading
-      </p>
-    </div>
-  );
+  return <LoadingOverlay fullScreen={false} message="Loading" />;
 };
 
 export default PremiumLoader;

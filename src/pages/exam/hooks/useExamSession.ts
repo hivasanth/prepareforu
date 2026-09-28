@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   setQuestionAnswer,
   setQuestionReview,
@@ -19,7 +19,6 @@ interface UseExamSessionOptions {
   selectedAnswers: Record<string, string | null>;
   markedForReview: Set<string>;
   visitedQuestions: Set<string>;
-  subjectMarksRef: React.MutableRefObject<Record<string, number>>;
   selectedAnswersRef: React.MutableRefObject<Record<string, string | null>>;
   markedForReviewRef: React.MutableRefObject<Set<string>>;
   setSelectedAnswers: React.Dispatch<React.SetStateAction<Record<string, string | null>>>;
@@ -38,14 +37,12 @@ export function useExamSession({
   initComplete,
   loading,
   attempt,
-  paper,
   questions,
   currentQuestion,
   isSubmitting,
   selectedAnswers,
   markedForReview,
   visitedQuestions,
-  subjectMarksRef,
   selectedAnswersRef,
   markedForReviewRef,
   setSelectedAnswers,
@@ -55,7 +52,7 @@ export function useExamSession({
   const lastSyncAnswers = useRef<string>('');
   const syncTimeoutRef = useRef<any>(null);
 
-  const examStats = computeExamStatistics(questions, selectedAnswers, markedForReview, visitedQuestions, undefined, attempt?.duration_seconds ?? undefined);
+  const examStats = useMemo(() => computeExamStatistics(questions, selectedAnswers, markedForReview, visitedQuestions, undefined, attempt?.duration_seconds ?? undefined), [questions, selectedAnswers, markedForReview, visitedQuestions, attempt?.duration_seconds]);
 
   // ─── Autosave Cache Sync ────────────────────────────────────────────────────
   useEffect(() => {
@@ -71,7 +68,7 @@ export function useExamSession({
       }
     }, 5000);
     return () => { if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current); };
-  }, [selectedAnswers, attempt?.id, loading, initComplete]);
+  }, [selectedAnswers, attempt?.id, attempt?.user_id, loading, initComplete]);
 
   // ─── Keep refs in sync ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -95,7 +92,7 @@ export function useExamSession({
     try {
       await executeWithRetry(
         `${questionId}-review`,
-        () => setQuestionReview(attempt.id, questionId, currentQuestion.correct_option, newMarked),
+        () => setQuestionReview(attempt.id, questionId, newMarked),
       );
     } catch (error) {
       if (error instanceof StaleOperationError) { return; }
@@ -129,9 +126,6 @@ export function useExamSession({
           attempt.id,
           questionId,
           option,
-          currentQuestion.correct_option,
-          subjectMarksRef.current[currentQuestion.subject_name] ?? (attempt.total_marks / questions.length),
-          paper?.negative_mark_value || 0,
         ),
       );
     } catch (error) {
@@ -164,9 +158,6 @@ export function useExamSession({
           attempt.id,
           questionId,
           null,
-          currentQuestion.correct_option,
-          subjectMarksRef.current[currentQuestion.subject_name] ?? (attempt.total_marks / questions.length),
-          paper?.negative_mark_value || 0,
         ),
       );
     } catch (error) {

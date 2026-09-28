@@ -1,30 +1,50 @@
 import type { FC } from 'react';
-import { CheckCircle2 } from 'lucide-react';
 import DOMPurify from 'dompurify';
+import { QuestionCardOption, type QuestionCardOptionState } from './QuestionCardOption';
 
 interface QuestionOptionsProps {
   options: string[];
   selectedAnswer: string | null | undefined;
-  onSelect: (option: string) => void;
+  /** Omit in read-only contexts: rows render as static informational divs
+   *  (no radio role, no pointer cursor, no click affordance). */
+  onSelect?: (option: string) => void;
   disabled?: boolean;
+  /** Suppress transient pointer-hover feedback (read-only contexts). */
+  hoverable?: boolean;
   showCorrect?: boolean;
   correctOption?: string;
   userAnswer?: string | null;
 }
 
+/**
+ * Answer option surface — delegates row geometry/markers/states to the shared
+ * QuestionCardOption primitive (same source as manual-entry authoring rows).
+ */
 export const QuestionOptions: FC<QuestionOptionsProps> = ({
   options,
   selectedAnswer,
   onSelect,
   disabled = false,
+  hoverable = true,
   showCorrect = false,
   correctOption,
   userAnswer,
 }) => {
   const labels = ['A', 'B', 'C', 'D'];
 
+  /* Interactive only when the caller supplies a selection handler. A context
+   * without onSelect (e.g. the Bulk Upload preview) must not be announced as
+   * a radiogroup nor render radio-wrapped rows — options there are plain
+   * informational rows. Disabled-but-handled consumers (sub-admin vault,
+   * design-system showcase) keep their existing radio geometry unchanged. */
+  const interactive = !!onSelect;
+
   return (
-    <div role="radiogroup" aria-label="Answer options" className="flex flex-col gap-3.5">
+    <div
+      role={interactive ? 'radiogroup' : undefined}
+      aria-label={interactive ? 'Answer options' : undefined}
+      className="flex flex-col gap-3.5"
+    >
       {options.map((optionText, idx) => {
         if (!optionText) return null;
         const label = labels[idx];
@@ -34,48 +54,31 @@ export const QuestionOptions: FC<QuestionOptionsProps> = ({
         const isCorrectAnswer = showCorrect && correctOption === label;
         const isWrongSelected = showCorrect && isSelected && correctOption !== label;
 
-        let borderClass = 'border-border-subtle bg-app-bg hover:border-border-subtle hover:bg-hover-bg';
-        let labelBg = 'bg-hover-bg text-text-secondary group-hover:text-text-primary';
-
-        if (isWrongSelected) {
-          borderClass = 'border-danger bg-danger/5';
-          labelBg = 'bg-danger text-white';
-        } else if (isCorrectAnswer) {
-          borderClass = 'border-success bg-success/5 shadow-md shadow-success/5';
-          labelBg = 'bg-success text-white';
-        } else if (isSelected) {
-          borderClass = 'border-primary bg-primary/5 shadow-md shadow-primary/5';
-          labelBg = 'bg-primary text-white';
-        }
+        const state: QuestionCardOptionState = isWrongSelected
+          ? 'wrong'
+          : isCorrectAnswer
+            ? 'correct'
+            : isSelected
+              ? 'selected'
+              : 'neutral';
 
         return (
-          <button
+          <QuestionCardOption
             key={label}
-            type="button"
-            role="radio"
-            aria-checked={isSelected}
-            onClick={() => onSelect(label)}
+            label={label}
+            state={state}
+            onClick={interactive ? () => onSelect?.(label) : undefined}
             disabled={disabled}
-            className={`w-full flex items-center gap-3 p-3 md:p-3.5 rounded-xl border-2 transition-all duration-200 text-left group ${
-              disabled ? 'cursor-default' : 'cursor-pointer'
-            } ${borderClass}`}
+            hoverable={hoverable}
+            ariaChecked={interactive ? isSelected : undefined}
           >
-            <div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center font-black text-sm md:text-base transition-all flex-shrink-0 ${labelBg}`}>
-              {label}
-            </div>
             <span
               className={`text-[13px] sm:text-[13px] md:text-[14px] font-medium flex-1 leading-relaxed ${
                 isSelected || isCorrectAnswer ? 'text-primary' : 'text-text-primary'
               }`}
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(optionText) }}
             />
-            {isSelected && (
-              <CheckCircle2 size={20} className="flex-shrink-0 text-primary" />
-            )}
-            {isCorrectAnswer && !isSelected && (
-              <CheckCircle2 size={20} className="flex-shrink-0 text-success" />
-            )}
-          </button>
+          </QuestionCardOption>
         );
       })}
     </div>

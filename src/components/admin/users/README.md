@@ -5,16 +5,31 @@ Feature directory for Admin → Users management.
 ## Architecture
 
 ```
-AdminUsers.tsx (page, 45 lines)
-└── useAdminUsers (hook, 122 lines) — fetch, filter, paginate, toggle status
+AdminUsers.tsx (page)
+└── useAdminUsers (hook) — fetch, filter, paginate, toggle status
     ├── useAuth (shared — current user for authorization)
     ├── useToast (shared — notifications)
     └── userService → user.repository (Supabase)
-├── AdminUsersView — main content component with DataGrid + mobile cards
-│   ├── UsersToolbar — exam tabs + search input + status filter + user count
-│   └── UsersPagination — prev/next with page indicator
-└── UserMobileCard — mobile card with avatar, name, email, status, toggle
+├── UsersActions — search input + status filter (CollectionToolbar)
+├── UsersTable — FloatingList table
+│   ├── FloatingListHeader (padding="md") — shared column grid header
+│   ├── FloatingListItem (padding="md") × N — rows on the same grid contract
+│   │   └── UserIdentity — avatar + name + email (min-w-0 truncation)
+│   └── Pagination (shared)
+└── ConfirmModal + ToastContainer (shared) — toggle confirmation flow
 ```
+
+## Responsive column contract
+
+`UsersTable` defines ONE `USER_TABLE_GRID` constant consumed by both the
+header and every row, so column geometry can never diverge:
+
+- `< md`: participant | status | action (fixed px status/action tracks)
+- `md`: + exam
+- `lg`: + exams taken + joined
+
+Header and rows both render with `padding="md"` (16px inset) and a 1px
+border so their content-box origins are identical at every breakpoint.
 
 ## Key Decisions
 

@@ -41,7 +41,39 @@ export const signupSchema = z
 export const subAdminOnboardSchema = z.object({
   name: z.string().trim().min(2, t('Enter a valid name')),
   email: z.string().trim().pipe(emailSchema),
-  couponCode: z.string().trim().min(3, t('Coupon code must be at least 3 characters')),
+  // Coupon is OPTIONAL. A blank field means "auto-generate a unique coupon
+  // server-side in the atomic provisioning RPC". When provided it must be a
+  // plausible code — generation/uniqueness is the DB's job, never the client's.
+  couponCode: z
+    .string()
+    .trim()
+    .pipe(
+      z.union([
+        z.literal(''),
+        z.string().min(3, t('Coupon code must be at least 3 characters')),
+      ])
+    ),
+  // Optional. Empty string (blank field) is valid and means "default (0)".
+  // When provided it must parse as a finite number in [0, 100] inclusive —
+  // the same window enforced by the DB CHECK constraint, the Edge Function,
+  // and the RPC. Never silently clamped.
+  commissionPercentage: z
+    .string()
+    .trim()
+    .pipe(
+      z.union([
+        z.literal(''),
+        z
+          .string()
+          .regex(/^\d+(\.\d{1,2})?$/, t('Commission must be a valid number up to 2 decimals'))
+          .pipe(
+            z.string().refine(
+              (v) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= 100 },
+              t('Commission must be between 0 and 100')
+            )
+          ),
+      ])
+    ),
 })
 
 export type SubAdminOnboardInput = z.infer<typeof subAdminOnboardSchema>

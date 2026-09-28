@@ -14,7 +14,7 @@ export function TopicCard({ topic, onClick }: TopicCardProps) {
   return (
     <Card
       variant="default"
-      className="flex items-center gap-4 p-4 group hover:shadow-card-premium"
+      className="flex items-center gap-4 p-4 group"
       onClick={onClick}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       role="button"
@@ -39,7 +39,7 @@ export function TopicCard({ topic, onClick }: TopicCardProps) {
 
       <ChevronRight
         size={18}
-        className={`flex-shrink-0 transition-transform lg:group-hover:translate-x-1 ${
+        className={`flex-shrink-0 transition-interaction duration-fast ease-standard ${
           !isDark ? 'text-text-primary stroke-[2.5]' : 'text-text-secondary'
         }`}
       />

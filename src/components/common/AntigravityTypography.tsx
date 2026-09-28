@@ -1,122 +1,87 @@
 import React from 'react'
+import { Typography } from './Typography'
 
-interface TypographyProps {
-  children: React.ReactNode
-  className?: string
-}
+/* ─── Phase 5.4C wrapper layer ───────────────────────────────────────────────
+   Every legacy primitive now renders through the single Foundation `Typography`
+   component. Public APIs are unchanged (backward compatible). Rendered output is
+   byte-identical to the pre-5.4C primitives: same tags, same className sets,
+   same inline `var(--text-*)` recipes.
 
-export const H1: React.FC<TypographyProps> = ({ children, className = '' }) => (
-  <h1
-    className={`text-text-title m-0 ${className}`}
-    style={{
-      fontSize: 'var(--text-h1)',
-      lineHeight: 'var(--lh-h1)',
-      fontWeight: 'var(--fw-h1)',
-      letterSpacing: 'var(--ls-h1, -0.025em)',
-    }}
-  >
+   BrandTitle is the ONE documented exception: its contract is arbitrary
+   responsive size classes + gradient clip, which an inline role recipe would
+   override. It stays a single-purpose primitive (no duplication).
+--------------------------------------------------------------------------- */
+
+export const H1: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = '',
+}) => (
+  <Typography role="page-title" as="h1" className={`m-0 ${className}`}>
     {children}
-  </h1>
+  </Typography>
 )
 
-interface H2Props extends TypographyProps {
-  id?: string
-}
-
-export const H2: React.FC<H2Props> = ({ children, className = '', id }) => (
-  <h2
-    id={id}
-    className={`text-text-primary m-0 ${className}`}
-    style={{
-      fontSize: 'var(--text-h2)',
-      lineHeight: 'var(--lh-h2)',
-      fontWeight: 'var(--fw-h2)',
-      letterSpacing: 'var(--ls-h2, -0.025em)',
-    }}
-  >
+export const H2: React.FC<{ children: React.ReactNode; className?: string; id?: string }> = ({
+  children,
+  className = '',
+  id,
+}) => (
+  <Typography role="section-title" as="h2" id={id} className={`m-0 ${className}`}>
     {children}
-  </h2>
+  </Typography>
 )
 
-export const H3: React.FC<TypographyProps> = ({ children, className = '' }) => (
-  <h3
-    className={`text-text-primary m-0 ${className}`}
-    style={{
-      fontSize: 'var(--text-h3)',
-      lineHeight: 'var(--lh-h3)',
-      fontWeight: 'var(--fw-h3)',
-      letterSpacing: 'var(--ls-h3, -0.025em)',
-    }}
-  >
+export const H3: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = '',
+}) => (
+  <Typography role="card-title" as="h3" className={`m-0 ${className}`}>
     {children}
-  </h3>
+  </Typography>
 )
 
-interface BodyProps extends TypographyProps {
-  secondary?: boolean
-}
-
-export const Body: React.FC<BodyProps> = ({ children, className = '', secondary = false }) => (
-  <p
-    className={`m-0 ${secondary ? 'text-text-secondary' : 'text-text-primary'} ${className}`}
-    style={{
-      fontSize: 'var(--text-body)',
-      lineHeight: 'var(--lh-body)',
-      fontWeight: 'var(--fw-body)',
-    }}
+export const Body: React.FC<{ children: React.ReactNode; className?: string; secondary?: boolean }> = ({
+  children,
+  className = '',
+  secondary = false,
+}) => (
+  <Typography
+    role="body"
+    as="p"
+    color={secondary ? 'secondary' : 'primary'}
+    className={`m-0 ${className}`}
   >
     {children}
-  </p>
+  </Typography>
 )
 
-interface LabelProps {
-  children: React.ReactNode
-  className?: string
-  error?: boolean
-  htmlFor?: string
-}
-
-export const Label: React.FC<LabelProps> = ({ children, className = '', error = false, htmlFor }) => (
-  <label
-    htmlFor={htmlFor}
-    className={`${error ? 'text-danger' : 'text-text-muted'} ${className}`}
-    style={{
-      fontSize: 'var(--text-label)',
-      lineHeight: 'var(--lh-label)',
-      fontWeight: 'var(--fw-label)',
-      letterSpacing: 'var(--ls-label)',
-      textTransform: 'var(--tt-label)',
-    }}
-  >
+export const Label: React.FC<{ children: React.ReactNode; className?: string; error?: boolean; htmlFor?: string }> = ({
+  children,
+  className = '',
+  error = false,
+  htmlFor,
+}) => (
+  <Typography role="label" as="label" color={error ? 'danger' : undefined} htmlFor={htmlFor} className={className}>
     {children}
-  </label>
+  </Typography>
 )
 
-export const Display: React.FC<TypographyProps> = ({ children, className = '' }) => (
-  <h1
-    className={`text-text-title m-0 ${className}`}
-    style={{
-      fontSize: 'var(--text-display)',
-      lineHeight: 'var(--lh-display)',
-      fontWeight: 'var(--fw-display)',
-      letterSpacing: 'var(--ls-display)',
-    }}
-  >
+export const Display: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = '',
+}) => (
+  <Typography role="display" as="h1" className={`m-0 ${className}`}>
     {children}
-  </h1>
+  </Typography>
 )
 
-export const Caption: React.FC<TypographyProps> = ({ children, className = '' }) => (
-  <p
-    className={`text-text-secondary m-0 ${className}`}
-    style={{
-      fontSize: 'var(--text-caption)',
-      lineHeight: 'var(--lh-caption)',
-      fontWeight: 'var(--fw-caption)',
-    }}
-  >
+export const Caption: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = '',
+}) => (
+  <Typography role="caption" as="p" className={`m-0 ${className}`}>
     {children}
-  </p>
+  </Typography>
 )
 
 /* DS-006 Typography capability — Brand/Display title.

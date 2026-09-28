@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Wand2 } from 'lucide-react'
 import { Alert, Button, Input, Label, Stack, TextArea } from '../../common/AntigravityUI'
+import { FieldError } from '../../common/SharedComponents'
 import { FORMAT_HINT, FORMAT_HINT_TE } from '../../../constants/topicFormatHints'
 import { ParsedPreview } from './ParsedPreview'
 import type { TopicSection } from '../../../types/exam.types'
@@ -16,6 +17,10 @@ interface LangInputPanelProps {
   onCopyPrompt: () => void
   fieldErrors?: Partial<Record<'title_en' | 'content_en' | 'title_te' | 'content_te', string>>
   onFieldBlur?: (field: 'title_en' | 'content_en' | 'title_te' | 'content_te') => void
+  /** D-3: mark the title input as the AdminModal initial-focus target (the
+   * shared modal focuses [data-modal-initial-focus] on open). Should be set
+   * for the English panel that is mounted when the Add/Edit modal opens. */
+  initialFocusTitle?: boolean
 }
 
 export function LangInputPanel({
@@ -29,6 +34,7 @@ export function LangInputPanel({
   onCopyPrompt,
   fieldErrors = {},
   onFieldBlur,
+  initialFocusTitle = false,
 }: LangInputPanelProps) {
   const isEn = lang === 'en'
   const titleError = isEn ? fieldErrors.title_en : fieldErrors.title_te
@@ -43,6 +49,7 @@ export function LangInputPanel({
         <Label htmlFor={`topic-title-${lang}`}>{isEn ? '🇬🇧 Topic Title (English)' : '🇮🇳 Topic Title (Telugu)'}</Label>
         <Input
           id={`topic-title-${lang}`}
+          data-modal-initial-focus={initialFocusTitle || undefined}
           placeholder={isEn ? 'e.g. Indus Valley Civilization' : 'e.g. సింధు నాగరికత'}
           value={title}
           onChange={e => onTitleChange(e.target.value)}
@@ -51,7 +58,7 @@ export function LangInputPanel({
           aria-describedby={titleError ? `topic-title-${lang}-error` : undefined}
         />
         {titleError && (
-          <span id={`topic-title-${lang}-error`} aria-live="polite" className="text-xs font-bold text-danger mt-1">{titleError}</span>
+          <FieldError id={`topic-title-${lang}-error`}>{titleError}</FieldError>
         )}
       </Stack>
 
@@ -108,7 +115,7 @@ export function LangInputPanel({
           aria-describedby={contentError ? `topic-content-${lang}-error` : undefined}
         />
         {contentError && (
-          <span id={`topic-content-${lang}-error`} aria-live="polite" className="text-xs font-bold text-danger mt-1">{contentError}</span>
+          <FieldError id={`topic-content-${lang}-error`}>{contentError}</FieldError>
         )}
       </Stack>
 

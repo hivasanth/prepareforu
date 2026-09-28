@@ -124,7 +124,7 @@ describe('DS-033 topic-exams: remediation regression (retry, paper switch, busin
     fireEvent.click(await screen.findByRole('tab', { name: /arithmetic/i }, queryTimeout))
 
     await waitFor(() => expect(screen.queryByText('Topic 1')).toBeNull())
-    expect(screen.getByRole('status', { name: /loading topics/i })).toBeTruthy()
+    await waitFor(() => expect(screen.getByRole('status', { name: /loading topics/i })).toBeTruthy())
 
     await act(async () => {
       resolveArithmetic([{ topic_en: 'Arithmetic Topic', topic_te: null, display_order: 1 }])

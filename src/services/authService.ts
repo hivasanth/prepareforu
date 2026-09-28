@@ -7,6 +7,7 @@ import type {
   ServiceResult,
 } from '../types/auth.types'
 import { getProfile } from './userService'
+import { invalidateCache as invalidateAdminQueryCache } from './adminQueryCache'
 import { logError, logWarn, logInfo } from '../utils/logger'
 import { passwordSchema } from '../validations/securitySchemas'
 
@@ -148,6 +149,10 @@ function mapError(error: any, source: 'auth' | 'db' | 'network' | 'unknown' = 'a
 
   if (msg.includes('user not found') || msg.includes('no user')) {
     return { source, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.', field: 'general' }
+  }
+
+  if (msg.includes('email not confirmed') || msg.includes('email not verified') || msg.includes('not confirmed')) {
+    return { source, code: 'EMAIL_NOT_VERIFIED', message: 'Please verify your email before signing in.', field: 'general' }
   }
 
   if (msg.includes('already registered') || msg.includes('already exists')) {
@@ -376,6 +381,43 @@ export async function loginWithEmail(params: {
       }
     }
 
+    // 6. Authoritative application gates (defense-in-depth; never trust client-side)
+    //    Supabase auth succeeded, but the application must NOT grant access if the
+    //    account is disabled or the email is unconfirmed. Both use the authoritative
+    //    application profile (`public.users`) plus server-confirmed email state.
+    const emailConfirmed =
+      !!authData.user.email_confirmed_at || !!profile.email_verified
+
+    if (profile.is_active === false) {
+      // A disabled account must never obtain a session. Clear the just-created
+      // local session via the canonical cleanup so the user cannot slip through.
+      await logout().catch(() => undefined)
+      return {
+        success: false,
+        error: {
+          source: 'auth',
+          code:   'ACCOUNT_DISABLED',
+          field:  'general',
+          message: 'Your account has been disabled. Contact support.',
+        },
+      }
+    }
+
+    if (!emailConfirmed) {
+      // Unverified email: DO NOT return an authenticated application session.
+      // Clear the just-created local session via the canonical cleanup.
+      await logout().catch(() => undefined)
+      return {
+        success: false,
+        error: {
+          source: 'auth',
+          code:   'EMAIL_NOT_VERIFIED',
+          field:  'general',
+          message: 'Please verify your email before signing in.',
+        },
+      }
+    }
+
     return {
       success: true,
       data: { session: activeSession, user: profile },
@@ -390,7 +432,14 @@ export async function loginWithEmail(params: {
 // Navigation after sign-out is handled by the caller (AuthContext uses navigate()).
 // This function only handles the Supabase sign-out — keeping service layer pure.
 export async function logout(): Promise<void> {
-  await supabase.auth.signOut()
+  try {
+    await supabase.auth.signOut()
+  } finally {
+    // F-3 security purge: cached admin data is RLS-scoped to the signed-in
+    // identity. It must never outlive that identity in this tab, regardless
+    // of whether the remote signOut itself succeeded (fail-closed).
+    invalidateAdminQueryCache()
+  }
   localStorage.removeItem('supabase.auth.token')
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const key = localStorage.key(i)
@@ -458,61 +507,6 @@ export async function updatePassword(newPassword: string): Promise<ServiceResult
   }
 }
 
-// ─── Magic Link / Passwordless Implementation ────────────────────────────────
-
-/**
- * Heuristic check if the URL provided is a Supabase magic link/OTP link.
- * Supabase magic links usually contain an access_token (Implicit) or a code (PKCE).
- */
-export function checkIsSignInWithEmailLink(url: string): boolean {
-  if (!url) return false;
-  // Common patterns for Supabase magic links
-  return (
-    url.includes('access_token=') || 
-    url.includes('code=') || 
-    url.includes('type=magiclink') || 
-    url.includes('type=signup') ||
-    url.includes('type=recovery')
-  );
-}
-
-/**
- * Completes the sign-in flow for a magic link.
- * If a PKCE code exists, it exchanges it for a session.
- * Finally verifies that a valid user/session exists.
- */
-export async function completePasswordlessSignIn(_email: string, link: string): Promise<void> {
-  try {
-    const url = new URL(link);
-    const code = url.searchParams.get('code');
-
-    if (code) {
-      logInfo('authService.magicLink.exchangeCode', {});
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) throw error;
-    }
-
-    // Auth state check
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('Authentication failed: No valid session found after link verification.');
-    }
-  } catch (err: any) {
-    logError('authService.completePasswordlessSignIn.error', { message: err.message });
-    throw err;
-  }
-}
-
-/**
- * Error parser for legacy components that expect a simple string message from an error code/object.
- */
-export function parseAuthError(error: any): string {
-  if (typeof error === 'string') {
-    return mapError({ code: error, message: error }).message;
-  }
-  return mapError(error).message;
-}
-
 // ─── Session Management ─────────────────────────────────────────────────────
 
 export async function getCurrentSession() {
@@ -535,8 +529,78 @@ export async function resendVerificationEmail(email: string) {
   return await supabase.auth.resend({ type: 'signup', email })
 }
 
-export async function reauthenticate(email: string, password: string) {
-  return await supabase.auth.signInWithPassword({ email, password })
+/**
+ * Re-authenticates an already signed-in user for privileged flows (e.g. the
+ * /profile password-change gate). Runs through the SAME security pipeline as
+ * login: security-gateway (rate limit + Turnstile) → per-account lockout check
+ * → signInWithPassword → record/reset the failed-login counter. Returns the
+ * canonical ServiceResult shape.
+ */
+export async function reauthenticate(email: string, password: string, captchaToken?: string): Promise<ServiceResult> {
+  // 0. Security gate (includes rate limiting & Turnstile verification)
+  const security = await checkSecurityGateway('/auth/reauthenticate', captchaToken)
+  if (!security.success) return security
+
+  try {
+    const cleanEmail = email.trim().toLowerCase()
+
+    // 1. Per-account lockout check (same as loginWithEmail)
+    const { data: lockData, error: lockError } = await safeSupabaseCall(
+      userRepo.isAccountLockedRpc(cleanEmail)
+    )
+
+    if (!lockError && lockData?.locked === true) {
+      const mins = Math.ceil((lockData.seconds_left ?? 900) / 60)
+      return {
+        success: false,
+        error: {
+          source: 'auth',
+          code:   'ACCOUNT_LOCKED',
+          field:  'general',
+          message: `Account temporarily locked. Try again in ${mins} minute${mins === 1 ? '' : 's'}.`,
+        },
+      }
+    }
+
+    // 2. Attempt Supabase auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email:    cleanEmail,
+      password,
+      options:  { captchaToken },
+    })
+
+    // 3. Wrong password → increment the failed-login counter
+    if (authError) {
+      if (import.meta.env.DEV) {
+        logWarn('authService.reauthenticateFailed', { message: authError.message })
+      }
+
+      const isWrongPassword =
+        authError.message?.toLowerCase().includes('invalid login') ||
+        authError.message?.toLowerCase().includes('invalid credentials') ||
+        authError.message?.toLowerCase().includes('incorrect')
+
+      if (isWrongPassword) {
+        safeSupabaseCall(
+          userRepo.recordFailedLoginRpc(cleanEmail)
+        ).catch((e) => logError('authService.recordFailedLogin.error', { message: e?.message }))
+      }
+
+      return { success: false, error: mapError(authError) }
+    }
+
+    // 4. Success → reset the failed-login counter
+    if (authData.user && authData.session) {
+      safeSupabaseCall(
+        userRepo.resetFailedLoginRpc(cleanEmail)
+      ).catch((e) => logError('authService.resetFailedLogin.error', { message: e?.message }))
+    }
+
+    return { success: true, data: null }
+  } catch (err: any) {
+    logError('authService.reauthenticate.exception', { message: err.message })
+    return { success: false, error: mapError(err, 'unknown') }
+  }
 }
 
 export async function sendPasswordResetWithRedirect(email: string, redirectTo: string) {

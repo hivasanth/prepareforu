@@ -1,12 +1,13 @@
-import { AlertCircle, BookMarked, BookOpen, Save, Pencil, Globe, Languages } from 'lucide-react'
+import { AlertCircle, BookMarked, BookOpen, Save, Pencil, Globe, Languages, CheckCircle2 } from 'lucide-react'
 import { AdminSelectionTabs } from '../../components/admin/shared/AdminSelectionTabs'
 import {
-  PageContainer, Stack, Button, SectionReveal, Tabs, Alert
+  PageContainer, Stack, Button, SectionReveal, Tabs, Alert,
+  ErrorContainer, RetryButton,
 } from '../../components/common/AntigravityUI'
 import { AdminIconWrap } from '../../components/common/AdminIconWrap'
-import { ToastContainer } from '../../hooks/useToast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AdminModal } from '../../components/common/AdminModal'
+import { MOTION_DURATION, MOTION_EASE } from '../../components/common/AntigravityMotion'
 import { ConfirmModal, GridSkeleton, EmptyState } from '../../components/common/SharedComponents'
 import { TopicsToolbar } from '../../components/admin/topics/TopicsToolbar'
 import { TopicMetadataFields } from '../../components/admin/topics/TopicMetadataFields'
@@ -17,13 +18,15 @@ import { useAdminTopics } from '../../components/admin/topics/useAdminTopics'
 
 export default function AdminTopics() {
   const {
-    toasts, error,
-    topics, isLoading, isContextValid,
+    error,
+    loadError,
+    actionError, successAlert, deleteError, clearActionError, clearSuccessAlert,
+    topics, isLoading, isContextValid, isRetrying,
     selectedExam, selectedPaper, selectedSubject,
     setSelectedExam, setSelectedPaper, setSelectedSubject,
     isModalOpen, editingTopic, isSaving,
     previewTopic, setPreviewTopic,
-    topicToDelete,
+    topicToDelete, isDeleting,
     activeLang, setActiveLang,
     titleEn, setTitleEn, titleTe, setTitleTe,
     rawEn, setRawEn, rawTe, setRawTe,
@@ -38,11 +41,12 @@ export default function AdminTopics() {
     fieldErrors, handleTopicFieldBlur,
     handleDelete, handleConfirmDelete, cancelDelete,
     handleTogglePublish, handleMove,
+    togglingTopicIds,
+    loadTopics,
   } = useAdminTopics()
 
   return (
     <PageContainer>
-      <ToastContainer toasts={toasts} />
       <Stack gap="lg">
         <SectionReveal className="w-full">
           <AdminSelectionTabs
@@ -53,11 +57,29 @@ export default function AdminTopics() {
           />
         </SectionReveal>
 
-        {error && (
+        {successAlert && (
           <SectionReveal>
-            <Alert variant="error" icon={AlertCircle} title="Something went wrong" className="w-full">
-              {error}
+            <Alert variant="success" icon={CheckCircle2} title="Success" className="w-full" onDismiss={clearSuccessAlert}>
+              {successAlert}
             </Alert>
+          </SectionReveal>
+        )}
+
+        {actionError && (
+          <SectionReveal>
+            <Alert variant="error" icon={AlertCircle} title="Action failed" className="w-full" onDismiss={clearActionError}>
+              {actionError}
+            </Alert>
+          </SectionReveal>
+        )}
+
+        {loadError && topics.length === 0 && !isLoading && (
+          <SectionReveal>
+            <ErrorContainer category={loadError.category} severity={loadError.severity}>
+              <h2 className="text-sm font-bold text-text-primary">{loadError.title}</h2>
+              <p className="text-[11px] text-text-muted">{loadError.message}</p>
+              <RetryButton onRetry={loadTopics} loading={isRetrying} />
+            </ErrorContainer>
           </SectionReveal>
         )}
 
@@ -74,8 +96,12 @@ export default function AdminTopics() {
             <TopicsToolbar subjectName={selectedSubject} topicCount={topics.length} onAdd={openAdd} />
 
             {isLoading ? (
-              <GridSkeleton count={5} height={80} columns="grid-cols-1" />
-            ) : topics.length === 0 ? (
+              /* L-4: ONE loading status owner for the topics region; the
+               * GridSkeleton bars inside are purely decorative. */
+              <div role="status" aria-live="polite" aria-label="Loading topics">
+                <GridSkeleton count={5} height={100} columns="grid-cols-1" unit="row" decorative />
+              </div>
+            ) : topics.length === 0 && !loadError ? (
               <EmptyState
                 icon={<AlertCircle size={40} />}
                 title="No Topics Yet"
@@ -96,6 +122,7 @@ export default function AdminTopics() {
                       onMoveUp={() => handleMove(idx, 'up')}
                       onMoveDown={() => handleMove(idx, 'down')}
                       isFirst={idx === 0} isLast={idx === topics.length - 1}
+                      toggling={togglingTopicIds.has(topic.id)}
                     />
                   ))}
                 </div>
@@ -154,6 +181,7 @@ export default function AdminTopics() {
         <div className="mb-5">
           <Tabs
             ariaLabel="Topic language"
+            idBase="topic-lang"
             activeId={activeLang}
             onChange={(id) => setActiveLang(id as 'en' | 'te')}
             options={[
@@ -182,10 +210,13 @@ export default function AdminTopics() {
             const isEn = lang === 'en'
             return (
               <motion.div key={lang} role="tabpanel"
+                id={`topic-lang-panel-${lang}`}
+                aria-labelledby={`topic-lang-tab-${lang}`}
                 initial={{ opacity: 0, x: isEn ? -10 : 10 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: isEn ? 10 : -10 }} transition={{ duration: 0.15 }}>
+                exit={{ opacity: 0, x: isEn ? 10 : -10 }} transition={{ duration: MOTION_DURATION.fast, ease: MOTION_EASE.standard }}>
                 <LangInputPanel
                   lang={lang}
+                  initialFocusTitle={isEn}
                   title={isEn ? titleEn : titleTe}
                   onTitleChange={isEn ? setTitleEn : setTitleTe}
                   rawText={isEn ? rawEn : rawTe}
@@ -246,6 +277,8 @@ export default function AdminTopics() {
         onConfirm={handleConfirmDelete}
         onCancel={cancelDelete}
         confirmLabel="Yes, Delete Permanently"
+        error={deleteError}
+        busy={isDeleting}
       />
     </PageContainer>
   )

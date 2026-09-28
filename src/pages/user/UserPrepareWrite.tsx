@@ -1,6 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { ExamLayout } from '../../components/exam'
-import { GridSkeleton } from '../../components/common/SharedComponents'
+import { CheckCircle2 } from 'lucide-react'
 import {
   PageContainer,
   PageTransition,
@@ -8,15 +7,16 @@ import {
   RetryButton,
   H2,
   Body,
+  Alert,
 } from '../../components/common/AntigravityUI'
-import { ToastContainer } from '../../hooks/useToast'
-import { usePrepareWrite } from '../../components/user/prepare-write'
+import {
+  usePrepareWrite,
+  SelectionViewSkeleton,
+  PreparationViewSkeleton,
+} from '../../components/user/prepare-write'
 
 const SelectionView = lazy(() => import('../../components/user/prepare-write/SelectionView').then(m => ({ default: m.SelectionView })))
 const PreparationView = lazy(() => import('../../components/user/prepare-write/PreparationView').then(m => ({ default: m.PreparationView })))
-const ExamView = lazy(() => import('../../components/user/prepare-write/ExamView').then(m => ({ default: m.ExamView })))
-const ResultView = lazy(() => import('../../components/user/prepare-write/ResultView').then(m => ({ default: m.ResultView })))
-const ReviewView = lazy(() => import('../../components/user/prepare-write/ReviewView').then(m => ({ default: m.ReviewView })))
 
 export default function UserPrepareWrite() {
   const {
@@ -27,7 +27,7 @@ export default function UserPrepareWrite() {
     errorState,
     pageError,
     retryError,
-    toasts,
+    notice,
     state,
     exams,
     papers,
@@ -36,17 +36,8 @@ export default function UserPrepareWrite() {
     setVisibleCount,
     handleExamChange,
     startPreparation,
-    startExam,
-    handleAnswer,
-    handleToggleReview,
-    submitExam,
+    startRealExam,
     exitSession,
-    handlePaperSelect,
-    handleJumpToQuestion,
-    handlePrev,
-    handleNextOrSubmit,
-    goToReview,
-    goToResult,
     clearSession,
   } = usePrepareWrite()
 
@@ -64,10 +55,21 @@ export default function UserPrepareWrite() {
     )
   }
 
-  const renderCurrentView = () => {
-    switch (state.view) {
-      case 'SELECTION':
-        return (
+const renderCurrentView = () => {
+  // Mirrors SelectionView.tsx — the tabs row renders only for APPSC selections.
+  const showTabs = userExamSelection === 'APPSC_GROUPS' || userExamSelection === 'APPSC';
+
+  switch (state.view) {
+    case 'SELECTION':
+      // On the initial load (authLoading=true OR first load with no exams yet),
+      // show the full-page skeleton. On exam-change reloads, keep the
+      // SelectionContainer > Tabs row mounted and only the paper grid
+      // shows the skeleton (mirrors /exams, /subject-tests, /topic-exams).
+      if (authLoading || (loading && exams.length === 0)) {
+        return <SelectionViewSkeleton count={8} showTabs={showTabs} />;
+      }
+      return (
+        <Suspense fallback={<SelectionViewSkeleton count={8} showTabs={showTabs} />}>
           <SelectionView
             userSelection={userExamSelection}
             exams={exams}
@@ -75,87 +77,58 @@ export default function UserPrepareWrite() {
             selectedExamId={state.selectedExamId}
             selectedPaper={state.selectedPaper}
             availabilityMap={availabilityMap}
-            loading={authLoading || loading}
+            loading={loading}
             actionLoading={actionLoading}
-            error={null}
             onExamChange={handleExamChange}
-            onPaperSelect={handlePaperSelect}
             onStartPreparation={startPreparation}
-            onRetry={() => state.selectedExamId && handleExamChange(state.selectedExamId)}
           />
-        )
-      case 'PREPARATION':
-        return (
+        </Suspense>
+      );
+    case 'PREPARATION':
+      // actionLoading=true means we are transitioning from SELECTION into
+      // PREPARATION (the locked question set is being built server-side).
+      if (actionLoading && state.questions.length === 0) return <PreparationViewSkeleton />;
+      return (
+        <Suspense fallback={<PreparationViewSkeleton />}>
           <PreparationView
             paper={state.selectedPaper}
             questions={state.questions}
+            questionCount={state.questionCount}
+            expiresAt={state.expiresAt}
             visibleCount={visibleCount}
+            actionLoading={actionLoading}
             onExit={exitSession}
-            onStartExam={startExam}
+            onStartRealExam={startRealExam}
             onLoadMore={() => setVisibleCount(prev => prev + 10)}
           />
-        )
-      case 'EXAM':
-        return (
-          <ExamView
-            paper={state.selectedPaper}
-            questions={state.questions}
-            currentIndex={state.currentIndex}
-            answers={state.answers}
-            markedForReview={state.markedForReview}
-            startTime={state.startTime}
-            onExit={exitSession}
-            onSubmit={submitExam}
-            onAnswer={handleAnswer}
-            onToggleReview={handleToggleReview}
-            onJumpToQuestion={handleJumpToQuestion}
-            onPrev={handlePrev}
-            onNext={handleNextOrSubmit}
-          />
-        )
-      case 'RESULT':
-        return (
-          <ResultView
-            questions={state.questions}
-            answers={state.answers}
-            durationSeconds={state.startTime && state.endTime ? Math.floor((state.endTime - state.startTime) / 1000) : undefined}
-            onReview={goToReview}
-            onNewSession={clearSession}
-          />
-        )
-      case 'REVIEW':
-        return (
-          <ReviewView
-            questions={state.questions}
-            answers={state.answers}
-            durationSeconds={state.startTime && state.endTime ? Math.floor((state.endTime - state.startTime) / 1000) : undefined}
-            onBackToResult={goToResult}
-            onCloseReview={clearSession}
-          />
-        )
-      default:
-        return null
-    }
+        </Suspense>
+      );
+    default:
+      return null;
   }
+};
 
-  return (
-    <>
-      <Suspense fallback={<GridSkeleton count={4} height={120} columns="grid-cols-1" />}>
-        {state.view === 'EXAM' ? (
-          <ExamLayout>
-            {renderCurrentView()}
-          </ExamLayout>
-        ) : state.view === 'REVIEW' ? (
-          renderCurrentView()
-        ) : (
-          <PageContainer>
-            <PageTransition>
-              {renderCurrentView()}
-            </PageTransition>
-          </PageContainer>
-        )}
-      </Suspense>
-      <ToastContainer toasts={toasts} />
-    </>
-  )
+return (
+  <PageContainer>
+    <PageTransition>
+      {renderCurrentView()}
+      {state.view === 'SELECTION' && (
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={clearSession}
+            className="text-[11px] font-bold text-text-secondary/60 hover:text-text-primary uppercase tracking-widest transition-colors"
+          >
+            Reset preparation
+          </button>
+        </div>
+      )}
+      {notice && (
+        <Alert variant="success" icon={CheckCircle2} title="Success" className="w-full">
+          {notice}
+        </Alert>
+      )}
+    </PageTransition>
+  </PageContainer>
+);
 }

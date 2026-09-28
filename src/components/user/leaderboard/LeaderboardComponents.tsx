@@ -1,6 +1,7 @@
 import React from 'react';
-import { ProgressBar } from '../../common/AntigravityUI';
+import { ProgressBar, NumberBadge } from '../../common/AntigravityUI';
 import { Body, Label } from '../../common/AntigravityTypography';
+import { ROW_HOVER } from '../../common/AntigravityCard';
 import type { LeaderboardEntry } from './types';
 
 interface LeaderboardRowProps {
@@ -12,11 +13,9 @@ interface LeaderboardRowProps {
 
 export const LeaderboardRow = React.memo(({ entry, isMe, isMobile, formatDuration }: LeaderboardRowProps) => {
   return (
-    <tr className={`transition-colors border-b border-border-subtle/30 ${isMe ? 'bg-primary/5' : 'lg:hover:bg-hover-bg/20'}`}>
+    <tr className={`border-b border-border-subtle/30 ${isMe ? 'bg-primary/5' : ''} ${ROW_HOVER}`}>
       <td className="px-2 py-4 text-center">
-          <Body className={`text-[14px] md:text-[16px] font-black m-0 ${entry.rank <= 3 ? 'text-[var(--gold-300)]' : 'text-text-muted'}`}>
-          {entry.rank.toString().padStart(2, '0')}
-        </Body>
+          <NumberBadge value={entry.rank} variant="rank" className="text-[14px] md:text-[16px] w-8 h-8 md:w-9 md:h-9" />
       </td>
       <td className="px-4 py-4">
         <div className="flex items-center gap-3 lg:gap-4">

@@ -119,6 +119,7 @@ describe('subAdminOnboardSchema', () => {
     name: 'Dr. Satish Kumar',
     email: 'satish@example.com',
     couponCode: 'SATISH25',
+    commissionPercentage: '',
   }
 
   it('accepts a valid onboarding payload', () => {
@@ -130,6 +131,7 @@ describe('subAdminOnboardSchema', () => {
       name: '  Dr. Satish Kumar  ',
       email: ' satish@example.com ',
       couponCode: '  SATISH25  ',
+      commissionPercentage: '   ',
     }).success).toBe(true)
   })
 
@@ -153,8 +155,10 @@ describe('subAdminOnboardSchema', () => {
     expect(subAdminOnboardSchema.safeParse({ ...VALID, email: '' }).success).toBe(false)
   })
 
-  it('rejects an empty coupon code', () => {
-    expect(subAdminOnboardSchema.safeParse({ ...VALID, couponCode: '' }).success).toBe(false)
+  it('accepts an empty coupon code (auto-generate)', () => {
+    // Blank coupon is now valid: the server auto-generates a unique code in the
+    // atomic provisioning RPC. The client never mints coupons itself.
+    expect(subAdminOnboardSchema.safeParse({ ...VALID, couponCode: '' }).success).toBe(true)
   })
 
   it('rejects a coupon code shorter than 3 characters', () => {

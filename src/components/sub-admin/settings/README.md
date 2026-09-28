@@ -52,8 +52,9 @@ Page (composition only)
 
 | File | Purpose |
 |------|---------|
-| `SubAdminSettings.tsx` (page) | Composition: 72 lines |
-| `useSettings.ts` | Feature hook: 208 lines |
+| `SubAdminSettings.tsx` (page) | Composition: 136 lines — wires hook to components, gates loading/error states |
+| `useSettings.ts` | Feature hook: 366 lines |
+| `SubAdminSettingsSkeleton.tsx` | Page-loading skeleton (single `role="status"` owner, decorative blocks) |
 | `types.ts` | Shared types: `ProfileData`, `NotificationPrefs`, `PrefKey` |
 | `IdentitySection.tsx` | Profile form (name, email, password, save) |
 | `RecruitmentSection.tsx` | Coupon code display, copy, share |
@@ -160,26 +161,28 @@ read-only and cannot be changed from settings.
 ```
 Page Mount
     ↓
-useEffect → fetchSubAdminProfileAndUser(user.id)
+useEffect → fetchData() → fetchSubAdminProfileAndUser(user.id)
     ├── userRepo.findSubAdminProfileByUserId(userId)
     │     ← { id, full_name, email, coupon_code, notification_prefs }
     └── userRepo.findUserLastActivity(userId)
           ← { last_activity_date }
     ↓
-Hydrate:
-  ├── profile → ProfileData
-  ├── name → profile.full_name
-  ├── notifyAttempt → prefs.notify_on_attempt
-  ├── notifyCompletion → prefs.notify_on_exam_closure
-  ├── notifyNewStudent → prefs.notify_on_new_student
-  └── lastLogin → formatted date string
+Housekeeping:
+  ├── update profileRef (the last-confirmed profile source of truth)
+  ├── setLastLogin (formatted local-calendar date — never UTC-parsed)
+  └── hydrate form fields ONLY on the first successful load (loadedOnceRef)
     ↓
-Error → showError toast
+No profile row → canonical business error (ErrorContainer + RetryButton)
+    ↓
+Technical failure → canonical PageError (ErrorContainer + RetryButton)
 ```
 
-**Load Phase:** Profile data is fetched once on mount. There is no
-polling or background refresh. `notification_prefs` is merged with
-`DEFAULT_PREFS` to fill any missing keys.
+**Load Phase:** Profile data is fetched on mount via `fetchData()` (an
+idempotent, retryable callback). While loading, the page renders
+`SubAdminSettingsSkeleton` (single `role="status"` owner — the real grid is
+NEVER rendered with default/empty values). A retry after a load failure uses
+`loadedOnceRef` so already-typed form values are never clobbered.
+`notification_prefs` is merged with `DEFAULT_PREFS` to fill any missing keys.
 
 ```
 Edit (user types in Full Name field)
@@ -188,17 +191,17 @@ name state updated → UI reflects new value
     ↓
 User clicks "Save Changes"
     ↓
-Validation:
-  ├── name.trim() empty? → showError("Name is required"), stop
+Validation (client `identityUpdateSchema`):
+  ├── name.trim() empty? → inline field error "Name is required", stop
   └── password provided? → passwordSchema.safeParse(password)
-        ├── invalid → showError(first issue), stop
+        ├── invalid → inline field error (first issue), stop
         └── valid → continue
     ↓
 Mutation:
   ├── name !== profile.full_name?
-  │     └── updateSubAdminProfile(saId, userId, name)
-  │           ├── userRepo.updateSubAdmin(id, { full_name })
-  │           └── userRepo.updateUser(id, { full_name })
+  │     └── updateSubAdminProfile(name)
+  │           ├── userRepo.updateSubAdminNameViaRpc(name)  [RPC: update_sub_admin_name]
+  │           └── (users row synced inside the same RPC)
   │
   └── password non-empty?
         └── authService.updatePassword(password)
@@ -207,7 +210,11 @@ Mutation:
     ↓
 showSuccess("Profile updated successfully")
     ↓
-Error → showError toast, form state preserved for retry
+Error → inline Alert (actionError):
+    ├── password step failed after name saved →
+    │     "Name saved, but password update failed: <reason>"
+    │     (name is NEVER rolled back)
+    └── otherwise → the failure message
 ```
 
 **Save Phase:** Name and password are saved in a single "Save Changes"
@@ -235,7 +242,7 @@ handleSaveProfile validates identity fields first
     ↓
 If password provided:
   ├── passwordSchema.safeParse(password)
-  │     ├── Fails → showError (first issue message), stop
+  │     ├── Fails → inline field error (first issue message), stop
   │     └── Passes → continue
   │
   └── authService.updatePassword(password)
@@ -245,7 +252,7 @@ If password provided:
         │     └── Error → return { success: false, error }
         │
         ├── Success → clear password field
-        └── Failure → showError
+        └── Failure → inline Alert (actionError); "Name saved, but…" if the name step already committed
 ```
 
 #### Password Validation Rules
@@ -253,6 +260,7 @@ If password provided:
 | Rule | Error |
 |------|-------|
 | Name empty | "Name is required" |
+| Name > 80 chars | "Name must be 80 characters or less" (client `identityUpdateSchema` blocks before the RPC is reached) |
 | Password < 8 chars | "Password must be at least 8 characters" |
 | No uppercase | "Must include an uppercase letter" |
 | No number | "Must include a number" |
@@ -295,6 +303,9 @@ User toggles a Switch component
     ↓
 handleTogglePref(key, value, setter)
     ↓
+Single-flight guard: savingPrefsRef already true → return (no re-entry)
+  Switches are also disabled while savingPrefs — one mutation at a time
+    ↓
 Step 1: Optimistic UI update
   └── setter(value) — toggle changes immediately
     ↓
@@ -302,18 +313,21 @@ Step 2: Show loading indicator
   └── setSavingPrefs(true) — "Saving..." text appears
     ↓
 Step 3: Persist
-  └── updateSubAdminNotificationPrefs(profile.id, newPrefs)
-        └── userRepo.updateSubAdmin(id, { notification_prefs })
+  └── newPrefs = { ...DEFAULT_PREFS, ...profileRef.current.notification_prefs, [key]: value }
+        (read from the LAST confirmed profile — a stale closure can
+         never resurrect a previous key's value)
+  └── updateSubAdminNotificationPrefs(newPrefs)
+        └── userRepo.updateSubAdminNotificationPrefsViaRpc(prefs)  [RPC: update_sub_admin_notification_prefs]
               ↓
-        Success → update local profile state:
-                   setProfile({ ...profile, notification_prefs: newPrefs })
+        Success → update local profile state (functional setProfile):
+                   setProfile(prev => ({ ...prev, notification_prefs: newPrefs }))
               ↓
         Failure → revert toggle:
                    setter(!value)
-                   showError(err.message || 'Failed to save preference')
+                   inline Alert: "Failed to save preference. Please try again."
     ↓
 Step 4: Clear loading indicator
-  └── setSavingPrefs(false)
+  └── setSavingPrefs(false), savingPrefsRef = false
 ```
 
 #### Notification Keys
@@ -331,6 +345,9 @@ Step 4: Clear loading indicator
 3. If the API call fails, the toggle reverts to its previous value.
 4. The "Saving..." indicator is shown during the API call and hidden
    on completion (success or failure).
+5. **Single-flight:** only ONE preference mutation runs at a time
+   (`savingPrefsRef` guard + switches disabled while `savingPrefs`), so
+   two rapid toggles can never race and resurrect a stale key.
 
 This pattern provides instant feedback while maintaining consistency
 with the server. The notification preferences are stored as a JSON
@@ -354,9 +371,9 @@ User clicks copy IconButton
     ↓
 navigator.clipboard.writeText(profile.coupon_code)
     ↓
-Success → setCopied(true), showSuccess("Coupon copied")
-          setTimeout(() => setCopied(false), 2000)
-Failure → showError("Failed to copy coupon")
+Success → setCopied(true), copy button accessible name flips to "Coupon copied"
+          (SR confirmation); arm 2000ms reset timer (clear any prior timer; cleared on unmount)
+Failure → inline Alert "Failed to copy coupon"
 ```
 
 #### Share Coupon
@@ -369,8 +386,8 @@ navigator.share available?
   │         (user may dismiss — no error shown)
   │
   └── No → navigator.clipboard.writeText(shareText)
-            ├── Success → showSuccess("Share text copied")
-            └── Failure → showError("Could not copy automatically...")
+            ├── Success → setCopied(true) (copy button accessible name flips to "Coupon copied")
+            └── Failure → inline Alert "Could not copy automatically..."
 ```
 
 The share text includes the educator name and coupon code:
@@ -401,19 +418,23 @@ User clicks "Students" export button
 setExportingStudents(true)
     ↓
 fetchStudentsByEducatorId(user.id)
-    └── userRepo.fetchStudentsByEducatorId(educatorId)
-          ← [{ full_name, email, created_at }]
+    └── userRepo.fetchAllStudentsByEducatorId(educatorId)  [PAGINATED]
+          ← { rows: [{ full_name, email, created_at }], truncated }
+          (exact count → loop .range pages → complete dataset; `truncated`
+           only if the loop returned fewer rows than the exact count)
     ↓
-data.length === 0?
-  ├── Yes → showError("No students found")
+rows.length === 0?
+  ├── Yes → inline Alert "No students found"
   └── No → downloadCSV({
              filename: "students_export.csv",
              headers: ["Name", "Email", "Joined"],
              rows: [full_name, email, created_at]
            })
-           showSuccess("Export complete")
+           ├── truncated → inline warning Alert (partial export, explicit)
+           │               + "Please contact admin for a full export"
+           └── complete  → showSuccess("Export complete")
     ↓
-Error → showError("Export failed")
+Error → inline Alert "Export failed"
     ↓
 setExportingStudents(false)
 ```
@@ -426,25 +447,33 @@ User clicks "Exams" export button
 setExportingExams(true)
     ↓
 fetchTeacherExamsForExport({ user }, profile.id)
-    └── teacherExamRepo.fetchTeacherExamsBySubAdminId(subAdminId)
-          ← [{ title, total_questions, total_marks, created_at }]
+    └── teacherExamRepo.fetchAllTeacherExamsBySubAdminId(subAdminId)  [PAGINATED]
+          ← { rows: [{ title, total_questions, total_marks, created_at }], truncated }
     ↓
-data.length === 0?
-  ├── Yes → showError("No exams found")
+rows.length === 0?
+  ├── Yes → inline Alert "No exams found"
   └── No → downloadCSV({
              filename: "exams_export.csv",
              headers: ["Title", "Questions", "Marks", "Created At"],
              rows: [title, total_questions, total_marks, created_at]
            })
-           showSuccess("Export complete")
+           ├── truncated → inline warning Alert (partial export, explicit)
+           └── complete  → showSuccess("Export complete")
     ↓
-Error → showError("Export failed")
+Error → inline Alert "Export failed"
     ↓
 setExportingExams(false)
 ```
 
+A **never-false-success contract** applies to both exports: the CSV is always
+downloaded from the paginated fetch (no silent `.limit()` truncation), and if
+the safety-net `truncated` flag is ever set, the user is told explicitly with
+a warning Alert instead of a success toast.
+
 Both exports use `downloadCSV()` from `csvUtils.ts` which:
-1. Builds a CSV string with escaped cells.
+1. Builds a CSV string from **formula-injection-neutralised** cells —
+   `escapeCSVCell` prefixes a leading `'` to any cell starting with
+   `=`, `+`, `-`, `@`, tab, or CR (OWASP spreadsheet-injection guard).
 2. Creates a Blob with `text/csv` MIME type.
 3. Generates an object URL.
 4. Programmatically clicks a hidden `<a>` element.
@@ -518,8 +547,9 @@ database constraints. Each layer is independently verifiable.
 │ user.id used for all service calls.           │
 ├──────────────────────────────────────────────┤
 │ Layer 3: Service Authorization                │
-│ Settings service functions use authenticated  │
-│ user ID (no ensureRole — accepted limitation) │
+│ Settings service functions scope to the       │
+│ authenticated user; ensureRole is used where  │
+│ a separate sub-admin identity is passed.      │
 ├──────────────────────────────────────────────┤
 │ Layer 4: Repository / Database                │
 │ Supabase RLS and table constraints.           │
@@ -552,19 +582,21 @@ expired, Supabase rejects the query at the RLS level.
 Settings service functions operate on the authenticated user's own
 data. The user ID is derived from the session, not from user input.
 
-| Service Function | User ID Source | Data Scoped To |
-|-----------------|----------------|----------------|
-| `fetchSubAdminProfileAndUser(userId)` | `user.id` | `sub_admins` row matching `user_id = userId` |
-| `updateSubAdminProfile(saId, userId, name)` | `user.id` (passed from session) | Only the caller's `sub_admins` and `users` rows |
-| `updateSubAdminNotificationPrefs(id, prefs)` | Implicit (via `profile.id` from session-derived profile) | Only the caller's `sub_admins` row |
-| `fetchStudentsByEducatorId(educatorId)` | `user.id` | Only students linked to the caller's educator profile |
-| `fetchTeacherExamsForExport({ user }, subAdminId)` | `user` object | Only exams owned by the caller's sub-admin profile |
+| Service Function | User ID Source | Data Scoped To | ensureRole |
+|-----------------|----------------|----------------|-----------|
+| `fetchSubAdminProfileAndUser(userId)` | `user.id` | `sub_admins` row matching `user_id = userId` | No — session-derived ID + RLS |
+| `updateSubAdminProfile(name)` | Server-side `auth.uid()` inside the RPC | Only the caller's `sub_admins` and `users` rows | N/A (RPC derives owner) |
+| `updateSubAdminNotificationPrefs(prefs)` | Server-side `auth.uid()` inside the RPC | Only the caller's `sub_admins` row | N/A (RPC derives owner) |
+| `fetchStudentsByEducatorId(educatorId)` | `user.id` | Only students linked to the caller's educator profile | No — session-derived ID + RLS |
+| `fetchTeacherExamsForExport({ user }, subAdminId)` | `user` object | Only exams owned by the caller's sub-admin profile | **Yes** — `resourceOwnerId` = sub-admin profile |
 
-**Accepted limitation:** These functions do not use `ensureRole`
-(unlike the Sub Admin Students feature). This is acceptable because:
-(1) the page is route-guarded at Layer 1, (2) the user ID is always
-derived from the authenticated session, never from user input, and
-(3) database RLS provides a defence-in-depth backstop.
+**Authorization posture:** `fetchTeacherExamsForExport` runs `ensureRole` with
+the sub-admin profile as `resourceOwnerId`. The two RPC-backed mutations
+derive ownership from `auth.uid()` server-side. The two read helpers
+(`fetchSubAdminProfileAndUser`, `fetchStudentsByEducatorId`) take the user ID
+from the authenticated session — never from user input — and rely on RLS row
+ownership as the defence-in-depth backstop alongside the route guard at
+Layer 1.
 
 ### Layer 4: Database Constraints
 
@@ -648,14 +680,15 @@ Data that survives page reloads and is stored in the database.
 
 | Data | Owner | Source | Lifecycle |
 |------|-------|--------|-----------|
-| `profile` (`id`, `full_name`, `email`, `coupon_code`, `notification_prefs`) | `useSettings` | `fetchSubAdminProfileAndUser` on mount | Fetched once, mutated on save/toggle |
+| `profile` (`id`, `full_name`, `email`, `coupon_code`, `notification_prefs`) | `useSettings` | `fetchSubAdminProfileAndUser` on mount / retry | Fetched, mutated on save/toggle |
 | `lastLogin` | `useSettings` | `userRepo.findUserLastActivity` on mount | Fetched once, never mutated |
 
 **Profile data is the single source of truth for all settings domains.**
-It is fetched once on mount and never refetched. Mutations (name,
-notification prefs) update local state optimistically. The database
-is the canonical record — the local state is a cache that stays
-consistent via optimistic updates.
+It is fetched on mount (`fetchData`, retryable via the page's
+`RetryButton` after a load error). Mutations (name, notification prefs)
+update local state optimistically. The database is the canonical record
+— the local state is a cache that stays consistent via optimistic
+updates.
 
 ### Ephemeral UI State
 
@@ -666,16 +699,26 @@ to the database.
 |------|-------|---------|-----------------|
 | `name` (form field) | `useSettings` | Editable copy of `profile.full_name` | Cleared on page reload |
 | `password` (form field) | `useSettings` | Password input buffer | Cleared after successful update or on page reload |
+| `fieldErrors` | `useSettings` | Per-field validation messages (name/password) | Cleared on successful save |
 | `saving` | `useSettings` | Profile save loading flag | `false` after save completes (success or failure) |
 | `savingPrefs` | `useSettings` | Notification save loading flag | `false` after toggle completes |
 | `copied` | `useSettings` | Coupon copy success feedback | Auto-reset after 2s timeout |
 | `exportingStudents` | `useSettings` | Student export loading flag | `false` after export completes |
 | `exportingExams` | `useSettings` | Exam export loading flag | `false` after export completes |
+| `loading` | `useSettings` | Profile-load spinner state (drives skeleton) | `false` after load completes (success or failure) |
+| `error` | `useSettings` | Page-level `PageError` (drives ErrorContainer + RetryButton) | `null` on successful load/reload |
+| `actionError` | `useSettings` | Inline `Alert` message for a failed action (save/toggle/copy/export) | `null` before the next action or after it succeeds |
+| `notice` | `useSettings` | Inline `Alert` message for a non-fatal notice (e.g. partial export) | `null` via `clearNotice()` / `onDismiss` |
+| `profileRef` | `useSettings` (ref) | Last confirmed `profile` — source of truth for toggle writes | Updated on every successful load/save/toggle |
+| `savingPrefsRef` | `useSettings` (ref) | Single-flight guard (B1) — blocks concurrent preference writes | `false` after the in-flight toggle completes |
+| `copiedTimerRef` | `useSettings` (ref) | Pending 2s copied-reset timer (B8) | Cleared when armed again or on unmount |
+| `loadedOnceRef` | `useSettings` (ref) | Prevents form re-hydration on retry (B2) | Set `true` after the first successful load |
 
 **Ephemeral state is exclusively owned by `useSettings`.** No component
 stores a copy. The password field is cleared after a successful update
 to prevent accidental re-submission. Feedback flags (`copied`,
-`exporting*`) are managed with timeouts or promise `.finally()`.
+`exporting*`, `loading`) are managed with timeouts or promise
+`.finally()`.
 
 ### Externally Owned State
 
@@ -684,14 +727,16 @@ Data owned by hooks or contexts outside the settings feature.
 | Data | Owner | Access in Settings | Mutable by Settings? |
 |------|-------|-------------------|---------------------|
 | `user` (auth session) | `AuthContext` | `useAuth().user` for `user.id` and `logout()` | No — only calls `logout()` |
-| `toasts` | `useToast` | `showSuccess()` / `showError()` for user feedback | Yes — pushes toast messages |
+| `toasts` | `useToast` | `showSuccess()` for success feedback | Yes — pushes success toast messages |
 | `isSignOutOpen` | `useSignOutConfirmation` | `openDialog()`, `closeDialog()`, `confirmSignOut()` | Yes — via returned callbacks |
 
 **External state is never duplicated in `useSettings`.** The hook reads
 from the canonical source on every render. For example, `toasts` is an
-array managed by `useToast` — `useSettings` only calls `showSuccess`
-and `showError`, which enqueue toast objects into the toast hook's
-internal state.
+array managed by `useToast` — `useSettings` calls `showSuccess` to enqueue
+success toasts. Error feedback is deliberately **not** routed through
+`showError`; it is rendered inline via `Alert`/`ErrorContainer` so failures
+are co-located with the surface (and page-load failures with their own
+`RetryButton`).
 
 ### Ownership Invariants
 
@@ -730,10 +775,10 @@ IdentitySection form fields
     ↓
 handleSaveProfile in useSettings
     ↓
-updateSubAdminProfile(saId, userId, name)
+updateSubAdminProfile(name)
     ↓
-userRepo.updateSubAdmin(id, { full_name })  ← sub_admins table
-userRepo.updateUser(id, { full_name })       ← users table
+userRepo.updateSubAdminNameViaRpc(name)  [RPC: update_sub_admin_name]  ← sub_admins table
+(users row synced inside the same RPC)       ← users table
     ↓
 authService.updatePassword(password)         ← Supabase Auth
     ↓
@@ -747,9 +792,9 @@ NotificationSection toggle
     ↓
 handleTogglePref in useSettings
     ↓
-updateSubAdminNotificationPrefs(profile.id, newPrefs)
+updateSubAdminNotificationPrefs(newPrefs)
     ↓
-userRepo.updateSubAdmin(id, { notification_prefs })  ← sub_admins table
+userRepo.updateSubAdminNotificationPrefsViaRpc(prefs)  [RPC: update_sub_admin_notification_prefs]  ← sub_admins table
     ↓
 Local profile state updated
 ```
@@ -982,22 +1027,23 @@ announce "Sign Out" dialog title and both button labels.
 |---------|---------------|----------------------|
 | Copy coupon | `IconButton` with `aria-label="Copy coupon"` | Screen reader announces purpose despite no visible label |
 | Share coupon | `IconButton` with `aria-label="Share coupon"` | Screen reader announces purpose despite no visible label |
-| Feedback (copied) | Icon changes from `Copy` to `Check` + `className="text-success"` | Visual only — no programmatic announcement needed for transient feedback; `showSuccess` toast provides audible feedback via `aria-live` |
+| Feedback (copied) | Copy icon flips to `Check` + `text-success` for 2s; copy button `aria-label` flips to `"Coupon copied"` | Accessible-name change gives screen readers a programmatic copy-success confirmation |
 
 **Keyboard flow:** Tab to copy IconButton → Enter to copy coupon →
 Tab to share IconButton → Enter to share.
 
 **Verification:** Tab to each icon button. Screen reader must announce
-"Copy coupon" and "Share coupon". After copy click, toast appears with
-"Coupon copied" — screen reader announces via `aria-live="polite"`.
+"Copy coupon" and "Share coupon". After copy click, the copy button's
+accessible name flips to "Coupon copied" for 2s — screen reader announces
+the change as the copy-success confirmation.
 
 ### ARIA Usage
 
 | Element | Attribute | Purpose |
 |---------|-----------|---------|
-| Copy IconButton | `aria-label="Copy coupon"` | Identifies purpose for screen readers |
+| Copy IconButton | `aria-label` = `"Copy coupon"` \| `"Coupon copied"` (dynamic) | Identifies purpose; state flips on copy success for SR confirmation |
 | Share IconButton | `aria-label="Share coupon"` | Identifies purpose for screen readers |
-| Toast container | `aria-live="polite"` (via `useToast`) | Announces new toasts without interrupting current screen reader output |
+| Success/error/notice banner | Inline `Alert` — `role="status"` (non-error) / `role="alert"` (error) | Announces new banner content without interrupting current output |
 | ConfirmModal | `role="dialog"`, `aria-modal="true"` (via `AdminModal`) | Identifies modal as a dialog and traps focus |
 | Switch | `role="switch"`, `aria-checked` (via `Switch` component) | Identifies toggle state for screen readers |
 
@@ -1005,29 +1051,23 @@ Tab to share IconButton → Enter to share.
 
 | Scenario | Visual Indicator | Screen Reader Behaviour |
 |----------|-----------------|------------------------|
+| Profile load | `SubAdminSettingsSkeleton` visible page (single `role="status"` owner, decorative blocks) | One live region announces "Loading settings"; the real grid never renders with defaults |
+| Profile load failure + retry | `ErrorContainer` + `RetryButton` (spinner + disabled while retrying) | `role="alert"` announces the page-level error; "Retrying…" when busy |
 | Profile save | Button shows built-in spinner + becomes disabled | "Save Changes" button is dimmed; screen reader announces "dimmed" or ignores |
-| Notification save | "Saving..." text appears below toggles | Text is rendered in DOM — screen reader reads it on next navigation |
+| Notification save | "Saving..." text appears below toggles; three switches disabled | Text is rendered in DOM — screen reader reads it on next navigation |
 | Students CSV export | Button shows built-in spinner + becomes disabled | "Students" button is dimmed |
 | Exams CSV export | Button shows built-in spinner + becomes disabled | "Exams" button is dimmed |
-| Coupon copy | Icon changes from Copy to Check for 2s | Visual only — no focus change; toast announces "Coupon copied" |
+| Coupon copy | Icon changes from Copy to Check for 2s; button name → "Coupon copied" | Visual + SR confirmation via dynamic accessible name |
 
 ### Error States
 
 | Scenario | Visual Indicator | Screen Reader Behaviour |
 |----------|-----------------|------------------------|
-| Profile load failure | Toast `showError` | `aria-live="polite"` announces error text |
-| Profile save failure | Toast `showError` | `aria-live="polite"` announces error text |
-| Name validation failure | Toast `showError("Name is required")` | `aria-live="polite"` announces error text |
-| Password validation failure | Toast `showError` with `passwordSchema` message | `aria-live="polite"` announces the specific validation rule |
-| Notification toggle failure | Toggle reverts + toast `showError` | Visual revert + `aria-live="polite"` announces error text |
-| Coupon copy failure | Toast `showError` | `aria-live="polite"` announces error text |
-| Export failure | Toast `showError` | `aria-live="polite"` announces error text |
-| Export empty result | Toast `showError` ("No students/exams found") | `aria-live="polite"` announces the empty result |
-
-All errors are displayed via toast notifications. There is no inline
-error messaging. The `useToast` hook manages the `aria-live="polite"`
-region that wraps the toast container, so all toast messages are
-announced by screen readers without focus interruption.
+| Profile load failure | `ErrorContainer` (page-level) + `RetryButton` | `role="alert"` announces the canonical error title + message |
+| Profile save partial failure | Inline `Alert variant="error"` ("Name saved, but password update failed…") | `role="alert"` announces the specific partial state; name is never rolled back |
+| Profile save / action failure | Inline `Alert variant="error"` at top of page | `role="alert"` announces the message without focus interruption |
+| Export truncation | Inline `Alert variant="warning"` (dismissible) | `role="status"` announces the partial-export notice |
+| Notification toggle failure | Toggle reverts + inline `Alert` | Visual revert + `role="alert"` announces "Failed to save preference" |
 
 ### Focus Management
 
@@ -1081,17 +1121,24 @@ localised — an error in one domain never corrupts state in another.
 User clicks "Save Changes"
     ↓
 Client-side validation
-    ├── Name empty? → showError("Name is required")
+    ├── Name empty? → inline Alert "Name is required"
     │                   ↳ User corrects name, clicks Save again
     │
-    └── Password invalid? → showError(passwordSchema message)
+    └── Name > 80 chars? → inline Alert "Name must be 80 characters or less"
+    │                       ↳ User shortens name, clicks Save again
+    │
+    └── Password invalid? → inline Alert (passwordSchema message)
                             ↳ User corrects password, clicks Save again
     ↓
 updateSubAdminProfile() / authService.updatePassword()
     ├── Success → showSuccess("Profile updated successfully")
     │              ↳ Form state preserved for further edits
     │
-    └── Failure → showError(err.message)
+    └── Name saved, password failed → inline Alert
+    │     "Name saved, but password update failed: <reason>"
+    │     ↳ Name stays saved; password field retains its value to correct
+    │
+    └── Failure → inline Alert (strips any VALIDATION_FAILED: prefix)
                   ↳ Both name and password fields retain their values
                   ↳ User can edit and retry without re-entering everything
 ```
@@ -1108,7 +1155,8 @@ authService.updatePassword(password)
     │              showSuccess("Profile updated successfully")
     │              ↳ Password was already validated client-side and server-side
     │
-    └── Failure → showError
+    └── Failure → inline Alert (actionError); if the name step committed first:
+    │              "Name saved, but password update failed: <reason>"
                   ↳ Password field retains value for correction
                   ↳ User can edit and retry
 ```
@@ -1122,14 +1170,16 @@ password is never logged or stored in persistent state.
 ```
 User toggles Switch
     ↓
+Single-flight guard: no second toggle runs while one is in flight (switches disabled)
+    ↓
 Step 1: Optimistic UI update (toggle changes immediately)
     ↓
-Step 2: updateSubAdminNotificationPrefs()
-    ├── Success → local profile state updated
+Step 2: updateSubAdminNotificationPrefs()  ← full normalized prefs from profileRef
+    ├── Success → local profile state updated (functional setProfile)
     │              ↳ Toggle remains in new position
     │
     └── Failure → toggle reverts to previous value
-    │              showError(toast)
+    │              inline Alert "Failed to save preference. Please try again."
     │              ↳ User can retry immediately
     │              ↳ Previous state is restored — no manual correction needed
     ↓
@@ -1145,14 +1195,16 @@ need to manually toggle back — the system handles it.
 ```
 User clicks Export button
     ↓
-fetchStudentsByEducatorId() / fetchTeacherExamsForExport()
-    ├── Success + data.length > 0 → downloadCSV(), showSuccess
-    │                                ↳ CSV saved to downloads folder
+fetchStudentsByEducatorId() / fetchTeacherExamsForExport()   [pagination, no silent limit]
+    ├── Success + rows.length > 0
+    │     ├── complete  → downloadCSV(), showSuccess
+    │     └── truncated → downloadCSV() + inline warning Alert
+    │                      (explicit "partial export" — never false success)
     │
-    ├── Success + data.length === 0 → showError("No students/exams found")
+    ├── Success + rows.length === 0 → inline Alert "No students/exams found"
     │                                  ↳ No action needed — there is no data to export
     │
-    └── Network error → showError("Export failed")
+    └── Network error → inline Alert "Export failed"
                         ↳ User can retry by clicking the button again
     ↓
 Loading indicator hidden
@@ -1166,13 +1218,14 @@ An empty result is not an error — it simply means there is no data.
 
 ```
 Copy: navigator.clipboard.writeText(coupon_code)
-    ├── Success → setCopied(true), showSuccess, auto-reset after 2s
-    └── Failure → showError, copied remains false
+    ├── Success → setCopied(true), showSuccess, auto-reset after 2s (timer
+    │              cleared before re-arming and on unmount — no stale reset)
+    └── Failure → inline Alert "Failed to copy coupon", copied remains false
 
 Share: navigator.share() / clipboard.writeText(shareText)
     ├── Web Share API: user dismisses → no error shown (expected behaviour)
     ├── Clipboard fallback success → showSuccess
-    └── Clipboard fallback failure → showError (manual copy instruction)
+    └── Clipboard fallback failure → inline Alert (manual copy instruction)
 ```
 
 **Recovery guarantee:** Copy/share operates on read-only data. No
@@ -1224,8 +1277,8 @@ The settings feature has a specific performance profile:
 | Number of async operations per session | 1 (profile load) + 1-3 (saves/toggles) + 0-2 (exports) = 2-6 |
 | Number of state mutations per session | ~3-8 (hydrate + saves + toggles + feedback flags) |
 | Render frequency | Once on mount + once per mutation |
-| Component tree depth | 3 levels (Page → Section → Primitives) |
-| Number of section components | 5 (always rendered, no conditional mounting) |
+| Component tree depth | 3 levels (Page → Section → Primitives), plus a gated skeleton/error surface |
+| Number of section components | 5 (grid mounted only after the profile load resolves) |
 
 This profile means the feature is **interaction-bound, not computation-bound**.
 The dominant costs are network latency (API calls) and re-render propagation
@@ -1236,17 +1289,17 @@ animation frame pressure.
 
 | # | Technique | Location | Problem Addressed | Measurable Benefit |
 |---|-----------|----------|-------------------|-------------------|
-| 1 | `useCallback` on all 6 handlers | `useSettings` | Unstable function references cause unnecessary re-renders of child components. Without `useCallback`, each render of `useSettings` creates 6 new function objects, triggering 5 section components to re-render even when unrelated state changed. | Stable references across renders. A state change in `copied` no longer re-renders `IdentitySection` or `SessionSection`. Measured: 5 child re-renders reduced to 1 (the section whose prop actually changed). |
-| 2 | Stale-request protection | `useSettings` (via `useStableFetch`) | Users navigating away during an in-flight async operation (profile load, save, toggle, copy, export) could trigger `setState` on an unmounted component, causing a React warning and potentially rendering stale data. | All 6 async operations check `mountedRef.current` before calling any setter. After unmount, no state updates occur. Prevents the "Can't perform a React state update on an unmounted component" warning and avoids rendering data from a stale session. |
-| 3 | Scoped state ownership | `useSettings` | State defined in a shared context or at the App level would re-render unrelated features on every settings state change. | All 13 state variables are owned by `useSettings`. Re-renders are scoped to the settings page subtree. Unrelated features (dashboard, exams, students) are never affected by settings state changes. |
-| 4 | Single fetch on mount | `useSettings` | Multiple fetches (polling, interval, refetch on unrelated state changes) would add unnecessary network calls. | Profile data is fetched exactly once, when `user?.id` becomes available. No polling, no interval, no `refetchOnFocus`, no refetch on unrelated state changes. Total cost: 1 query (2 table reads: `sub_admins` + `users`). |
+| 1 | `useCallback` on all handlers | `useSettings` | Unstable function references cause unnecessary re-renders of child components. Without `useCallback`, each render of `useSettings` creates new function objects, triggering section components to re-render even when unrelated state changed. | Stable references across renders. A state change in `copied` no longer re-renders `IdentitySection` or `SessionSection`. |
+| 2 | Stale-request protection | `useSettings` (via `useStableFetch`) | Users navigating away during an in-flight async operation (profile load, save, toggle, copy, share, exports) could trigger `setState` on an unmounted component, causing a React warning and potentially rendering stale data. | All async operations (including `fetchData`) check `mountedRef.current` before calling any setter. After unmount, no state updates occur. Prevents the "Can't perform a React state update on an unmounted component" warning and avoids rendering data from a stale session. |
+| 3 | Scoped state ownership | `useSettings` | State defined in a shared context or at the App level would re-render unrelated features on every settings state change. | All 16 state variables (plus 5 refs) are owned by `useSettings`. Re-renders are scoped to the settings page subtree. Unrelated features (dashboard, exams, students) are never affected by settings state changes. |
+| 4 | Single fetch on mount + explicit retry | `useSettings` | Multiple fetches (polling, interval, refetch on unrelated state changes) would add unnecessary network calls. | Profile data is fetched by `fetchData` when `user?.id` becomes available, and again only on explicit user retry (error surface's `RetryButton`). No polling, no interval, no `refetchOnFocus`, no refetch on unrelated state changes. Total cost: 1 query per fetch (2 table reads: `sub_admins` + `users`). |
 | 5 | Optimistic UI for toggles | `useSettings` | Waiting for the API call to complete before updating the toggle introduces perceived latency (typically 100-500ms). | Toggle updates immediately. The user sees the new state before the API call completes. If the call fails, the toggle reverts. Measured: perceived latency for toggle = 0ms (instant) vs. 100-500ms without optimisation. |
 
 ### Intentionally Rejected Optimizations
 
 | # | Technique | Evidence for Rejection |
 |---|-----------|----------------------|
-| 1 | `React.memo` on section components | Each section component is always rendered (no conditional mounting). `React.memo` performs a shallow comparison on every render. The section components are small (IdentitySection: 59 lines, RecruitmentSection: 36 lines, NotificationSection: 48 lines, BackupSection: 29 lines, SessionSection: 43 lines). Their render cost is estimated at < 0.5ms each. With `useCallback` already preventing unnecessary re-renders from handler identity changes, the only remaining re-render triggers are prop value changes (intentional) or parent re-renders (already scoped). `React.memo` would add a shallow comparison (3-7 props × ~0.01ms = ~0.07ms) for zero skip benefit — no re-renders are being skipped that aren't already prevented by `useCallback`. |
+| 1 | `React.memo` on section components | Section components are gated behind a loading skeleton/error surface, so they render with real data only. `React.memo` performs a shallow comparison on every render. The section components are small (IdentitySection: 59 lines, RecruitmentSection: 36 lines, NotificationSection: 48 lines, BackupSection: 29 lines, SessionSection: 43 lines). Their render cost is estimated at < 0.5ms each. With `useCallback` already preventing unnecessary re-renders from handler identity changes, the only remaining re-render triggers are prop value changes (intentional) or parent re-renders (already scoped). `React.memo` would add a shallow comparison (3-7 props × ~0.01ms = ~0.07ms) for zero skip benefit — no re-renders are being skipped that aren't already prevented by `useCallback`. |
 | 2 | `useMemo` on profile-derived values | The profile object is set once on mount and mutated at most 2-3 times per session (name change + 1-2 notification toggles). There are no derived values computed from profile — the section components receive the raw fields (name, email, couponCode) as separate props. `useMemo` would store the previous reference and compare dependencies on every render, but since there is nothing to derive, the memo would be a no-op with overhead. |
 | 3 | Debounced save | Profile save is button-triggered, not keystroke-triggered. The user explicitly clicks "Save Changes" to initiate the save. There is no keystroke-by-keystroke validation that would benefit from debouncing. Adding a 200ms debounce to the button click would add perceived latency with zero accuracy benefit — the user expects an immediate response to the click. |
 | 4 | Polling for profile updates | Profile data changes only when the user explicitly saves (name change) or when an external admin modifies the sub-admin account (rare). Neither case benefits from polling. Polling would add a network call every N seconds (e.g., 30s × 60 = 2,880 calls per day) for zero benefit — the user already has the latest data they care about. |
@@ -1264,8 +1317,8 @@ the actual interaction pattern — not applied speculatively.
 
 | Addressed Cost | Optimisation |
 |----------------|-------------|
-| Unstable callback references → unnecessary re-renders | `useCallback` on all 6 handlers |
-| Stale state after unmount → warnings + stale data | `mountedRef` guards on all 6 async operations |
+| Unstable callback references → unnecessary re-renders | `useCallback` on all handlers |
+| Stale state after unmount → warnings + stale data | `mountedRef` guards on all async operations |
 | Re-render propagation beyond settings → wasted work | Scoped state ownership in `useSettings` |
 | Unnecessary network calls → latency + server load | Single fetch on mount, no polling |
 | Perceived latency on toggle → delayed feedback | Optimistic UI with revert-on-error |
@@ -1281,7 +1334,8 @@ the actual interaction pattern — not applied speculatively.
    server-side validation, Supabase Auth update, no current password
    check.
 3. **Preserve notification behavior** — optimistic UI with revert on
-   error, same toast feedback.
+   error, single-flight preference writes (one toggle in flight at a
+   time, switches disabled while saving), inline Alert feedback.
 4. **Preserve recruitment workflow** — clipboard copy, Web Share API
    with fallback, same feedback.
 5. **Preserve backup workflow** — CSV export with same headers and
@@ -1301,8 +1355,11 @@ the actual interaction pattern — not applied speculatively.
     handlers, stale-request protection. All rejected optimisations
     documented with evidence.
 12. **Separate accepted design decisions from actual technical debt** —
-    feature-specific section components and missing `ensureRole` on
-    settings service functions are accepted design decisions, not debt.
+     feature-specific section components are accepted design decisions.
+     `ensureRole` is used on `fetchTeacherExamsForExport`; the two
+     read-only helpers derive the user ID from the authenticated session
+     (never user input) with RLS as the defence-in-depth backstop —
+     documented, not debt.
 13. **Repository-wide opportunities must never block certification.**
 14. **Certify only independently verified improvements.**
 15. **Freeze the feature before proceeding to the next migration.**
@@ -1352,8 +1409,9 @@ the actual interaction pattern — not applied speculatively.
 
 - **`useSettings` is the single orchestration layer** — all state
   ownership, data loading, and event handlers are in the feature hook.
-  The page (72 lines) is pure composition. No other hook or context
-  holds settings state.
+  The page (136 lines) is thin composition with explicit loading/error
+  gates (skeleton, `ErrorContainer` + `RetryButton`). No other hook or
+  context holds settings state.
 - **Each settings domain is independently encapsulated** — Identity,
   Security, Notifications, Recruitment, and Operations are separate
   workflows with separate data, separate handlers, and separate UI
@@ -1365,9 +1423,9 @@ the actual interaction pattern — not applied speculatively.
 |----------|--------|----------|
 | Identity | ✅ Preserved | Same `fetchSubAdminProfileAndUser` → hydrate → `updateSubAdminProfile` save path |
 | Password | ✅ Preserved | Same `passwordSchema` validation, `authService.updatePassword`, Supabase Auth update |
-| Notifications | ✅ Preserved | Same optimistic UI with revert on error, same preference keys, same "Saving..." indicator |
-| Recruitment | ✅ Preserved | Same clipboard copy with checkmark, same Web Share API with text fallback |
-| Exports | ✅ Preserved | Same CSV headers (`students_export.csv`, `exams_export.csv`), same data formatting |
+| Notifications | ✅ Preserved | Same optimistic UI with revert on error, same preference keys, same "Saving..." indicator; single-flight writes + switches disabled while saving |
+| Recruitment | ✅ Preserved | Same clipboard copy with checkmark (timer cleanup safe on rapid re-copy/unmount), same Web Share API with text fallback |
+| Exports | ✅ Preserved | Same CSV headers (`students_export.csv`, `exams_export.csv`), same data formatting; paginated fetch + explicit truncation notice |
 | Session | ✅ Preserved | Same `useSignOutConfirmation` with confirmation dialog, `AuthContext.logout` on confirm |
 
 ### Design Decisions
@@ -1396,7 +1454,7 @@ the actual interaction pattern — not applied speculatively.
 ### Optimization Integrity
 
 - **Performance decisions are evidence-based** — `useCallback` on all
-  6 handlers, stale-request protection via `mountedRef` on all 6 async
+  handlers, stale-request protection via `mountedRef` on all async
   operations, scoped state ownership in `useSettings`, single fetch on
   mount, optimistic UI for toggles. All 8 intentionally rejected
   optimisations (`React.memo`, `useMemo`, debounced save, polling,
@@ -1440,6 +1498,6 @@ certification:
 
 | Observation | Classification | Rationale |
 |-------------|---------------|-----------|
-| Missing `ensureRole` on settings service functions | Accepted design decision | Route-guarded page; user ID derived from session, never from user input; RLS provides defence in depth |
+| Partial `ensureRole` coverage on read-only service functions | Accepted design decision | `fetchTeacherExamsForExport` uses `ensureRole`; the two read helpers derive the user ID from the authenticated session, never from user input; route guard + RLS provide defence in depth |
 | Feature-specific section components | Accepted design decision | Five independent business domains with no reuse target |
 | No current password check for password change | Accepted design decision | Session itself is authorisation (unlike User Profile which requires reauthentication) |

@@ -1,30 +1,45 @@
-import { AlertCircle, Shield, BarChart3, Plus } from 'lucide-react'
+import { useState } from 'react'
+import { AlertCircle, Plus, Save, CheckCircle, CheckCircle2 } from 'lucide-react'
 import {
-  H1, PageContainer, Stack, Card, Button, SectionReveal, Grid, Alert, Spinner
+  H1, PageContainer, Stack, Card, Button, SectionReveal, Alert
 } from '../../components/common/AntigravityUI'
 import { PageHeader } from '../../components/admin/PageHeader'
-import { SettingsCard, AddExamModal } from '../../components/admin/settings'
+import { AddExamModal } from '../../components/admin/settings'
 import { AdminSelectionTabs } from '../../components/admin/shared/AdminSelectionTabs'
-import { ToastContainer } from '../../hooks/useToast'
-import { EmptyState } from '../../components/common/SharedComponents'
-import { SubjectDistributionPanel } from '../../components/admin/settings/SubjectDistributionPanel'
-import { ExamParamsForm } from '../../components/admin/settings/ExamParamsForm'
+import { EmptyState, ConfirmModal } from '../../components/common/SharedComponents'
+import { SegmentedFilter } from '../../components/common/SegmentedFilter'
+import { ErrorContainer } from '../../components/common/ErrorContainer'
+import { RetryButton } from '../../components/common/RetryButton'
+import { ExamModePanel } from '../../components/admin/settings/ExamModePanel'
+import { SubjectTestModePanel } from '../../components/admin/settings/SubjectTestModePanel'
+import { AdminSettingsSkeleton } from '../../components/admin/settings/AdminSettingsSkeleton'
 import { useAdminSettings } from '../../components/admin/settings/useAdminSettings'
+import { motion, AnimatePresence } from 'framer-motion'
+import { SECTION_REVEAL } from '../../components/common/AntigravityMotion'
 
 export default function AdminSettings() {
   const {
-    user, toasts, error, selectedExam, selectedPaper, selectedSubject,
+    user, selectedExam, selectedPaper, selectedSubject,
     setSelectedExam, setSelectedPaper, setSelectedSubject,
-    config, setConfig, subjects, setSubjects,
+    config, setConfig, subjects,
     isLoading, isSaving, isModalOpen, setIsModalOpen,
     tabsKey, setTabsKey,
-    handleSave, saveConfig, saveSubjects,
+    handleSave,
     paramsFieldErrors, subjectsError, handleParamsBlur, handleSubjectBlur,
+    handleQuestionCountChange,
+    pageMode, setPageMode,
+    testMode, setTestMode,
+    topicConfigs, topicLoading, topicError, saveRetryable,
+    saveSuccess, draftDivergesFromServer,
+    subjectTestValid,
+    handleTopicThresholdChange,
+    pageError, retryLoad, retrySave,
+    pendingSelection, stayHere, discardForSwitch, saveAndSwitch,
   } = useAdminSettings()
+  const [examCreatedMessage, setExamCreatedMessage] = useState<string | null>(null)
 
   return (
     <PageContainer>
-      <ToastContainer toasts={toasts} />
       <H1 className="sr-only">Settings</H1>
 
       <PageHeader
@@ -36,6 +51,26 @@ export default function AdminSettings() {
       />
 
       <Stack gap="lg">
+        {examCreatedMessage && (
+          <SectionReveal>
+            <Alert variant="success" icon={CheckCircle2} title="Exam created" className="w-full" onDismiss={() => setExamCreatedMessage(null)}>
+              {examCreatedMessage}
+            </Alert>
+          </SectionReveal>
+        )}
+
+        <SectionReveal>
+          <SegmentedFilter
+            ariaLabel="Configuration mode"
+            options={[
+              { id: 'exams', label: 'Exams' },
+              { id: 'subject_test', label: 'Subject Test' },
+            ]}
+            value={pageMode}
+            onChange={(val) => setPageMode(val as 'exams' | 'subject_test')}
+          />
+        </SectionReveal>
+
         <SectionReveal className="w-full">
           <div className="w-full flex flex-col gap-4 relative">
             <AdminSelectionTabs
@@ -47,62 +82,138 @@ export default function AdminSettings() {
               selectedSubject={selectedSubject}
               setSelectedSubject={setSelectedSubject}
               hideAll={true}
+              showSubjects={pageMode === 'subject_test'}
             />
           </div>
         </SectionReveal>
 
-        {error && (
-          <SectionReveal>
-            <Alert variant="error" icon={AlertCircle} title="Something went wrong" className="w-full">
-              {error}
-            </Alert>
-          </SectionReveal>
-        )}
-
-        <div aria-live="polite" aria-label="Settings content">
-        {isLoading ? (
-          <SectionReveal>
-            <Card variant="subtle" className="py-32 text-center flex flex-col items-center gap-4">
-              <Spinner size="lg" />
-              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Syncing configuration...</p>
-            </Card>
-          </SectionReveal>
-        ) : !config ? (
-          <SectionReveal>
-            <EmptyState
-              icon={<AlertCircle size={48} />}
-              title="No Configuration"
-              subtitle="No configuration found for this selection."
-            />
-          </SectionReveal>
-        ) : (
-          <Grid cols={2}>
-            <SettingsCard title="Subject Distribution" icon={Shield} onSave={() => handleSave('subjects', saveSubjects)} isSaving={isSaving.subjects}>
-              <SubjectDistributionPanel
-                subjects={subjects}
-                selectedSubject={selectedSubject}
-                configTotalQuestions={config.total_questions}
-                onQuestionCountChange={(idx, value) => {
-                  const ns = [...subjects]; ns[idx].question_count = value; setSubjects(ns);
-                }}
-                onMarksChange={(idx, value) => {
-                  const ns = [...subjects]; ns[idx].marks_per_question = value; setSubjects(ns);
-                }}
-                error={subjectsError}
-                onSubjectBlur={handleSubjectBlur}
+        {/* BUG-E: this wrapper is layout-only. ErrorContainer owns the alert
+         *  semantics and AdminSettingsSkeleton owns the single loading status
+         *  region — a live region here would nest conflicting announcements. */}
+        <div>
+          {pageError ? (
+            <ErrorContainer category={pageError.category} severity={pageError.severity}>
+              <h2 className="text-sm font-bold text-text-primary">{pageError.title}</h2>
+              <p className="text-[11px] text-text-muted">{pageError.message}</p>
+              <RetryButton onRetry={retryLoad} loading={isLoading} />
+            </ErrorContainer>
+          ) : isLoading ? (
+            <AdminSettingsSkeleton />
+          ) : selectedExam === 'all' || selectedExam === 'APPSC_GROUPS' ? (
+            /* BUG-D: a group-level pseudo-selection is not a data-empty
+             * condition — show neutral guidance instead of EmptyState. */
+            <SectionReveal>
+              <Card padding={24}>
+                <p className="text-center text-[12px] text-text-muted">
+                  Select a specific exam to view its configuration.
+                </p>
+              </Card>
+            </SectionReveal>
+          ) : !config ? (
+            <SectionReveal>
+              <EmptyState
+                icon={<AlertCircle size={48} />}
+                title="No Configuration Yet"
+                subtitle="This exam has no saved configuration for the current selection."
               />
-            </SettingsCard>
+            </SectionReveal>
+          ) : (
+            <Stack gap="lg">
+              <AnimatePresence mode="wait">
+                {pageMode === 'exams' ? (
+                  <motion.div
+                    key="exams"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={SECTION_REVEAL}
+                  >
+                    <ExamModePanel
+                      config={config}
+                      subjects={subjects}
+                      topicConfigs={topicConfigs}
+                      topicLoading={topicLoading}
+                      subjectsError={subjectsError}
+                      paramsFieldErrors={paramsFieldErrors}
+                      onConfigChange={setConfig}
+                      onQuestionCountChange={handleQuestionCountChange}
+                      onTopicThresholdChange={handleTopicThresholdChange}
+                      onFieldBlur={handleParamsBlur}
+                      onSubjectBlur={handleSubjectBlur}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="subject_test"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={SECTION_REVEAL}
+                  >
+                    <SubjectTestModePanel
+                      subjects={subjects}
+                      selectedSubject={selectedSubject}
+                      topicConfigs={topicConfigs}
+                      topicLoading={topicLoading}
+                      testMode={testMode}
+                      onTestModeChange={setTestMode}
+                      onTopicThresholdChange={handleTopicThresholdChange}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-            <SettingsCard title="Exam Parameters" icon={BarChart3} onSave={() => handleSave('params', saveConfig)} isSaving={isSaving.params}>
-              <ExamParamsForm
-                config={config}
-                onConfigChange={setConfig}
-                fieldErrors={paramsFieldErrors}
-                onFieldBlur={handleParamsBlur}
-              />
-            </SettingsCard>
-          </Grid>
-        )}
+              <SectionReveal>
+                <div className="sticky bottom-4 z-30">
+                <Card variant="default" padding={16}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <AnimatePresence mode="wait">
+                        {saveSuccess && (
+                          <motion.div
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -8 }}
+                            className="flex items-center gap-1.5"
+                          >
+                            <CheckCircle size={14} className="text-success" />
+                            <span className="text-[11px] font-semibold text-success">Changes saved</span>
+                          </motion.div>
+                        )}
+                        {topicError && !saveSuccess && (
+                          <ErrorContainer
+                            category="server"
+                            severity="medium"
+                            variant="inline"
+                            padding={16}
+                          >
+                            <p className="text-[11px] text-text-primary">{topicError}</p>
+                            {/* BUG-C: retry is offered only for genuine
+                             *  transport/backend failures backed by a valid
+                             *  current-context factory. Validation failures
+                             *  keep the draft and show the message only. */}
+                            {saveRetryable && (
+                              <RetryButton onRetry={retrySave} loading={isSaving} label="Retry" size="sm" />
+                            )}
+                          </ErrorContainer>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <Button
+                      onClick={handleSave}
+                      loading={isSaving}
+                      disabled={isSaving || (pageMode === 'subject_test' && (!draftDivergesFromServer || !subjectTestValid))}
+                      variant="primary"
+                    >
+                      <Save size={16} className="mr-2" />
+                      Save Changes
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            </SectionReveal>
+            </Stack>
+          )}
         </div>
       </Stack>
 
@@ -114,6 +225,19 @@ export default function AdminSettings() {
           setTabsKey(prev => prev + 1)
           setSelectedExam(examId)
         }}
+        onSuccess={setExamCreatedMessage}
+      />
+
+      <ConfirmModal
+        open={pendingSelection !== null}
+        title="Unsaved changes"
+        message="You have unsaved changes. Save them before switching, or discard to continue without saving."
+        confirmLabel="Save Changes"
+        cancelLabel="Stay Here"
+        onConfirm={saveAndSwitch}
+        onCancel={stayHere}
+        secondaryAction={{ label: 'Discard Changes', onClick: discardForSwitch }}
+        busy={isSaving}
       />
     </PageContainer>
   )

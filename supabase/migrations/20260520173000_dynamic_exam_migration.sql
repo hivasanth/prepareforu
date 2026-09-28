@@ -378,6 +378,11 @@ ALTER TABLE public.attempts ADD CONSTRAINT fk_attempts_exam FOREIGN KEY (exam_id
 ALTER TABLE public.leaderboard ADD CONSTRAINT fk_leaderboard_exam FOREIGN KEY (exam_id) REFERENCES public.exams(exam_id);
 
 -- Step 6.5: Re-create RLS policies
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_versions_select' AND polrelid = 'public.exam_versions'::regclass
+  ) THEN
 CREATE POLICY exam_versions_select ON public.exam_versions FOR SELECT
 USING (
   is_admin() 
@@ -388,6 +393,9 @@ USING (
       AND exam_configs.is_published = true
   )
 );
+  END IF;
+END
+$$;
 
 -- Step 7: Re-create materialized views
 CREATE MATERIALIZED VIEW public.daily_attempts_stats AS

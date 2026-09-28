@@ -1,16 +1,47 @@
 import React from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { ChevronDown, Check, Minus } from 'lucide-react'
+import { Check, Minus } from 'lucide-react'
+import { TRANSITION_INTERACTION } from './AntigravityMotion'
 
-/* Shared Input-role surface (P1 A-5 L-2): single source of truth for the field
-   language used by Input / TextArea / Select. */
-const FIELD_SURFACE = 'bg-input-bg border border-input-border rounded-xl text-input-text'
+/* ─── Input Component ──────────────────────────────────────────────────────
+ * Design role:
+ *   Standard text input field for all form contexts.
+ *
+ * Variants:
+ *   default — Standard input (h-48px, 14px bold text, ancient-input material)
+ *   compact — Smaller input (h-40px, 13px text) for dense admin config
+ *   management — Neutral management surface (no gold light material)
+ *
+ * Surface tokens:
+ *   --input-bg / --input-text / --input-border / --input-focus-border
+ *   Field surface: bg-input-bg border border-input-border rounded-xl
+ *
+ * Use for:
+ *   - Search fields
+ *   - Text entry forms
+ *   - Numeric question-count config (compact variant)
+ *   - Admin form fields (management variant)
+ *
+ * Do not use for:
+ *   - Card surfaces (use Card)
+ *   - Selection containers (use SelectionContainer)
+ *   - Error displays (use ErrorContainer)
+ *   - Button actions (use Button)
+ *
+ * Theme: Light + Dark (ancient-input = gold material in light;
+ *         management = neutral in both)
+ * Consumers: 15+ files across admin/, user/, auth/
+ * ────────────────────────────────────────────────────────────────────────── */
+const FIELD_SURFACE = 'bg-input-bg light:bg-white border border-input-border rounded-xl text-input-text'
 const FIELD_FOCUS = 'focus:border-input-focus-border'
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   rightIcon?: LucideIcon
   leftIcon?: LucideIcon
   onRightIconClick?: () => void
+  /** Explicit accessible name for the right-icon action button (A11-2). Falls
+   *  back to the icon's display name, then "Input action". */
+  rightIconAriaLabel?: string
   /** DS-003: variant API. `default` (unchanged) | `compact` (smaller field) |
    *  `management` (Phase 3.9/D-144 — neutral Management Surface Family field;
    *  excludes `.ancient-input` so the light gold input material cannot override it). */
@@ -21,6 +52,7 @@ export const Input: React.FC<InputProps> = ({
   rightIcon: RightIcon,
   leftIcon: LeftIcon,
   onRightIconClick,
+  rightIconAriaLabel,
   variant = 'default',
   className = '',
   ...props
@@ -42,7 +74,7 @@ export const Input: React.FC<InputProps> = ({
   return (
     <div className="relative group">
       {LeftIcon && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary group-focus-within:text-primary transition-colors pointer-events-none">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary group-focus-within:text-primary transition-interaction duration-fast ease-standard pointer-events-none">
           <LeftIcon size={18} />
         </div>
       )}
@@ -50,7 +82,7 @@ export const Input: React.FC<InputProps> = ({
         className={`
           w-full ${heightCls} ${management ? '' : 'ancient-input'} ${surfaceCls}
           ${textCls} placeholder:text-text-placeholder placeholder:opacity-40 placeholder:font-medium
-          focus:outline-none ${focusCls} transition-all
+          focus:outline-none ${focusCls} ${TRANSITION_INTERACTION}
           ${paddingCls}
           ${className}
         `}
@@ -60,8 +92,8 @@ export const Input: React.FC<InputProps> = ({
         <button
           type="button"
           onClick={onRightIconClick}
-          aria-label={RightIcon.displayName || 'Input action'}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 text-text-secondary/40 hover:text-primary transition-colors"
+          aria-label={rightIconAriaLabel || RightIcon.displayName || 'Input action'}
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 text-text-secondary/40 hover:text-primary transition-interaction duration-fast ease-standard"
         >
           <RightIcon size={18} />
         </button>
@@ -97,82 +129,12 @@ export const TextArea: React.FC<TextAreaProps> = ({
       className={`
         w-full ${management ? '' : 'ancient-textarea'} resize-none ${surfaceCls}
         text-[14px] font-bold placeholder:text-text-placeholder placeholder:opacity-40 placeholder:font-medium
-        focus:outline-none ${focusCls} transition-all leading-relaxed
+        focus:outline-none ${focusCls} ${TRANSITION_INTERACTION} leading-relaxed
         ${paddingCls}
         ${className}
       `}
       {...props}
     />
-  )
-}
-
-interface SelectOption {
-  id: string
-  name: string
-}
-
-interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange' | 'value'> {
-  label?: string
-  icon?: LucideIcon
-  value: string
-  onChange: (value: string) => void
-  options: SelectOption[]
-  placeholder?: string
-}
-
-export const Select: React.FC<SelectProps> = ({
-  label,
-  icon: Icon,
-  value,
-  onChange,
-  options,
-  placeholder,
-  disabled = false,
-  className = '',
-  id: providedId,
-  ...props
-}) => {
-  const selectId = providedId || (label ? `select-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined)
-
-  return (
-    <div className={`space-y-2 ${disabled ? 'opacity-40 pointer-events-none' : ''} ${className}`}>
-      {label && (
-        <label htmlFor={selectId} className={'text-[10px] font-bold text-text-muted uppercase tracking-widest ml-1'}>
-          {label}
-        </label>
-      )}
-      <div className="relative group">
-        {Icon && (
-          <div className={'absolute left-4 top-1/2 -translate-y-1/2 transition-colors pointer-events-none z-10 text-text-secondary group-focus-within:text-primary'}>
-            <Icon size={16} />
-          </div>
-        )}
-        <select
-          id={selectId}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
-          {...props}
-          className={`
-            w-full h-[48px] ancient-select transition-all appearance-none cursor-pointer
-            text-[12px] font-bold uppercase tracking-wide
-            focus:outline-none pr-10
-            ${Icon ? 'pl-11' : 'pl-4'}
-            ${FIELD_SURFACE} ${FIELD_FOCUS}
-          `}
-        >
-          {placeholder && <option value="" className={'bg-input-bg text-input-text'}>{placeholder}</option>}
-          {options.map((opt, idx) => (
-            <option key={`${opt.id}-${idx}`} value={String(opt.id)} className={'bg-input-bg text-input-text'}>
-              {opt.name}
-            </option>
-          ))}
-        </select>
-        <div className={'absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity text-text-muted'}>
-          <ChevronDown size={14} />
-        </div>
-      </div>
-    </div>
   )
 }
 
@@ -182,6 +144,10 @@ interface SwitchProps {
   label?: string
   disabled?: boolean
   className?: string
+  /** Forwarded to the switch button so an external <Label htmlFor> can name it. */
+  id?: string
+  /** Accessible name when no visible label pairing exists. */
+  'aria-label'?: string
 }
 
 export const Switch: React.FC<SwitchProps> = ({
@@ -190,9 +156,11 @@ export const Switch: React.FC<SwitchProps> = ({
   label,
   disabled = false,
   className = '',
+  id,
+  'aria-label': ariaLabel,
 }) => {
   return (
-    <div className={`flex items-center justify-between gap-3 ${className} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className={`flex items-center justify-between gap-3 ${className} ${disabled ? 'opacity-50' : ''}`}>
       {label && (
         <span className="text-[13px] font-bold text-text-primary uppercase tracking-tight">
           {label}
@@ -201,18 +169,26 @@ export const Switch: React.FC<SwitchProps> = ({
       <button
         type="button"
         role="switch"
+        id={id}
+        /* D-1: the button must always carry an accessible name. When the caller
+         * supplies a visible label but no aria-label, the label text names the
+         * control so screen readers announce it (the visible label span is a
+         * sibling, not an associated <label>, so aria-label is the contract). */
+        aria-label={ariaLabel ?? label}
         aria-checked={checked}
+        disabled={disabled}
         onClick={() => onChange(!checked)}
         className={`
-          relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent 
-          transition-colors duration-300 ease-in-out focus:outline-none
-          ${checked ? 'bg-primary' : 'bg-hover-bg'}
+          relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent 
+          ${TRANSITION_INTERACTION} duration-slow ease-standard focus:outline-none
+          ${disabled ? 'cursor-not-allowed' : 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2'}
+          ${checked ? 'bg-primary' : 'bg-hover-bg light:bg-white'}
         `}
       >
         <span
           className={`
             pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-elevation-1 ring-0 
-            transition duration-300 cubic-bezier(0.175, 0.885, 0.32, 1.275)
+            transition-transform duration-slow ease-emphasized
             bg-white
             ${checked ? 'translate-x-5' : 'translate-x-0'}
           `}
@@ -262,11 +238,11 @@ export const Checkbox: React.FC<CheckboxProps> = ({
           className="sr-only peer"
         />
         <div className={`
-          w-5 h-5 rounded-md border-2 transition-all duration-200
+          w-5 h-5 rounded-md border-2 ${TRANSITION_INTERACTION}
           flex items-center justify-center
           ${isChecked
             ? 'bg-checkbox-surface-checked border-checkbox-border-checked shadow-elevation-2 shadow-primary/30'
-            : 'bg-checkbox-surface border-checkbox-border'
+            : 'bg-checkbox-surface light:bg-white border-checkbox-border'
           }
           peer-focus:ring-4 peer-focus:ring-primary/25 peer-focus:border-checkbox-border-focus
           peer-hover:border-checkbox-border-hover
@@ -315,11 +291,11 @@ export const Radio: React.FC<RadioProps> = ({
           className="sr-only peer"
         />
         <div className={`
-          w-5 h-5 rounded-full border-2 transition-all duration-200
+          w-5 h-5 rounded-full border-2 ${TRANSITION_INTERACTION}
           flex items-center justify-center
           ${checked
             ? 'border-radio-border-checked'
-            : 'border-radio-border bg-radio-surface'
+            : 'border-radio-border bg-radio-surface light:bg-white'
           }
           peer-focus:ring-2 peer-focus:ring-primary/30
           peer-hover:border-radio-border-hover
@@ -368,7 +344,7 @@ export function RadioGroup<T extends string>({
         </span>
       )}
       <div
-        className="flex gap-1 p-1 bg-radio-track-surface rounded-xl border border-border-subtle"
+        className="flex gap-1 p-1 bg-radio-track-surface light:bg-white rounded-xl border border-border-subtle"
         role="radiogroup"
         aria-label={label}
       >
@@ -382,7 +358,7 @@ export function RadioGroup<T extends string>({
               aria-checked={isActive}
               onClick={() => onChange(opt.value)}
               className={`
-                flex-1 py-1.5 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer
+                flex-1 py-1.5 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider ${TRANSITION_INTERACTION} cursor-pointer
                 ${isActive
                   ? 'bg-primary text-white shadow-sm'
                   : 'text-text-muted hover:text-text-primary bg-transparent'

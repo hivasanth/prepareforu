@@ -7,7 +7,6 @@ interface ExamTimerProps {
   startedAt: string;
   onTimeUp: () => void;
   tabSwitchLimit?: number;
-  initialTabSwitches?: number;
   /** Contextual exam banner (Group 5: floating warnings eliminated). */
   onSecurityNotice?: (message: string) => void;
 }
@@ -18,13 +17,11 @@ export const ExamTimer: FC<ExamTimerProps> = ({
   startedAt,
   onTimeUp,
   tabSwitchLimit = 5,
-  initialTabSwitches = 0,
   onSecurityNotice,
 }) => {
   const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [tabSwitches, setTabSwitches] = useState(initialTabSwitches);
   const [announcement, setAnnouncement] = useState<string>('');
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
    * INDUSTRY BEST PRACTICE: "Callback Ref" pattern.
@@ -89,10 +86,6 @@ export const ExamTimer: FC<ExamTimerProps> = ({
    * ActiveExamPage previously also registered the same event, causing double-
    * counting of tab switches. That duplicate handler has been removed.
    */
-  const tabSwitchesRef = useRef(tabSwitches);
-  useEffect(() => {
-    tabSwitchesRef.current = tabSwitches;
-  }, [tabSwitches]);
 
   // Stable refs so the event listener closure never goes stale
   const attemptIdRef = useRef(attemptId);
@@ -107,11 +100,9 @@ export const ExamTimer: FC<ExamTimerProps> = ({
       if (!document.hidden) return;
 
       try {
-        const newCount = await updateTabSwitchCount(
-          attemptIdRef.current,
-          tabSwitchesRef.current
-        );
-        setTabSwitches(newCount);
+        // M-03 fix: increment is server-side and atomic — no client-supplied
+        // count. The DB returns the new authoritative count.
+        const newCount = await updateTabSwitchCount(attemptIdRef.current);
 
         const limit = tabSwitchLimitRef.current;
         if (newCount >= limit) {
@@ -146,15 +137,15 @@ export const ExamTimer: FC<ExamTimerProps> = ({
     : 0;
 
   const getTimerColor = () => {
-    if (percentageLeft <= 10) return 'text-rose-500 font-black animate-pulse';
-    if (percentageLeft <= 25) return 'text-amber-500 font-bold';
-    return 'text-emerald-500 font-bold';
+    if (percentageLeft <= 10) return 'text-danger font-black animate-pulse';
+    if (percentageLeft <= 25) return 'text-warning font-bold';
+    return 'text-success font-bold';
   };
 
   const getBorderColor = () => {
-    if (percentageLeft <= 10) return 'border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.2)]';
-    if (percentageLeft <= 25) return 'border-amber-500/30';
-    return 'border-emerald-500/20';
+    if (percentageLeft <= 10) return 'border-danger/50 shadow-glow-danger';
+    if (percentageLeft <= 25) return 'border-warning/30';
+    return 'border-success/20';
   };
 
   return (
@@ -162,7 +153,7 @@ export const ExamTimer: FC<ExamTimerProps> = ({
       role="timer"
       aria-label={`Time remaining: ${minutes} minutes ${seconds} seconds`}
       className={`
-      flex items-center gap-2 px-6 py-2.5 rounded-2xl border-2 transition-all duration-500
+      flex items-center gap-2 px-6 py-2.5 rounded-2xl border-2 transition-interaction duration-very-slow ease-standard
       ${getBorderColor()}
       bg-elevated-bg
     `}>
@@ -170,7 +161,7 @@ export const ExamTimer: FC<ExamTimerProps> = ({
         <span className="text-[9px] font-bold uppercase tracking-widest leading-none mb-1 text-text-muted">
           Remaining
         </span>
-        <div className={`text-2xl tabular-nums leading-none font-['Vend_Sans'] ${getTimerColor()}`}>
+        <div className={`text-2xl tabular-nums leading-none font-sans ${getTimerColor()}`}>
           {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
         </div>
       </div>

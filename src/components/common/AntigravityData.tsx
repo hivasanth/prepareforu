@@ -6,7 +6,10 @@ import { Label } from './AntigravityTypography'
 import { TAB_SPRING } from './AntigravityAnimation'
 import { IconBadge } from './IconBadge'
 import { Checkbox } from './AntigravityForm'
+import { ROW_HOVER } from './AntigravityCard'
 import { useTheme } from '../../context/ThemeContext'
+import { Pill } from './Pill'
+import { TRANSITION_INTERACTION, FOCUS_RING } from './AntigravityMotion'
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 export interface TabOption {
@@ -31,9 +34,17 @@ interface TabsProps {
   ariaLabel?: string
   /** Strip inner container styling (bg, border, shadow, rounding) for use inside a parent wrapper */
   bare?: boolean
+  /** D-2: opt-in deterministic id prefix for ARIA tab <-> panel linkage.
+   * When set, each tab gets `id={idBase}-tab-{id}` and
+   * `aria-controls={idBase}-panel-{id}`; the OPT-IN caller is responsible for
+   * rendering a matching `role="tabpanel"` with `id={idBase}-panel-{id}` and
+   * `aria-labelledby={idBase}-tab-{id}`. MUST be page-unique when used.
+   * Without this prop the legacy `useId()` behaviour is preserved exactly and
+   * tabs never emit an aria-controls reference (BUG-09 contract). */
+  idBase?: string
 }
 
-export const Tabs: React.FC<TabsProps> = ({ options, activeId, onChange, variant = 'primary', size, className = '', pillClassName = '', ariaLabel, bare = false }) => {
+export const Tabs: React.FC<TabsProps> = ({ options, activeId, onChange, variant = 'primary', size, className = '', pillClassName = '', ariaLabel, bare = false, idBase }) => {
   const instanceId = React.useId()
   const isSecondary = variant === 'secondary'
   const { isDark } = useTheme()
@@ -71,8 +82,6 @@ export const Tabs: React.FC<TabsProps> = ({ options, activeId, onChange, variant
     }
   }
 
-  const bareAlignment = bare ? 'justify-center lg:justify-start' : ''
-
   /* D-123: dark is the app baseline; the pill branches on the app theme (React isDark),
      not the OS prefers-color-scheme. Strings reproduce the certified renders exactly. */
   const pillCls = isDark
@@ -82,22 +91,33 @@ export const Tabs: React.FC<TabsProps> = ({ options, activeId, onChange, variant
   const renderTab = (option: TabOption, index: number, tightActive: boolean) => {
     const isActive = activeId === option.id
     const isDisabled = option.disabled
-    const tabId = `${instanceId}-tab-${option.id}`
-    const panelId = `${instanceId}-panel-${option.id}`
+    /* FIX-1: the bare variant sits on the nav/forest SelectionContainer surface,
+       so Light Mode unselected text follows the navigation language
+       (--text-nav-secondary gold) instead of the generic --text-secondary.
+       Dark Mode keeps text-text-secondary; the non-bare track is unchanged. */
+    const inactiveText = tightActive
+      ? 'text-text-secondary light:text-[var(--text-nav-secondary)]'
+      : 'text-text-secondary'
+    /* D-2: when the caller opts into deterministic ids (idBase), the tab only
+       emits aria-controls when the caller also owns a real named panel. The
+       legacy useId() path carries NO aria-controls (BUG-09: never reference a
+       panel that does not exist). */
+    const tabId = idBase ? `${idBase}-tab-${option.id}` : `${instanceId}-tab-${option.id}`
+    const panelId = idBase ? `${idBase}-panel-${option.id}` : undefined
 
     return (
       <button
         key={option.id}
         role="tab"
         id={tabId}
-        aria-selected={isActive}
         aria-controls={panelId}
+        aria-selected={isActive}
         aria-disabled={isDisabled}
         tabIndex={isActive ? 0 : -1}
         disabled={isDisabled}
         onClick={() => !isDisabled && onChange(option.id)}
         onKeyDown={(e) => onKeyDown(e, index)}
-        className={`relative shrink-0 rounded-xl font-bold uppercase ${tightActive ? (isActive ? 'tracking-tight' : 'tracking-widest') : 'tracking-widest'} transition-[color,opacity] duration-200 outline-none whitespace-nowrap h-full flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 ${sizeClasses[resolvedSize].tab} ${isDisabled ? 'opacity-40 cursor-not-allowed' : `cursor-pointer ${isActive ? 'text-primary' : 'text-text-secondary border border-border-subtle light:text-[var(--material-tab-text-inactive)] light:hover:text-[var(--material-tab-text-hover)] light:hover:bg-white/5'}`}`}
+        className={`relative shrink-0 rounded-xl font-bold uppercase ${tightActive ? (isActive ? 'tracking-tight' : 'tracking-widest') : 'tracking-widest'} ${TRANSITION_INTERACTION} ${FOCUS_RING} whitespace-nowrap h-full flex items-center justify-center gap-1.5 ${sizeClasses[resolvedSize].tab} ${isDisabled ? 'opacity-40 cursor-not-allowed' : `cursor-pointer ${isActive ? 'selection-active-text' : `${inactiveText} border border-border-subtle light:border-[var(--material-tab-pill-border)] light:hover:text-[var(--material-tab-text-hover)] light:hover:bg-white/5`}`}`}
       >
         {isActive && !isDisabled && (
           <motion.div
@@ -106,7 +126,7 @@ export const Tabs: React.FC<TabsProps> = ({ options, activeId, onChange, variant
             transition={TAB_SPRING}
           />
         )}
-        <span className={`relative z-10 flex items-center gap-1.5 ${isActive ? 'opacity-100 scale-105' : 'opacity-70 hover:opacity-100'}`}>
+        <span className="relative z-10 flex items-center gap-1.5">
           {option.icon && <span className="flex-shrink-0">{option.icon}</span>}
           {option.label}
           {option.badge && <span className="flex-shrink-0">{option.badge}</span>}
@@ -116,9 +136,9 @@ export const Tabs: React.FC<TabsProps> = ({ options, activeId, onChange, variant
   }
 
   return (
-    <div className={`w-full overflow-x-auto scrollbar-hide flex ${bareAlignment} ${className}`} role="tablist" aria-orientation="horizontal" aria-label={ariaLabel}>
+    <div className={`w-full overflow-x-auto ${bare ? 'custom-scrollbar' : 'scrollbar-hide'} flex ${className}`} role="tablist" aria-orientation="horizontal" aria-label={ariaLabel}>
       {bare ? (
-        <div ref={tablistRef} className={`flex items-center gap-1 md:gap-2 min-w-max ${sizeClasses[resolvedSize].container}`}>
+        <div ref={tablistRef} className={`flex items-center gap-1 md:gap-2 min-w-max mx-auto lg:mx-0 ${sizeClasses[resolvedSize].container}`}>
           {options.map((option, index) => renderTab(option, index, true))}
         </div>
       ) : (
@@ -155,56 +175,42 @@ export const AdminPageTitle: React.FC<AdminPageTitleProps> = ({
 }
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
+/* Phase 5.4D: Badge is now a thin wrapper over the Pill primitive. Its legacy
+   variant/size API maps directly onto Pill's certified variant/size recipes,
+   so the DS-005 render contract (md: h-7 px-3 rounded-[14px] text-[10px];
+   variants: bg-[color]/15 text-[color] border-[color]/30; default: neutral
+   border language) is preserved exactly. No custom styling exists here. */
 type BadgeVariant = 'default' | 'success' | 'danger' | 'warning' | 'primary' | 'secondary'
-type BadgeSize = 'md' | 'sm'
+/* Full Pill size scale — every value maps to Pill's certified recipes. */
+type BadgeSize = 'xs' | 'sm' | 'md' | 'lg'
 
 export interface BadgeProps {
   variant?: BadgeVariant
   size?: BadgeSize
   icon?: LucideIcon
   pulse?: boolean
+  /** Fully curved (pill) radius — overrides the size's certified radius. */
+  curved?: boolean
   className?: string
+  /** Native hover tooltip — surfaces truncated content (e.g. coupon codes). */
+  title?: string
   children: React.ReactNode
-}
-
-const BADGE_SIZE: Record<BadgeSize, string> = {
-  md: 'h-7 px-3 rounded-[14px] text-[10px] tracking-wider',
-  sm: 'h-5 px-2.5 rounded-full text-[9px] tracking-wider',
 }
 
 export const Badge: React.FC<BadgeProps> = ({
   variant = 'default',
   size = 'md',
-  icon: Icon,
+  icon,
   pulse = false,
+  curved = false,
   className = '',
+  title,
   children,
-}) => {
-  const variants: Record<BadgeVariant, string> = {
-    default:   'bg-hover-bg text-text-secondary border-border-subtle',
-    success:   'bg-success/15 text-success border-success/30',
-    danger:    'bg-danger/15 text-danger border-danger/30',
-    warning:   'bg-warning/15 text-warning border-warning/30',
-    primary:   'bg-primary/15 text-primary border-primary/30',
-    secondary: 'bg-secondary/15 text-secondary border-secondary/30',
-  }
-
-  return (
-    <div
-      className={`
-        ${BADGE_SIZE[size]}
-        font-bold uppercase
-        border flex items-center gap-1.5 w-fit
-        ${variants[variant]}
-        ${pulse ? 'animate-pulse' : ''}
-        ${className}
-      `}
-    >
-      {Icon && <Icon size={12} />}
-      {children}
-    </div>
-  )
-}
+}) => (
+  <Pill variant={variant} size={size} icon={icon} pulse={pulse} curved={curved} className={className} title={title}>
+    {children}
+  </Pill>
+)
 
 // ─── ProgressBar ──────────────────────────────────────────────────────────────
 type ProgressBarColor = 'primary' | 'success' | 'danger' | 'warning'
@@ -236,7 +242,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       aria-valuemax={100}
     >
       <div
-        className={`h-full rounded-full transition-all duration-300 ease-out ${colors[color]}`}
+        className={`h-full rounded-full transition-[width] duration-slow ease-standard ${colors[color]}`}
         style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
       />
     </div>
@@ -415,7 +421,7 @@ export function DataGrid<T extends Record<string, any>>({
               <tr
                 key={row[rowKey]}
                 className={`
-                  group hover:bg-hover-bg/30 transition-colors
+                  group ${ROW_HOVER}
                   ${selectedRows?.has(row[rowKey]) ? 'bg-primary/5' : ''}
                   ${striped && idx % 2 === 1 ? 'bg-hover-bg/20' : ''}
                 `}

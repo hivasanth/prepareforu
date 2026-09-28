@@ -3,8 +3,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
+import { VisualFallback } from '../common/visuals/VisualFallback';
 
 const COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6'];
+
+const VALID_CHART_TYPES = new Set(['bar', 'line', 'area', 'pie']);
 
 function normalizeSeries(data: any) {
   const { chartType, series } = data;
@@ -61,10 +64,16 @@ function normalizeSeries(data: any) {
 export const ChartVisualizer: React.FC<{ data: any }> = React.memo(({ data }) => {
   const { finalSeries, colors, yAxisLabel, chartType } = normalizeSeries(data);
 
+  if (!Array.isArray(finalSeries) || finalSeries.length === 0) {
+    return <VisualFallback code="INVALID_VISUAL_DATA" />;
+  }
+
+  const resolvedType = VALID_CHART_TYPES.has(chartType) ? chartType : 'bar';
+
   return (
     <div className="w-full h-64">
       <ResponsiveContainer width="100%" height="100%">
-        {chartType === 'bar' ? (
+        {resolvedType === 'bar' ? (
           <BarChart data={finalSeries}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" opacity={0.3} />
             <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
@@ -79,7 +88,7 @@ export const ChartVisualizer: React.FC<{ data: any }> = React.memo(({ data }) =>
               ))}
             </Bar>
           </BarChart>
-        ) : chartType === 'pie' ? (
+        ) : resolvedType === 'pie' ? (
           <PieChart>
             <Pie
               data={finalSeries}

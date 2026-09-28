@@ -1,7 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import { ThemeProvider } from './context/ThemeContext'
-import { Input, TextArea, Select, Switch, Checkbox, Radio, RadioGroup } from './components/common/AntigravityForm'
+import { Input, TextArea, Switch, Checkbox, Radio, RadioGroup } from './components/common/AntigravityForm'
+import { PremiumSelect } from './components/common/PremiumSelect'
 
 afterEach(cleanup)
 
@@ -13,9 +14,9 @@ function renderWithTheme(ui: React.ReactNode, light = false) {
   )
 }
 
-const SURFACE_CLS = 'bg-hover-bg border-border-subtle rounded-xl text-text-primary placeholder:text-text-placeholder'
-const FOCUS_CLS = 'focus:border-primary'
-const HOVER_CLS = 'transition-all'
+const SURFACE_CLS = 'bg-input-bg border-input-border rounded-xl text-input-text placeholder:text-text-placeholder'
+const FOCUS_CLS = 'focus:border-input-focus-border'
+const HOVER_CLS = 'transition-interaction'
 
 describe('DS-003 RUNTIME AUDIT', () => {
   // ---- INPUT TYPES (text / password / email / number / search) ----
@@ -84,7 +85,7 @@ describe('DS-003 RUNTIME AUDIT', () => {
     it('renders with Foundation material (LIGHT)', () => {
       renderWithTheme(<TextArea placeholder="content" aria-label="ta" />, true)
       const el = screen.getByLabelText('ta')
-      expect(el).toHaveClass('bg-hover-bg', 'border-border-subtle', 'rounded-xl')
+      expect(el).toHaveClass('bg-input-bg', 'border-input-border', 'rounded-xl')
     })
     it('supports rows + disabled', () => {
       renderWithTheme(<TextArea placeholder="content" aria-label="ta" rows={6} disabled />)
@@ -107,46 +108,40 @@ describe('DS-003 RUNTIME AUDIT', () => {
     })
   })
 
-  // ---- SELECT ----
-  describe('Select', () => {
+  // ---- PREMIUM SELECT ----
+  describe('PremiumSelect', () => {
     const opts = [
       { id: 'a', name: 'Alpha' },
       { id: 'b', name: 'Beta' },
     ]
-    it('renders options + Foundation material (DARK)', () => {
-      const { container } = renderWithTheme(<Select aria-label="sel" value="a" onChange={() => {}} options={opts} />)
-      const el = container.querySelector('select')!
-      expect(el.tagName).toBe('SELECT')
-      expect(el).toHaveClass('bg-hover-bg', 'border-border-subtle', 'rounded-xl', 'text-text-primary')
+    it('renders trigger button with selected option (DARK)', () => {
+      const { container } = renderWithTheme(<PremiumSelect value="a" onChange={() => {}} options={opts} />)
+      const btn = container.querySelector('button[role="combobox"]')!
+      expect(btn).toBeTruthy()
       expect(screen.getByText('Alpha')).toBeTruthy()
-      expect(screen.getByText('Beta')).toBeTruthy()
     })
-    it('renders with Foundation material (LIGHT)', () => {
-      const { container } = renderWithTheme(<Select aria-label="sel" value="a" onChange={() => {}} options={opts} />, true)
-      const el = container.querySelector('select')!
-      expect(el).toHaveClass('bg-hover-bg', 'border-border-subtle', 'rounded-xl')
+    it('renders with LIGHT theme', () => {
+      const { container } = renderWithTheme(<PremiumSelect value="a" onChange={() => {}} options={opts} />, true)
+      const btn = container.querySelector('button[role="combobox"]')!
+      expect(btn).toBeTruthy()
     })
-    it('renders placeholder option', () => {
-      renderWithTheme(<Select aria-label="sel" value="" onChange={() => {}} options={opts} placeholder="Pick" />)
+    it('renders placeholder when no value selected', () => {
+      renderWithTheme(<PremiumSelect value="" onChange={() => {}} options={opts} placeholder="Pick" />)
       expect(screen.getByText('Pick')).toBeTruthy()
     })
     it('disabled state', () => {
-      const { container } = renderWithTheme(<Select aria-label="sel" value="a" onChange={() => {}} options={opts} disabled />)
-      expect(container.querySelector('select')!).toBeDisabled()
+      const { container } = renderWithTheme(<PremiumSelect value="a" onChange={() => {}} options={opts} disabled />)
+      const btn = container.querySelector('button[role="combobox"]')!
+      expect(btn).toBeDisabled()
     })
-    it('calls onChange with selected id (keyboard navigable)', () => {
+    it('opens dropdown and calls onChange', () => {
       let val = 'a'
-      const { container } = renderWithTheme(<Select aria-label="sel" value={val} onChange={(v) => (val = v)} options={opts} />)
-      fireEvent.change(container.querySelector('select')!, { target: { value: 'b' } })
+      const { container } = renderWithTheme(<PremiumSelect value={val} onChange={(v) => (val = v)} options={opts} />)
+      const btn = container.querySelector('button[role="combobox"]')!
+      fireEvent.click(btn)
+      const betaOption = screen.getByText('Beta')
+      fireEvent.click(betaOption)
       expect(val).toBe('b')
-    })
-    it('DOCUMENTED A11Y GAP: label is not associated via htmlFor/id (aria-label not forwarded to <select>)', () => {
-      const { container } = renderWithTheme(<Select label="Country" value="a" onChange={() => {}} options={opts} />)
-      const sel = container.querySelector('select')!
-      // Current behaviour: the <select> has no id and the rendered <label> has no htmlFor.
-      expect(sel.id).toBe('')
-      const labelEl = container.querySelector('label')!
-      expect(labelEl.getAttribute('for')).toBeNull()
     })
   })
 
@@ -216,7 +211,7 @@ describe('DS-003 RUNTIME AUDIT', () => {
     it('is a Foundation component', () => {
       expect(Input).toBeTypeOf('function')
       expect(TextArea).toBeTypeOf('function')
-      expect(Select).toBeTypeOf('function')
+      expect(PremiumSelect).toBeTypeOf('function')
       expect(Switch).toBeTypeOf('function')
       expect(Checkbox).toBeTypeOf('function')
       expect(Radio).toBeTypeOf('function')
@@ -230,7 +225,7 @@ describe('DS-003 RUNTIME AUDIT', () => {
       renderWithTheme(<Input aria-label="ov" className="w-full my-2" />)
       const el = screen.getByLabelText('ov')
       expect(el).toHaveClass('w-full', 'my-2')
-      expect(el).toHaveClass('bg-hover-bg', 'border-border-subtle', 'rounded-xl')
+      expect(el).toHaveClass('bg-input-bg', 'border-input-border', 'rounded-xl')
     })
   })
 })

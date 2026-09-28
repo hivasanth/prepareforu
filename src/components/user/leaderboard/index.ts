@@ -1,5 +1,5 @@
 export { useUserLeaderboard } from './useUserLeaderboard'
-export { LeaderboardSkeleton } from './LeaderboardSkeleton'
+export { LeaderboardSkeleton, LeaderboardContentSkeleton, LEADERBOARD_SKELETON_COUNT, LEADERBOARD_TOP_LIMIT } from './LeaderboardSkeleton'
 export { LeaderboardTopCard } from './LeaderboardTopCard'
 export { LeaderboardTable } from './LeaderboardTable'
 export { LeaderboardUserCard } from './LeaderboardUserCard'

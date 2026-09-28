@@ -4,6 +4,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line, Legend
 } from 'recharts';
 import { AlertCircle, Table as TableIcon, Info } from 'lucide-react';
+import { ROW_HOVER } from './AntigravityCard';
 import type { DiagramData } from '../../types/exam.types';
 
 interface DiagramRendererProps {
@@ -230,7 +231,7 @@ function renderTable(metadata: any) {
         </thead>
         <tbody className="divide-y divide-border-subtle/10">
           {rows.map((row: any[], ri: number) => (
-            <tr key={ri} className="hover:bg-primary/5 transition-colors even:bg-hover-bg/20">
+            <tr key={ri} className={`${ROW_HOVER} even:bg-hover-bg/20`}>
               {row.map((cell, ci) => (
                 <td key={ci} className="px-4 py-3 text-sm text-text-primary font-medium whitespace-nowrap">
                   {typeof cell === 'object' ? JSON.stringify(cell) : cell}
@@ -332,7 +333,7 @@ function render2SetVenn(sets: string[], intersections: any) {
     <div className="flex flex-col items-center w-full py-6">
       <div className="relative w-full max-w-[340px] h-64 flex items-center justify-center">
         {/* Circle A */}
-        <div className="absolute left-0 w-44 h-44 rounded-full border-2 border-primary/40 bg-primary/20 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center shadow-lg transition-transform hover:scale-105">
+        <div className="absolute left-0 w-44 h-44 rounded-full border-2 border-primary/40 bg-primary/20 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center shadow-lg transition-interaction duration-fast ease-standard hover:brightness-105">
             <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-primary/20 px-2 py-0.5 rounded text-[9px] font-bold text-primary uppercase border border-primary/30">{sets[0]}</div>
            <div className="text-[11px] font-bold text-text-primary line-clamp-4 pr-10">
               {aOnly.join(', ') || '∅'}
@@ -340,7 +341,7 @@ function render2SetVenn(sets: string[], intersections: any) {
         </div>
 
         {/* Circle B */}
-        <div className="absolute right-0 w-44 h-44 rounded-full border-2 border-rose-500/40 bg-rose-500/20 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center shadow-lg transition-transform hover:scale-105">
+        <div className="absolute right-0 w-44 h-44 rounded-full border-2 border-rose-500/40 bg-rose-500/20 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center shadow-lg transition-interaction duration-fast ease-standard hover:brightness-105">
             <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-rose-500/20 px-2 py-0.5 rounded text-[9px] font-bold text-rose-500 uppercase border border-rose-500/30">{sets[1]}</div>
            <div className="text-[11px] font-bold text-text-primary line-clamp-4 pl-10">
               {bOnly.join(', ') || '∅'}
@@ -425,7 +426,7 @@ function render3SetVenn(sets: string[], intersections: any) {
 function renderError(msg: string) {
   return (
     <div className="flex flex-col items-center gap-3 p-8 border-2 border-dashed border-border-subtle/30 rounded-2xl">
-      <AlertCircle className="text-red-500/50" size={32} strokeWidth={1.5} />
+      <AlertCircle className="text-danger/50" size={32} strokeWidth={1.5} />
       <div className="text-xs font-bold text-text-secondary uppercase tracking-widest">{msg}</div>
     </div>
   );

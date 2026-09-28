@@ -2,7 +2,35 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { SelectionContainer } from './AntigravityLayout'
 import { TAB_SPRING } from './AntigravityAnimation'
+import { GHOST_HOVER, FOCUS_RING } from './AntigravityMotion'
 import type { TabsSize } from './AntigravityData'
+
+/* ─── SegmentedFilter ──────────────────────────────────────────────────────
+ * Design role:
+ *   Compact segmented filter/tab control for switching between a small set
+ *   of options. Renders tab buttons inside a SelectionContainer track with
+ *   an animated pill indicator (framer-motion layoutId + TAB_SPRING).
+ *
+ * Architecture:
+ *   SelectionContainer (premium track) → div[role="tablist"] → buttons
+ *   Active indicator: motion.div layoutId with nav-active-surface
+ *   Motion: TAB_SPRING (stiffness 260, damping 32, mass 1.1)
+ *
+ * Use for:
+ *   - Time range filters (7 Days / 30 Days / All Time)
+ *   - Configuration mode switching (Exams / Subject Test)
+ *   - Question count selection (20 / 30 / 50)
+ *   - Live / Upcoming / History filters
+ *
+ * Do NOT use for:
+ *   - Multi-level exam/paper/subject selection (use AdminSelectionTabs)
+ *   - Navigation sidebar links (use Navigation component)
+ *   - Action buttons (use Button)
+ *
+ * Theme: Light + Dark (SelectionContainer premium variant)
+ * Consumers: 5 files (PerformanceTimeRangeTabs, AdminSettings,
+ *   TeacherExamFilterBar, SubjectTestModePanel, UserLeaderboard)
+ * ────────────────────────────────────────────────────────────────────────── */
 
 export interface SegmentedFilterOption {
   id: string
@@ -18,6 +46,8 @@ interface SegmentedFilterProps {
   onChange: (id: string) => void
   size?: TabsSize
   className?: string
+  /** Accessible name for the tablist. */
+  ariaLabel?: string
 }
 
 const SIZE_CLASSES: Record<TabsSize, { tab: string; container: string }> = {
@@ -32,6 +62,7 @@ export const SegmentedFilter: React.FC<SegmentedFilterProps> = ({
   onChange,
   size = 'md',
   className = '',
+  ariaLabel,
 }) => {
   const instanceId = React.useId()
   const tablistRef = React.useRef<HTMLDivElement>(null)
@@ -61,18 +92,18 @@ export const SegmentedFilter: React.FC<SegmentedFilterProps> = ({
   }
 
   return (
-    <SelectionContainer className={`w-fit max-w-full !p-2 ${className}`}>
+    <SelectionContainer className={`w-fit max-w-full p-2 ${className}`} tilt={false}>
       <div
         ref={tablistRef}
         className={`flex items-center gap-0.5 md:gap-1 min-w-max ${SIZE_CLASSES[size].container}`}
         role="tablist"
         aria-orientation="horizontal"
+        aria-label={ariaLabel}
       >
         {options.map((option, index) => {
           const isActive = value === option.id
           const isDisabled = option.disabled
           const tabId = `${instanceId}-tab-${option.id}`
-          const panelId = `${instanceId}-panel-${option.id}`
 
           return (
             <button
@@ -80,13 +111,12 @@ export const SegmentedFilter: React.FC<SegmentedFilterProps> = ({
               role="tab"
               id={tabId}
               aria-selected={isActive}
-              aria-controls={panelId}
               aria-disabled={isDisabled}
               tabIndex={isActive ? 0 : -1}
               disabled={isDisabled}
               onClick={() => !isDisabled && onChange(option.id)}
               onKeyDown={(e) => onKeyDown(e, index)}
-              className={`relative shrink-0 rounded-lg font-bold uppercase ${isActive ? 'tracking-tight' : 'tracking-widest'} transition-[color,opacity] duration-200 outline-none whitespace-nowrap h-full flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 ${SIZE_CLASSES[size].tab} ${isDisabled ? 'opacity-40 cursor-not-allowed' : `cursor-pointer ${isActive ? 'text-primary' : 'text-text-secondary border border-border-subtle light:text-[var(--material-tab-text-inactive)] light:hover:text-[var(--material-tab-text-hover)] light:hover:bg-white/5'}`}`}
+              className={`relative shrink-0 rounded-lg font-bold uppercase ${isActive ? 'tracking-tight' : 'tracking-widest'} ${GHOST_HOVER} ${FOCUS_RING} whitespace-nowrap h-full flex items-center justify-center gap-1.5 ${SIZE_CLASSES[size].tab} ${isDisabled ? 'opacity-40 cursor-not-allowed' : `cursor-pointer ${isActive ? 'selection-active-text' : 'text-text-secondary light:text-[var(--gold-300)] border border-border-subtle light:border-[var(--material-tab-pill-border)] light:hover:text-[var(--material-tab-text-hover)] light:hover:bg-white/5'}`}`}
             >
               {isActive && !isDisabled && (
                 <motion.div
@@ -95,7 +125,7 @@ export const SegmentedFilter: React.FC<SegmentedFilterProps> = ({
                   transition={TAB_SPRING}
                 />
               )}
-              <span className={`relative z-10 flex items-center gap-1.5 ${isActive ? 'opacity-100 scale-105' : 'opacity-70 hover:opacity-100'}`}>
+              <span className="relative z-10 flex items-center gap-1.5">
                 {option.icon && <span className="flex-shrink-0">{option.icon}</span>}
                 {option.label}
                 {option.badge && <span className="flex-shrink-0">{option.badge}</span>}

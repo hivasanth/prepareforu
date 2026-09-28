@@ -1,19 +1,23 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { AlertCircle, Sparkles } from 'lucide-react'
-import { Button } from '../../common/AntigravityUI'
+import { AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react'
+import { Button, Card } from '../../common/AntigravityUI'
+import { RowLevelError } from '../../common/SharedComponents'
 import { BulkQuestionSchema } from '../../../validations/questionSchema'
-import { getDimension, safeParse } from './types'
-import type { QuestionData } from './types'
+import { computeDuplicateRedundancy, getDimension, newQuestionClientId, safeParse, MAX_QUESTIONS } from './types'
+import type { ParseReport, QuestionData } from './types'
 
 interface CreateStepJsonPasteProps {
   questions: QuestionData[]
   setQuestions: (v: QuestionData[]) => void
+  requestCount: number
+  parseReport: ParseReport | null
+  setParseReport: (r: ParseReport | null) => void
   onConfirm: () => void
   breakpoint: string
 }
 
-export function CreateStepJsonPaste({ questions, setQuestions, onConfirm, breakpoint }: CreateStepJsonPasteProps) {
+export function CreateStepJsonPaste({ questions, setQuestions, requestCount, parseReport, setParseReport, onConfirm, breakpoint }: CreateStepJsonPasteProps) {
   const [rawJson, setRawJson] = useState('')
   const [jsonError, setJsonError] = useState<string | null>(null)
 
@@ -35,16 +39,33 @@ export function CreateStepJsonPaste({ questions, setQuestions, onConfirm, breakp
       const parsed = safeParse(content)
       if (!Array.isArray(parsed)) throw new Error('Root must be a JSON array.')
       if (parsed.length === 0) throw new Error('The JSON array is empty.')
-      if (parsed.length > 200) throw new Error('Batch size limited to 200 questions for stability.')
+      if (parsed.length > MAX_QUESTIONS) throw new Error(`Batch size limited to ${MAX_QUESTIONS} questions for stability.`)
 
-      const validated: QuestionData[] = parsed.map((q: any, idx: number) => {
-        const result = BulkQuestionSchema.safeParse(q)
+      // Validate EVERY row and collect ALL issues (never throw-first).
+      // Duplicate rows are dropped first so a repeated (valid) question is
+      // reported once as a duplicate instead of repeated in the review list.
+      const duplicateOf = computeDuplicateRedundancy(parsed)
+      let duplicateRows = 0
+      let invalidRows = 0
+      const invalidSamples: string[] = []
+      const accepted: Array<Omit<QuestionData, 'display_order'>> = []
+
+      parsed.forEach((raw, i) => {
+        if (duplicateOf.has(i)) {
+          duplicateRows += 1
+          return
+        }
+        const result = BulkQuestionSchema.safeParse(raw)
         if (!result.success) {
-          const message = result.error.issues[0]?.message || 'Invalid question data.'
-          throw new Error(`Question ${idx + 1}: ${message}`)
+          invalidRows += 1
+          if (invalidSamples.length < 3) {
+            invalidSamples.push(`Question ${i + 1}: ${result.error.issues[0]?.message || 'invalid question data'}`)
+          }
+          return
         }
         const v = result.data
-        return {
+        accepted.push({
+          client_id: newQuestionClientId(),
           question_text_en: v.question_text_en.trim().slice(0, 2000),
           question_text_te: v.question_text_te ? String(v.question_text_te).trim().slice(0, 2000) : undefined,
           option_a_en: v.option_a_en.trim().slice(0, 1000),
@@ -58,20 +79,42 @@ export function CreateStepJsonPaste({ questions, setQuestions, onConfirm, breakp
           explanation_en: v.explanation_en ? String(v.explanation_en).trim().slice(0, 3000) : undefined,
           explanation_te: v.explanation_te ? String(v.explanation_te).trim().slice(0, 3000) : undefined,
           correct_option: v.correct_option,
-          display_order: idx + 1,
+          difficulty: v.difficulty,
           diagram: null
-        }
+        })
       })
 
-      setQuestions(validated)
-    } catch (err: any) {
-      setJsonError(err.message)
+      const finalList = accepted.map((q, idx) => ({ ...q, display_order: idx + 1 }))
+
+      setQuestions(finalList)
+      setParseReport({
+        requested: requestCount,
+        received: parsed.length,
+        accepted: finalList.length,
+        duplicateRows,
+        invalidRows,
+        invalidSamples
+      })
+    } catch (err) {
+      setJsonError(err instanceof Error ? err.message : String(err))
+      setParseReport(null)
     }
   }
 
+  const handleClear = () => {
+    setRawJson('')
+    setJsonError(null)
+    setQuestions([])
+    setParseReport(null)
+  }
+
+  const report = parseReport
+  const underRequested = report !== null && report.accepted < report.requested
+  const hadIssues = report !== null && (report.invalidRows > 0 || report.duplicateRows > 0)
+
   return (
     <div className="space-y-6">
-      <div className="bg-card-bg border border-border-subtle/20 rounded-2xl p-5">
+      <Card variant="elevated">
         <div className="space-y-4">
           <textarea
             id="json-paste"
@@ -81,26 +124,22 @@ export function CreateStepJsonPaste({ questions, setQuestions, onConfirm, breakp
             aria-label="JSON questions input"
             aria-invalid={!!jsonError}
             aria-describedby={jsonError ? 'json-paste-error' : undefined}
-            className="w-full bg-card-bg border-2 border-border-subtle/20 rounded-2xl p-4 font-mono text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all resize-y shadow-sm"
+            className="w-full bg-card-bg border-2 border-border-subtle/20 rounded-2xl p-4 font-mono text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-interaction duration-fast ease-standard resize-y shadow-sm"
             style={{ height: getDimension(breakpoint, 'jsonH') }}
           />
           {jsonError && (
             <motion.div
-              id="json-paste-error"
-              role="alert"
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-red-500/8 border border-red-500/20 rounded-xl px-4 py-3 flex items-start gap-3"
             >
-              <AlertCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
-              <span className="text-xs font-bold text-red-500 leading-tight">{jsonError}</span>
+              <RowLevelError id="json-paste-error">{jsonError}</RowLevelError>
             </motion.div>
           )}
         </div>
-      </div>
+      </Card>
 
       <div className="flex items-center justify-between pt-1">
-        <Button variant="secondary" onClick={() => setQuestions([])}>
+        <Button variant="secondary" onClick={handleClear}>
           Clear
         </Button>
         <Button onClick={handleParse}>
@@ -108,15 +147,48 @@ export function CreateStepJsonPaste({ questions, setQuestions, onConfirm, breakp
         </Button>
       </div>
 
-      {questions.length > 0 && (
-        <div role="status" className="bg-green-500/8 border border-green-500/20 rounded-2xl p-4 flex items-center justify-between">
-          <span className="text-xs font-bold text-green-600">
-            {questions.length} questions parsed and validated successfully.
-          </span>
-          <Button onClick={onConfirm}>
-            Confirm & Continue
-          </Button>
-        </div>
+      {report && questions.length > 0 && (
+        <motion.div
+          role="status"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl p-4 flex flex-col gap-3 border"
+          style={{
+            background: report.accepted >= report.requested ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)',
+            borderColor: report.accepted >= report.requested ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.2)'
+          }}
+        >
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={16} className={report.accepted >= report.requested ? 'text-green-600' : 'text-amber-500'} />
+              <span className={`text-xs font-bold ${report.accepted >= report.requested ? 'text-green-700' : 'text-amber-600'}`}>
+                {report.accepted} of {report.requested} requested questions ready
+              </span>
+            </div>
+            <Button variant="soft" size="sm" onClick={onConfirm}>
+              Confirm & Continue
+            </Button>
+          </div>
+
+          {hadIssues && (
+            <div className="flex items-start gap-2 border-t pt-3 border-border-subtle/20">
+              <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+              <div className="text-xs font-bold text-text-secondary leading-relaxed space-y-1">
+                <p>
+                  {report.received} received — {report.duplicateRows > 0 && <span>{report.duplicateRows} duplicate{report.duplicateRows > 1 ? 's' : ''} removed</span>}
+                  {report.duplicateRows > 0 && report.invalidRows > 0 && ' · '}
+                  {report.invalidRows > 0 && <span>{report.invalidRows} invalid question{report.invalidRows > 1 ? 's' : ''} excluded</span>}
+                </p>
+                {report.invalidSamples.map((sample, i) => (
+                  <p key={i} className="text-xs text-danger font-bold">{sample}</p>
+                ))}
+                {underRequested && (
+                  <p>Fewer than requested — add more from the AI or adjust the count at Review.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </motion.div>
       )}
     </div>
   )

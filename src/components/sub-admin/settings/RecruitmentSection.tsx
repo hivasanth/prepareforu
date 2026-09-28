@@ -25,7 +25,10 @@ export function RecruitmentSection({ couponCode, copied, onCopy, onShare }: Recr
             </span>
           </Stack>
           <Stack direction="row" gap="sm">
-            <IconButton onClick={onCopy} aria-label="Copy coupon">
+            <IconButton
+              onClick={onCopy}
+              aria-label={copied ? 'Coupon copied' : 'Copy coupon'}
+            >
               {copied ? <Check size={16} className="text-success" /> : <Copy size={16} />}
             </IconButton>
             <IconButton onClick={onShare} aria-label="Share coupon">

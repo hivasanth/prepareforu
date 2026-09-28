@@ -1,13 +1,15 @@
 import type { FC } from 'react'
-import { Badge } from '../../common/AntigravityUI'
-import type { BadgeProps } from '../../common/AntigravityData'
+import { Pill } from '../../common/AntigravityUI'
+import type { PillVariant } from '../../common/AntigravityUI'
 
 interface DifficultyBadgeProps {
   difficulty: 'easy' | 'medium' | 'hard' | string
   className?: string
 }
 
-const DIFFICULTY_VARIANT: Record<string, BadgeProps['variant']> = {
+/* Phase 5.4D: Difficulty is a Pill role. Easy/Medium/Hard map to semantic
+   colors ONLY (success/warning/danger) — no other color is ever shown. */
+const DIFFICULTY_VARIANT: Record<string, PillVariant> = {
   easy: 'success',
   medium: 'warning',
   hard: 'danger',
@@ -16,8 +18,8 @@ const DIFFICULTY_VARIANT: Record<string, BadgeProps['variant']> = {
 export const DifficultyBadge: FC<DifficultyBadgeProps> = ({ difficulty, className = '' }) => {
   const diff = difficulty?.toLowerCase() || 'medium'
   return (
-    <Badge variant={DIFFICULTY_VARIANT[diff] || 'warning'} className={className}>
+    <Pill role="difficulty" variant={DIFFICULTY_VARIANT[diff] || 'warning'} className={className}>
       {diff}
-    </Badge>
+    </Pill>
   )
 }

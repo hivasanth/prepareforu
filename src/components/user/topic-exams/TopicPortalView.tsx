@@ -28,7 +28,7 @@ interface TopicPortalViewProps {
   // Topics Grid
   topics: TopicItem[];
   topicCounts: Record<string, number>;
-  onTopicClick: (topic: string) => void;
+  onTopicClick: (topic: TopicItem) => void;
   topicsLoading?: boolean;
   minQuestions?: number;
 }
@@ -74,7 +74,6 @@ export function TopicPortalView({
               customPapers={paperOptions}
               customSubjects={subjectOptions}
               hideAll={true}
-              bare
             />
           </SectionReveal>
         )}
@@ -107,7 +106,6 @@ export function TopicPortalView({
               <BilingualToggle
                 displayLang={lang}
                 onChange={setLang}
-                showShadow
               />
             </div>
           </div>
@@ -118,7 +116,9 @@ export function TopicPortalView({
           <Label className="uppercase font-bold tracking-widest text-[11px] text-text-muted block mb-4">Select Topic</Label>
           
           {topicsLoading ? (
-            <GridSkeleton count={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
+            <div role="status" aria-label="Loading topics" className="w-full">
+              <GridSkeleton count={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" gap="gap-4" decorative />
+            </div>
           ) : topics.length === 0 ? (
             <EmptyState title="No topics available" subtitle="Select a different subject to view topics." />
           ) : (
@@ -131,9 +131,9 @@ export function TopicPortalView({
                 const displayTitle = (lang === 'te' && hasTelugu) ? t.topic_te! : t.topic_en;
 
                 return (
-                  <Card key={t.topic_en} variant="premium-dark-neutral" className="relative !p-5 text-left flex flex-col gap-4">
+                  <Card key={t.id ?? t.topic_en} variant="premium-dark-neutral" padding={20} className="relative text-left flex flex-col gap-4">
                     <div className="flex items-center justify-between w-full">
-                      <IconBadge icon={BookOpen} size="xl" shape="rounded" className="rounded-[14px]" />
+                      <IconBadge icon={BookOpen} size="xl" shape="rounded" className="rounded-button-md" />
                       <TopicInfoButton displayTitle={displayTitle} />
                     </div>
                     <div title={displayTitle}>
@@ -141,7 +141,7 @@ export function TopicPortalView({
                         {displayTitle}
                       </Body>
                     </div>
-                    <StartTestButton hasMinimum={hasMinimum} onClick={() => onTopicClick(t.topic_en)} />
+                    <StartTestButton hasMinimum={hasMinimum} subjectName={displayTitle} onClick={() => onTopicClick(t)} />
                   </Card>
                 );
               })}

@@ -12,20 +12,54 @@
 --   difficulty is already a PostgreSQL enum (easy/medium/hard) — no CHECK needed.
 --
 -- Pre-flight: verified all 49 existing rows have non-empty option fields.
+--
+-- REPLAYABILITY (N-3 remediation, 2026-09-10): 20260721000004_database_check_
+-- constraints.sql (recorded on LIVE as 20260721000004) already creates these
+-- four constraints with the SAME names, so on a fresh chain (and on LIVE) this
+-- file's un-guarded ADD CONSTRAINT statements fail with SQLSTATE 42710. They
+-- are therefore wrapped in EXISTS guards; the resulting schema is identical.
 -- =============================================================================
 
-ALTER TABLE public.questions
-  ADD CONSTRAINT chk_questions_option_a_en_not_empty
-  CHECK (length(trim(option_a_en)) > 0);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'chk_questions_option_a_en_not_empty'
+  ) THEN
+    ALTER TABLE public.questions
+      ADD CONSTRAINT chk_questions_option_a_en_not_empty
+      CHECK (length(trim(option_a_en)) > 0);
+  END IF;
+END $$;
 
-ALTER TABLE public.questions
-  ADD CONSTRAINT chk_questions_option_b_en_not_empty
-  CHECK (length(trim(option_b_en)) > 0);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'chk_questions_option_b_en_not_empty'
+  ) THEN
+    ALTER TABLE public.questions
+      ADD CONSTRAINT chk_questions_option_b_en_not_empty
+      CHECK (length(trim(option_b_en)) > 0);
+  END IF;
+END $$;
 
-ALTER TABLE public.questions
-  ADD CONSTRAINT chk_questions_option_c_en_not_empty
-  CHECK (length(trim(option_c_en)) > 0);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'chk_questions_option_c_en_not_empty'
+  ) THEN
+    ALTER TABLE public.questions
+      ADD CONSTRAINT chk_questions_option_c_en_not_empty
+      CHECK (length(trim(option_c_en)) > 0);
+  END IF;
+END $$;
 
-ALTER TABLE public.questions
-  ADD CONSTRAINT chk_questions_option_d_en_not_empty
-  CHECK (length(trim(option_d_en)) > 0);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'chk_questions_option_d_en_not_empty'
+  ) THEN
+    ALTER TABLE public.questions
+      ADD CONSTRAINT chk_questions_option_d_en_not_empty
+      CHECK (length(trim(option_d_en)) > 0);
+  END IF;
+END $$;

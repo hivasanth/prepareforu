@@ -23,7 +23,7 @@ export function ProfileHeader({ user, memberSince }: ProfileHeaderProps) {
         >
           {user.full_name?.charAt(0).toUpperCase()}
         </div>
-        <div className="absolute -bottom-1 -right-1 w-8 h-8 md:w-10 md:h-10 bg-success border-4 border-card-bg rounded-full shadow-lg" aria-label="Verified account" />
+        <div className="absolute -bottom-1 -right-1 w-8 h-8 md:w-10 md:h-10 bg-success border-4 border-card-bg rounded-full shadow-lg" role="img" aria-label="Verified account" />
       </div>
 
       <div className="flex-1 text-center md:text-left space-y-6">

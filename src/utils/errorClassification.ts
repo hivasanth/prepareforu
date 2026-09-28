@@ -4,6 +4,8 @@ import type {
   ErrorCode,
   ErrorInput,
   CaptureOptions,
+  DomainErrorCode,
+  DomainErrorInfo,
 } from '../types/error.types'
 
 // ─── Centralized Category Mapping ──────────────────────────────────────────
@@ -85,7 +87,12 @@ function detectCategory(input: ErrorInput, message: string): ErrorCategory {
     lower.includes('load failed')
   )
     return 'network'
-  if (lower.includes('500') || lower.includes('502') || lower.includes('internal error'))
+  if (
+    lower.includes('500') ||
+    lower.includes('502') ||
+    lower.includes('internal server error') ||
+    lower.includes('internal error')
+  )
     return 'server'
   return 'unknown'
 }
@@ -165,6 +172,22 @@ export function classifyError(
   return { category, code, message: buildFriendlyMessage(category) }
 }
 
+// Lightweight structured-field extraction for service-layer catch blocks.
+// Supabase/PostgREST errors surface `message` + `code` on the thrown object;
+// this avoids `catch (error: any)` without changing logging or throw behaviour.
+export function errorFields(err: unknown): { message?: string; code?: string } {
+  if (err instanceof Error) return { message: err.message }
+  if (err && typeof err === 'object') {
+    const rec = err as { message?: unknown; code?: unknown }
+    return {
+      message: typeof rec.message === 'string' ? rec.message : String(rec.message ?? undefined),
+      code: typeof rec.code === 'string' ? rec.code : undefined,
+    }
+  }
+  return err === undefined ? {} : { message: String(err) }
+}
+
+
 // ─── Code → Category ───────────────────────────────────────────────────────
 // Canonical reverse mapping so consumers can translate a normalized ErrorCode
 // back into the category the UI renders. Accepts a plain string so both the
@@ -220,4 +243,245 @@ function buildFriendlyMessage(category: ErrorCategory): string {
     unknown: 'An unexpected error occurred. Please try again.',
   }
   return messages[category]
+}
+
+// ─── Domain Error Mapping ───────────────────────────────────────────────────
+// Canonical mapping of backend business codes (Edge Function / RPC) to
+// surface-ready, actionable UX — including any navigation target. This is the
+// single source of truth for the sub-admin provisioning domain; pages consume
+// it instead of hand-rolling code→message switch statements.
+//
+// Retry semantics: `retryable` indicates the operation is safe to retry. For
+// idempotent provisioning this is true for any of the transient/stale paths;
+// a caller retries with the SAME request_id (the server + DB dedupe).
+
+export function mapDomainError(
+  code: string | undefined,
+  message: string | undefined,
+  status?: number | undefined,
+): DomainErrorInfo {
+  const normalized = (code ?? '').toUpperCase() as DomainErrorCode
+  switch (normalized) {
+    case 'EDUCATOR_EXISTS':
+      return {
+        code: 'EDUCATOR_EXISTS',
+        title: 'Account Already Exists',
+        message: 'An educator account with this email already exists. Use a different email or edit the existing one.',
+        category: 'business',
+        retryable: false,
+      }
+    case 'COUPON_TAKEN':
+      return {
+        code: 'COUPON_TAKEN',
+        title: 'Coupon Code Unavailable',
+        message: 'This coupon code is already assigned to an active educator. Choose a different code.',
+        category: 'business',
+        retryable: false,
+      }
+    case 'INVALID_COMMISSION':
+      return {
+        code: 'INVALID_COMMISSION',
+        title: 'Invalid Commission',
+        message: 'Commission must be a number between 0 and 100.',
+        category: 'validation',
+        retryable: true,
+      }
+    case 'ALREADY_PROVISIONED':
+      return {
+        code: 'ALREADY_PROVISIONED',
+        title: 'Already Onboarded',
+        message: 'This onboarding was already completed. The educator is active.',
+        category: 'business',
+        retryable: false,
+      }
+    case 'SUB_ADMIN_NOT_FOUND':
+      return {
+        code: 'SUB_ADMIN_NOT_FOUND',
+        title: 'Educator Not Found',
+        message: 'The requested educator could not be found. Refresh the list and try again.',
+        category: 'business',
+        retryable: false,
+      }
+    case 'CONCURRENT_UPDATE_CONFLICT':
+      return {
+        code: 'CONCURRENT_UPDATE_CONFLICT',
+        title: 'Stale Changes Detected',
+        message: 'This educator was updated elsewhere. Refresh the list and try again.',
+        category: 'business',
+        retryable: true,
+      }
+    case 'INVITE_FAILED':
+      return {
+        code: 'INVITE_FAILED',
+        title: 'Invitation Not Sent',
+        message: 'We could not send the invitation email. Please try again shortly.',
+        category: 'server',
+        retryable: true,
+      }
+    case 'INVITE_REDIRECT_MISCONFIGURED':
+      return {
+        code: 'INVITE_REDIRECT_MISCONFIGURED',
+        title: 'Invitation Temporarily Unavailable',
+        message: 'The invitation service is misconfigured. Please contact support.',
+        category: 'server',
+        retryable: true,
+      }
+    case 'COUPON_GENERATION_EXHAUSTED':
+      return {
+        code: 'COUPON_GENERATION_EXHAUSTED',
+        title: 'Could Not Generate Coupon',
+        message: 'A unique coupon could not be generated right now. Please try again.',
+        category: 'business',
+        retryable: true,
+      }
+    case 'PROVISION_FAILED':
+      return {
+        code: 'PROVISION_FAILED',
+        title: 'Provisioning Failed',
+        message: 'The educator was invited but provisioning did not complete. The invitation was revoked — no partial account remains. Try again.',
+        category: 'server',
+        retryable: true,
+      }
+    case 'ROLE_GRANT_FAILED':
+    case 'USER_NOT_FOUND':
+      return {
+        code: normalized,
+        title: 'Could Not Complete',
+        message: 'The educator could not be activated. Refresh and try again, or contact support.',
+        category: 'business',
+        retryable: true,
+      }
+    case 'UNAUTHORIZED':
+    case 'FORBIDDEN':
+      return {
+        code: normalized as 'UNAUTHORIZED' | 'FORBIDDEN',
+        title: 'Permission Required',
+        message: 'Only an administrator can perform this action.',
+        category: 'authorization',
+        retryable: false,
+      }
+    case 'UNAUTHENTICATED':
+      return {
+        code: 'UNAUTHENTICATED',
+        title: 'Session Expired',
+        message: 'Please sign in again to continue.',
+        category: 'authentication',
+        retryable: false,
+        navigateTo: '/login',
+      }
+    case 'VALIDATION_FAILED':
+      return {
+        code: 'VALIDATION_FAILED',
+        title: 'Check Your Details',
+        message: message || 'Some details are invalid. Review and try again.',
+        category: 'validation',
+        retryable: true,
+      }
+    case 'REQUEST_ID_INVALID':
+      return {
+        code: 'REQUEST_ID_INVALID',
+        title: 'Onboarding Session Expired',
+        message: 'Your onboarding session expired. Please try again.',
+        category: 'business',
+        retryable: true,
+      }
+    case 'RATE_LIMIT_UNAVAILABLE':
+      return {
+        code: 'RATE_LIMIT_UNAVAILABLE',
+        title: 'Security Layer Unavailable',
+        message: 'Our security layer is temporarily unavailable. Try again later.',
+        category: 'rateLimit',
+        retryable: true,
+      }
+    case 'TOO_MANY_REQUESTS':
+      return {
+        code: 'TOO_MANY_REQUESTS',
+        title: 'Too Many Requests',
+        message: message || 'Please wait a moment before trying again.',
+        category: 'rateLimit',
+        retryable: true,
+      }
+    case 'INTERNAL_ERROR':
+      return {
+        code: 'INTERNAL_ERROR',
+        title: 'Unexpected Error',
+        message: 'Something went wrong on our end. Please try again shortly.',
+        category: 'server',
+        retryable: true,
+      }
+    // ── Educator-exam start domain (server-authoritative window/ownership
+    //    codes raised by create_attempt). Precondition failures are NOT
+    //    retryable — they describe a deterministic state, not a transient one.
+    case 'UNAUTHORIZED_ACCESS':
+      return {
+        code: 'UNAUTHORIZED_ACCESS',
+        title: 'Access Denied',
+        message: "You don't have access to this exam.",
+        category: 'authorization',
+        retryable: false,
+      }
+    case 'EXAM_NOT_STARTED':
+      return {
+        code: 'EXAM_NOT_STARTED',
+        title: 'Exam Not Started Yet',
+        message: 'This exam has not started yet. Please come back once it opens.',
+        category: 'business',
+        retryable: false,
+      }
+    case 'EXAM_WINDOW_CLOSED':
+      return {
+        code: 'EXAM_WINDOW_CLOSED',
+        title: 'Exam Has Ended',
+        message: 'This exam window has closed. You can no longer start it.',
+        category: 'business',
+        retryable: false,
+      }
+    case 'TEACHER_EXAM_NOT_AVAILABLE':
+      return {
+        code: 'TEACHER_EXAM_NOT_AVAILABLE',
+        title: 'Exam Unavailable',
+        message: 'This exam is not currently available. Please check your schedule and try again.',
+        category: 'business',
+        retryable: false,
+      }
+    default: {
+      // Fall back to transport classification when no known domain code.
+      const categorized: ErrorCategory =
+        status === 401 ? 'authentication' :
+        status === 403 ? 'authorization' :
+        status === 429 ? 'rateLimit' :
+        (status ?? 0) >= 500 ? 'server' :
+        'business'
+      return {
+        code: 'UNKNOWN_DOMAIN',
+        title: categorized === 'server' ? 'Server Error' : 'Something Went Wrong',
+        message: message || 'An unexpected error occurred. Please try again.',
+        category: categorized,
+        retryable: true,
+      }
+    }
+  }
+}
+
+// ─── Educator-Exam Start Flow ───────────────────────────────────────────────
+// The create_attempt RPC raises stable, distinct codes as its message text
+// (PostgREST surfaces RAISE EXCEPTION text verbatim). This helper scans that
+// text for the known-token set and maps the FIRST match through the canonical
+// mapDomainError above — the single mapping, consumed by the page hook so it
+// never hand-rolls code→message logic.
+
+const TEACHER_EXAM_DOMAIN_TOKENS = [
+  'EXAM_NOT_STARTED',
+  'EXAM_WINDOW_CLOSED',
+  'TEACHER_EXAM_NOT_AVAILABLE',
+  'UNAUTHORIZED_ACCESS',
+] as const
+
+export function teacherExamErrorInfo(input: ErrorInput): DomainErrorInfo | null {
+  const raw = extractMessage(input)
+  const upper = raw.toUpperCase()
+  for (const token of TEACHER_EXAM_DOMAIN_TOKENS) {
+    if (upper.includes(token)) return mapDomainError(token, raw)
+  }
+  return null
 }

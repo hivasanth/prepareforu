@@ -55,7 +55,7 @@ export function Avatar({
     <div className="relative inline-flex shrink-0" {...a11y}>
       <AdminIconWrap
         size={size}
-        rounded={shape === 'circle' ? 'full' : 'lg'}
+        rounded={shape === 'circle' ? 'full' : 'md'}
         className={`${FONT_SIZE[size]} ${className}`}
       >
         {initial}

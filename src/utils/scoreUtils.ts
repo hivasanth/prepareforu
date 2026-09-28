@@ -21,8 +21,8 @@ export interface DistributionRange {
 
 export interface StudentStats {
   totalExams: number;
-  avgScore: number;
-  bestScore: number;
+  avgPct: number;
+  bestPct: number;
   lastActive: string | null;
 }
 
@@ -89,19 +89,23 @@ export function computeScoreDistribution(
   });
 }
 
+// Aggregates the DISPLAY metric for the students page. Callers must pass
+// per-attempt `percentage` (already derived from raw marks via
+// `calculatePercentage`) — never raw marks. The names avgPct/bestPct make the
+// percentage semantics explicit so raw marks can't silently leak through.
 export function computeStudentStats(
-  studentAttempts: { score: number; submitted_at: string; duration_seconds?: number }[]
+  studentAttempts: { percentage: number; submitted_at: string }[]
 ): StudentStats {
   const totalExams = studentAttempts.length;
   if (totalExams === 0) {
-    return { totalExams: 0, avgScore: 0, bestScore: 0, lastActive: null };
+    return { totalExams: 0, avgPct: 0, bestPct: 0, lastActive: null };
   }
-  const avgScore = Math.round(
-    studentAttempts.reduce((acc, curr) => acc + curr.score, 0) / totalExams
+  const avgPct = Math.round(
+    studentAttempts.reduce((acc, curr) => acc + curr.percentage, 0) / totalExams
   );
-  const bestScore = Math.max(...studentAttempts.map(a => a.score));
+  const bestPct = Math.max(...studentAttempts.map(a => a.percentage));
   const lastActive = [...studentAttempts].sort(
     (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
   )[0].submitted_at;
-  return { totalExams, avgScore, bestScore, lastActive };
+  return { totalExams, avgPct, bestPct, lastActive };
 }

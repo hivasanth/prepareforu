@@ -25,7 +25,6 @@ interface UseQuestionNavigationReturn {
   currentQuestion: Question | undefined;
   isLastQuestion: boolean;
   isFirstQuestion: boolean;
-  currentQState: ReturnType<typeof computeQuestionState> | null;
   hasAnswer: boolean;
   isMarked: boolean;
   canProceed: boolean;
@@ -68,10 +67,9 @@ export function useQuestionNavigation({
       const total = (questionTimeSpentRef.current[currentId] || 0) + elapsed;
 
       questionTimeSpentRef.current[currentId] = total;
-      const sourceCorrectOption = questions[currentIdxRef.current]?.correct_option || '';
       executeWithRetry(
         `${currentId}-time`,
-        () => addQuestionTime(currentAttempt.id, currentId, sourceCorrectOption, elapsed),
+        () => addQuestionTime(currentAttempt.id, currentId, elapsed),
       ).catch((err: unknown) => {
         if (!(err instanceof StaleOperationError)) {
           console.warn("Failed to persist time for", currentId);
@@ -92,7 +90,7 @@ export function useQuestionNavigation({
       try {
         await executeWithRetry(
           `${targetId}-visit`,
-          () => touchQuestionVisit(targetAttempt.id, targetId, questions[index].correct_option),
+          () => touchQuestionVisit(targetAttempt.id, targetId),
         );
       } catch (err) {
         if (!(err instanceof StaleOperationError)) {
@@ -117,7 +115,7 @@ export function useQuestionNavigation({
           try {
             await executeWithRetry(
               `${currentQuestion.id}-visit`,
-              () => touchQuestionVisit(visitAttempt.id, currentQuestion.id, currentQuestion.correct_option),
+              () => touchQuestionVisit(visitAttempt.id, currentQuestion.id),
             );
           } catch (err) {
             if (!(err instanceof StaleOperationError) && !cancelled) {
@@ -150,7 +148,6 @@ export function useQuestionNavigation({
     currentQuestion,
     isLastQuestion,
     isFirstQuestion,
-    currentQState,
     hasAnswer,
     isMarked,
     canProceed,

@@ -1,12 +1,16 @@
 import { Button, Grid, H2, Body, ErrorContainer, RetryButton } from '../../common/AntigravityUI'
-import { LoadingSkeleton, EmptyState } from '../../common/SharedComponents'
+import { GridSkeleton, EmptyState } from '../../common/SharedComponents'
 import { RecentAttemptCard } from '../../common/RecentAttemptCard'
-import type { AttemptWithRelations } from '../../../types/exam.types'
+import { ArrowRight, BarChart3 } from 'lucide-react'
+import type { PerformanceAttemptSummary } from '../../../types/exam.types'
+import type { DashboardError } from './useUserDashboard'
 
 interface DashboardRecentActivityProps {
-  recentActivity: AttemptWithRelations[]
+  recentActivity: PerformanceAttemptSummary[]
   loading: boolean
-  error: string | null
+  error: DashboardError | null
+  /** DASH-LOW-1 — non-destructive background-refresh failure notice. */
+  refreshFailed?: boolean
   isRetrying: boolean
   onRetry: () => void
   onViewPerformance: () => void
@@ -15,46 +19,54 @@ interface DashboardRecentActivityProps {
 }
 
 export function DashboardRecentActivity({
-  recentActivity, loading, error, isRetrying,
+  recentActivity, loading, error, refreshFailed = false, isRetrying,
   onRetry, onViewPerformance, onStartExam, onReviewAttempt,
 }: DashboardRecentActivityProps) {
+  const showNonDestructiveNotice = refreshFailed && recentActivity.length > 0
   return (
     <>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <H2 className="uppercase">Recent Activity</H2>
         <Button variant="soft" onClick={onViewPerformance} className="self-end sm:self-center">
-          Analytics →
+          Analytics <ArrowRight size={16} />
         </Button>
       </div>
 
       {loading ? (
-        <Grid cols={1} sm={2} lg={3} className="gap-4 md:gap-6">
-          {[1, 2, 3].map(i => <LoadingSkeleton key={i} height={180} borderRadius={24} />)}
-        </Grid>
-      ) : error ? (
-        <ErrorContainer category="network" severity="critical">
+        <div role="status" aria-live="polite" aria-label="Loading recent activity">
+          <GridSkeleton decorative count={5} height={180} columns="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" gap="gap-4 md:gap-5 lg:gap-6" />
+        </div>
+      ) : error && !showNonDestructiveNotice ? (
+        <ErrorContainer category={error.category} severity="critical">
           <H2>Failed to load recent activity</H2>
-          <Body>{error}</Body>
+          <Body>{error.message}</Body>
           <RetryButton onRetry={onRetry} loading={isRetrying} />
         </ErrorContainer>
       ) : recentActivity.length === 0 ? (
         <EmptyState
-          icon="📊"
+          icon={<BarChart3 size={48} className="text-primary" aria-hidden />}
           title="No Recent Activity"
           subtitle="Complete your first exam to see your results here."
           actionLabel="Start an Exam"
           onAction={onStartExam}
         />
       ) : (
-        <Grid cols={1} sm={2} lg={3} className="gap-4 md:gap-6">
-          {recentActivity.map((act) => (
-            <RecentAttemptCard
-              key={act.id}
-              attempt={act}
-              onClick={() => onReviewAttempt(act.id)}
-            />
-          ))}
-        </Grid>
+        <>
+          {showNonDestructiveNotice && (
+            <div role="status" aria-live="polite" className="mb-4 text-sm font-bold text-text-secondary">
+              Couldn't refresh your recent activity. Showing your last saved results.
+            </div>
+          )}
+          <Grid cols={1} sm={2} lg={3}>
+            {recentActivity.map((act) => (
+              <RecentAttemptCard
+                key={act.id}
+                attempt={act}
+                onClick={() => onReviewAttempt(act.id)}
+              />
+            ))}
+          </Grid>
+        </>
       )}
     </>
   )

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useExamSecurity } from '../../pages/exam/hooks/useExamSecurity';
@@ -27,6 +27,7 @@ export function useActiveExam() {
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
   const [displayLang, setDisplayLang] = useState<'en' | 'te'>('en');
+  const [showStatusBoard, setShowStatusBoard] = useState(true);
 
   const [visitedQuestions, setVisitedQuestions] = useState<Set<string>>(new Set());
   const [markedForReview, setMarkedForReview] = useState<Set<string>>(new Set());
@@ -76,7 +77,6 @@ export function useActiveExam() {
     teluguAvailable,
     initExam,
     handleLanguageSelect,
-    subjectMarksRef,
   } = useExamInitialization({
     paperId,
     user,
@@ -154,7 +154,6 @@ export function useActiveExam() {
     selectedAnswers,
     markedForReview,
     visitedQuestions,
-    subjectMarksRef,
     selectedAnswersRef,
     markedForReviewRef,
     setSelectedAnswers,
@@ -177,11 +176,9 @@ export function useActiveExam() {
     setIsSubmitModalOpen,
   });
 
-  useEffect(() => { if (!initComplete) return; paperRef.current = paper; }, [paper, initComplete]);
-  useEffect(() => { if (!initComplete) return; attemptRef.current = attempt; }, [attempt, initComplete]);
+  // Refs are synced directly at each setter call site (FIX-10).
 
   const { finalSubmit, onTimeUp } = useExamSubmission({
-    questions,
     currentQuestion,
     navigate,
     examSource,
@@ -199,17 +196,17 @@ export function useActiveExam() {
     isAutoSubmittingRef,
   });
 
-  const visualNode = currentQuestion?.visual && (
+  const visualNode = useMemo(() => currentQuestion?.visual && (
     <div className="mb-8 rounded-2xl overflow-hidden border border-border-subtle">
       <QuestionVisualizer visual={currentQuestion.visual} />
     </div>
-  );
+  ), [currentQuestion?.visual]);
 
-  const diagramNode = currentQuestion?.diagram && (
+  const diagramNode = useMemo(() => currentQuestion?.diagram && (
     <div className="mb-8 p-4 bg-hover-bg/20 rounded-2xl border border-border-subtle">
       <DiagramRenderer diagram={currentQuestion.diagram} />
     </div>
-  );
+  ), [currentQuestion?.diagram]);
 
   return {
     phase, loading, error, initComplete,
@@ -222,6 +219,7 @@ export function useActiveExam() {
     selectedAnswers, handleOptionSelect, clearAnswer, toggleMarkForReview,
     examStats,
     isSubmitting, isAutoSubmitting, isSubmitModalOpen, setIsSubmitModalOpen,
+    showStatusBoard, setShowStatusBoard,
     finalSubmit, onTimeUp,
     showFullscreenPrompt, fullscreenViolations, requestFullscreen,
     examSource, showSubjectName,

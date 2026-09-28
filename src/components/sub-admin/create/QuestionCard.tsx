@@ -1,31 +1,48 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Trash2, Check, Edit3 } from 'lucide-react'
 import { DiagramRenderer } from '../../../components/common/DiagramRenderer'
+import { Card } from '../../common/AntigravityCard'
+import { PremiumSelect } from '../../common/PremiumSelect'
+import { QuestionCardHeader } from '../../exam/QuestionCardHeader'
+import { QuestionCardOption } from '../../exam/QuestionCardOption'
 import { BulkQuestionSchema } from '../../../validations/questionSchema'
+import { FieldError } from '../../common/SharedComponents'
 import type { QuestionData } from './types'
 
-type QuestionEditField = 'question_text_en' | 'option_a_en' | 'option_b_en' | 'option_c_en' | 'option_d_en'
+type QuestionEditField = 'question_text_en' | 'option_a_en' | 'option_b_en' | 'option_c_en' | 'option_d_en' | 'explanation_en'
 type QuestionEditErrors = Partial<Record<QuestionEditField, string>>
 
 interface QuestionCardProps {
   q: QuestionData
   idx: number
-  getTypo: (k: string) => string
-  getDimension: (k: string) => number
+  /** 1-based index for the canonical header badge. */
+  index: number
+  /** Denominator for the canonical "of {total}" line. */
+  total: number
+  /** Open the card in edit mode on mount (used by "Add Question"). */
+  autoEdit?: boolean
   onDelete: () => void
   onUpdate: (upd: Partial<QuestionData>) => void
 }
 
-export function QuestionCard({ q, idx, getTypo, getDimension, onDelete, onUpdate }: QuestionCardProps) {
-  const [isEditing, setIsEditing] = useState(false)
+const DIFFICULTY_OPTIONS = [
+  { id: 'easy', name: 'Easy' },
+  { id: 'medium', name: 'Medium' },
+  { id: 'hard', name: 'Hard' },
+]
+
+export function QuestionCard({ q, idx, index, total, autoEdit = false, onDelete, onUpdate }: QuestionCardProps) {
+  const [isEditing, setIsEditing] = useState(autoEdit)
+  const [prevQ, setPrevQ] = useState(q)
   const [localQ, setLocalQ] = useState(q)
   const [fieldErrors, setFieldErrors] = useState<QuestionEditErrors>({})
 
-  useEffect(() => {
+  if (prevQ !== q) {
+    setPrevQ(q)
     setLocalQ(q)
     setFieldErrors({})
-  }, [q])
+  }
 
   const handleSave = () => {
     const result = BulkQuestionSchema.safeParse(localQ)
@@ -51,23 +68,67 @@ export function QuestionCard({ q, idx, getTypo, getDimension, onDelete, onUpdate
   return (
     <motion.div
       layout
-      className="bg-card-bg border border-border-subtle/20 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-200"
-      style={{ padding: getDimension('cardPadding') }}
+      className="w-full"
+      initial={false}
     >
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-primary/20">
-            {idx + 1}
-          </div>
+      <Card variant={isEditing ? 'elevated' : 'static'} padding={0} className="relative overflow-hidden">
+        <QuestionCardHeader
+          index={index}
+          total={total}
+          difficulty={isEditing ? undefined : (q.difficulty ?? 'medium')}
+          difficultySlot={isEditing ? (
+            <PremiumSelect
+              value={localQ.difficulty ?? 'medium'}
+              onChange={(d) => setLocalQ({ ...localQ, difficulty: d as QuestionData['difficulty'] })}
+              options={DIFFICULTY_OPTIONS}
+              label="Difficulty level"
+              maxVisible={3}
+            />
+          ) : undefined}
+          actions={
+            !isEditing ? (
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  aria-label={`Edit question ${index}`}
+                  className="p-2 rounded-lg hover:bg-primary/10 text-text-secondary hover:text-primary transition-interaction duration-fast ease-standard focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <Edit3 size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  aria-label={`Delete question ${index}`}
+                  className="p-2 rounded-lg hover:bg-danger/10 text-text-secondary hover:text-danger transition-interaction duration-fast ease-standard focus:outline-none focus:ring-2 focus:ring-danger/30"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSave}
+                className="bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 shadow-sm shadow-primary/20 transition-interaction duration-fast ease-standard focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <Check size={12} /> Save
+              </button>
+            )
+          }
+        />
+
+        <div className="p-5 md:p-6 space-y-5">
+          {q.diagram && <DiagramRenderer diagram={q.diagram} className="mb-1" />}
+
           {!isEditing ? (
-            <div className="space-y-3 flex-1 min-w-0">
-              {q.diagram && <DiagramRenderer diagram={q.diagram} className="mb-4" />}
-              <h3 className="font-bold text-text-primary leading-snug" style={{ fontSize: getTypo('cardQ') }}>
-                {q.question_text_en || 'Untitled Question'}
-              </h3>
-            </div>
+            <h3 className="font-semibold text-text-primary leading-relaxed text-[clamp(14px,1.8vw,17px)] max-w-[780px]">
+              {q.question_text_en || 'Untitled Question'}
+            </h3>
           ) : (
-            <div className="flex-1 min-w-0">
+            <div>
+              <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-2 opacity-70">
+                Question Text
+              </label>
               <textarea
                 id={`q-${idx}-question`}
                 value={localQ.question_text_en || ''}
@@ -75,108 +136,89 @@ export function QuestionCard({ q, idx, getTypo, getDimension, onDelete, onUpdate
                 aria-label="Question text"
                 aria-invalid={!!fieldErrors.question_text_en}
                 aria-describedby={fieldErrors.question_text_en ? `q-${idx}-question-error` : undefined}
-                className="w-full bg-hover-bg border border-border-subtle/40 rounded-xl p-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-text-primary resize-none"
+                className="w-full bg-hover-bg border border-border-subtle/40 rounded-xl p-3 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-text-primary resize-none"
                 rows={3}
               />
               {fieldErrors.question_text_en && (
-                <span id={`q-${idx}-question-error`} aria-live="polite" className="text-xs font-bold text-danger mt-1 block">{fieldErrors.question_text_en}</span>
+                <FieldError id={`q-${idx}-question-error`}>{fieldErrors.question_text_en}</FieldError>
               )}
             </div>
           )}
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {!isEditing ? (
-            <>
-              <button onClick={() => setIsEditing(true)} className="p-2 rounded-lg hover:bg-primary/10 text-text-secondary hover:text-primary transition-all">
-                <Edit3 size={14} />
-              </button>
-              <button onClick={onDelete} className="p-2 rounded-lg hover:bg-red-500/10 text-text-secondary hover:text-red-500 transition-all">
-                <Trash2 size={14} />
-              </button>
-            </>
-          ) : (
-            <button onClick={handleSave} className="bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 shadow-sm shadow-primary/20">
-              <Check size={12} /> Save
-            </button>
-          )}
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
-        {(['a', 'b', 'c', 'd'] as const).map(opt => {
-          const isCorrect = q.correct_option === opt.toUpperCase()
-          const enKey = `option_${opt}_en` as QuestionEditField
-          return (
-            <div
-              key={opt}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all ${
-                isCorrect
-                  ? 'bg-green-500/8 border-green-500/25 text-green-500'
-                  : 'bg-hover-bg/30 border-border-subtle/10 text-text-secondary'
-              }`}
-            >
-              <div className={`w-5 h-5 rounded-md flex items-center justify-center font-black text-[10px] shrink-0 ${
-                isCorrect ? 'bg-green-500/20 text-green-500' : 'bg-card-bg border border-border-subtle/40 text-text-secondary'
-              }`}>
-                {opt.toUpperCase()}
-              </div>
-              {!isEditing ? (
-                <span className="font-medium flex-1 truncate text-xs">
-                  {String(q[enKey] ?? '')}
-                </span>
-              ) : (
-                <div className="flex-1 min-w-0">
-                  <input
-                    id={`q-${idx}-opt-${opt}`}
-                    value={String(localQ[enKey] ?? '')}
-                    onChange={(e) => updateLocalField(enKey, e.target.value)}
-                    aria-label={`Option ${opt.toUpperCase()}`}
-                    aria-invalid={!!fieldErrors[enKey]}
-                    aria-describedby={fieldErrors[enKey] ? `q-${idx}-opt-${opt}-error` : undefined}
-                    className="w-full bg-transparent border-none p-0 font-medium text-xs focus:ring-0 text-text-primary min-w-0"
-                  />
-                  {fieldErrors[enKey] && (
-                    <span id={`q-${idx}-opt-${opt}-error`} aria-live="polite" className="text-[11px] font-bold text-danger mt-0.5 block">{fieldErrors[enKey]}</span>
+          <div role="group" aria-label="Answer options" className="flex flex-col gap-3.5">
+            {(['a', 'b', 'c', 'd'] as const).map(opt => {
+              const isCorrect = q.correct_option === opt.toUpperCase()
+              const editingCorrect = localQ.correct_option === opt.toUpperCase()
+              const enKey = `option_${opt}_en` as QuestionEditField
+              const error = fieldErrors[enKey]
+
+              return (
+                <QuestionCardOption
+                  key={opt}
+                  label={opt.toUpperCase()}
+                  state={isEditing
+                    ? (editingCorrect ? 'correct' : 'neutral')
+                    : (isCorrect ? 'correct' : 'neutral')}
+                >
+                  {!isEditing ? (
+                    <span className={`font-medium flex-1 leading-relaxed ${isCorrect ? 'text-success' : 'text-text-primary'}`}>
+                      {String(q[enKey] ?? '') || <span className="text-text-hint italic text-xs">Empty option</span>}
+                    </span>
+                  ) : (
+                    <div className="flex-1 min-w-0">
+                      <textarea
+                        id={`q-${idx}-opt-${opt}`}
+                        value={String(localQ[enKey] ?? '')}
+                        onChange={(e) => updateLocalField(enKey, e.target.value)}
+                        aria-label={`Option ${opt.toUpperCase()}`}
+                        aria-invalid={!!error}
+                        aria-describedby={error ? `q-${idx}-opt-${opt}-error` : undefined}
+                        rows={2}
+                        className="w-full bg-transparent border-none p-0 font-medium text-xs md:text-sm leading-relaxed focus:ring-0 text-text-primary min-w-0 resize-none focus:outline-none"
+                      />
+                      {error && (
+                        <FieldError id={`q-${idx}-opt-${opt}-error`}>{error}</FieldError>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-              {isEditing && (
-                <button
-                  onClick={() => setLocalQ({ ...localQ, correct_option: opt.toUpperCase() as 'A' | 'B' | 'C' | 'D' })}
-                  aria-label={`Mark option ${opt.toUpperCase()} as correct`}
-                  aria-pressed={localQ.correct_option === opt.toUpperCase()}
-                  title="Mark as correct"
-                  className={`w-3.5 h-3.5 rounded-full border-2 transition-all shrink-0 ${
-                    localQ.correct_option === opt.toUpperCase()
-                      ? 'bg-primary border-primary'
-                      : 'border-border-subtle hover:border-primary/50'
-                  }`}
-                />
-              )}
-            </div>
-          )
-        })}
-      </div>
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => setLocalQ({ ...localQ, correct_option: opt.toUpperCase() as 'A' | 'B' | 'C' | 'D' })}
+                      aria-label={`Mark option ${opt.toUpperCase()} as correct`}
+                      aria-pressed={editingCorrect}
+                      title="Mark as correct"
+                      className={`w-3.5 h-3.5 rounded-full border-2 transition-interaction duration-fast ease-standard shrink-0 ${
+                        editingCorrect
+                          ? 'bg-success border-success'
+                          : 'border-border-subtle hover:border-success/50'
+                      }`}
+                    />
+                  )}
+                </QuestionCardOption>
+              )
+            })}
+          </div>
 
-      <div className="bg-primary/5 border border-primary/10 rounded-xl px-3 py-2.5">
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <span className="text-[9px] font-black uppercase tracking-widest text-primary opacity-60">Explanation</span>
+          <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 space-y-1.5">
+            <span className="text-[10px] font-bold text-primary uppercase tracking-widest block">Explanation</span>
+            {!isEditing ? (
+              <p className="font-medium text-text-secondary leading-relaxed italic text-xs">
+                &ldquo;{q.explanation_en || 'No explanation provided.'}&rdquo;
+              </p>
+            ) : (
+              <textarea
+                id={`q-${idx}-explanation`}
+                value={localQ.explanation_en || ''}
+                onChange={(e) => updateLocalField('explanation_en', e.target.value)}
+                aria-label="Explanation"
+                className="w-full bg-transparent border border-primary/10 rounded-lg p-2 font-medium text-xs focus:ring-0 text-text-primary resize-none focus:outline-none"
+                rows={2}
+              />
+            )}
+          </div>
         </div>
-        {!isEditing ? (
-          <p className="font-medium text-text-secondary leading-relaxed italic" style={{ fontSize: getTypo('cardExpl') }}>
-            {q.explanation_en || 'No explanation provided.'}
-          </p>
-        ) : (
-          <textarea
-            id={`q-${idx}-explanation`}
-            value={localQ.explanation_en || ''}
-            onChange={(e) => setLocalQ({ ...localQ, explanation_en: e.target.value })}
-            aria-label="Explanation"
-            className="w-full bg-transparent border border-primary/10 rounded-lg p-2 font-medium text-xs focus:ring-0 text-text-primary resize-none"
-            rows={2}
-          />
-        )}
-      </div>
+      </Card>
     </motion.div>
   )
 }

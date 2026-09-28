@@ -1,11 +1,12 @@
-
-[functions.generate-questions]
+[functions.onboard-sub-admin]
 enabled = true
 verify_jwt = true
-import_map = "./functions/generate-questions/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/generate-questions/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/generate-questions/*.html" ]
+entrypoint = "./functions/onboard-sub-admin/index.ts"
+
+[functions.security-gateway]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/security-gateway/index.ts"
+
+[extensions.pg_cron]
+enabled = true

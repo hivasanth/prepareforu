@@ -1,0 +1,1107 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Number Memory Rush — presentation layer.
+
+   Layout, board structure, HUD, result modal and leaderboard structure are the
+   approved shared shell for all four titles; this file is the SHARED root cause
+   location for the HUD / result / idle-play-area fixes — no per-game override
+   stacks may re-enter the sheet. This file consumes ONLY PrepareForU design
+   tokens (src/styles/themes.css + src/index.css) instead of a bespoke palette,
+   and expresses the app's depth language in layers:
+   page → game card → board sockets → number tiles.
+
+   Everything is scoped under `.nmr-scope` so none of the original globals
+   (`*`, `body`, `:root`) leak into the rest of PrepareForU. Theme switching is
+   automatic: every value resolves through a semantic token that flips under
+   `.light`.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.nmr-scope {
+  /* Aliases onto PrepareForU semantic tokens. Deliberately NOT named after the
+     global tokens (`--text-muted` etc.) so no token is shadowed or duplicated. */
+  --nmr-accent: var(--color-accent);
+  /* Higher-contrast accent for accent-coloured *text* (the base accent fails
+     WCAG AA as small text on dark surfaces; the hover step is the lightest
+     brand step in dark and the darkest in light). */
+  --nmr-accent-text: var(--color-accent-hover);
+  --nmr-accent-glow: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  --nmr-secondary: var(--color-secondary);
+  --nmr-success: var(--color-success);
+  --nmr-warning: var(--color-warning);
+  --nmr-danger: var(--color-danger);
+  --nmr-danger-soft: color-mix(in srgb, var(--color-danger) 50%, transparent);
+  --nmr-surface: color-mix(in srgb, var(--bg-surface) 92%, transparent);
+  --nmr-border: var(--border-subtle);
+
+  /* Surface aliases. Every game surface resolves through the SAME PrepareForU
+     card/material tokens the rest of the app consumes. Dark keeps the approved
+     neutral game surfaces; the `.light` block below swaps them to the certified
+     gold premium Card material (--stat-card-*) so light mode matches every other
+     card. No game-specific colour, shadow or elevation is introduced. */
+  --nmr-card-bg: var(--nmr-surface);
+  --nmr-card-border: var(--nmr-border);
+  --nmr-card-shadow: var(--elevation-3), inset 0 1px 0 color-mix(in srgb, var(--text-primary) 7%, transparent);
+
+  /* The single playground wrapper is a RECESSED surface behind the elevated
+     Cards, so the two metric columns and the play card read as one composition
+     inside it (dark) — light mode swaps it to the certified carved surface. */
+  --nmr-playground-bg: var(--nmr-hud-bg);
+  --nmr-playground-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 6%, transparent), var(--elevation-1);
+
+  --nmr-tile-bg: var(--bg-elevated);
+  --nmr-tile-border: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  --nmr-tile-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent), var(--elevation-2);
+  --nmr-tile-hover-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 10%, transparent), var(--elevation-3);
+  --nmr-tile-press-shadow: inset 0 2px 4px color-mix(in srgb, var(--bg-app) 45%, transparent), var(--elevation-1);
+  --nmr-hidden-bg: var(--bg-hover);
+  --nmr-hidden-border: var(--border-subtle);
+  --nmr-hidden-shadow: var(--elevation-1);
+
+  --nmr-hud-bg: color-mix(in srgb, var(--bg-app) 55%, transparent);
+  --nmr-hud-shadow: inset 0 2px 6px color-mix(in srgb, var(--bg-app) 40%, transparent);
+  --nmr-row-bg: color-mix(in srgb, var(--bg-elevated) 60%, transparent);
+  --nmr-row-border: var(--border-subtle);
+  --nmr-row-shadow: none;
+  --nmr-board-bg: transparent;
+  --nmr-board-shadow: none;
+  --nmr-cell-bg: color-mix(in srgb, var(--bg-app) 40%, transparent);
+  --nmr-cell-shadow: inset 0 1px 3px color-mix(in srgb, var(--bg-app) 45%, transparent);
+
+  --nmr-radius-sm: var(--radius-control);
+  --nmr-radius-md: var(--button-radius-md);
+  --nmr-radius-lg: var(--radius-container);
+
+  width: 100%;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Light mode — the game adopts the certified gold premium Card material used by
+   every other card (--stat-card-bg gradient, --stat-card-border gold edge,
+   --stat-card-shadow carved depth), and expresses the board as a recessed
+   surface (--surface-inset + --shadow-pressed). Purely a token swap: no layout,
+   geometry or gameplay change. */
+.light .nmr-scope {
+  --nmr-card-bg: var(--stat-card-bg);
+  --nmr-card-border: var(--stat-card-border);
+  --nmr-card-shadow: var(--stat-card-shadow);
+
+  --nmr-tile-bg: var(--stat-card-bg);
+  --nmr-tile-border: var(--stat-card-border);
+  --nmr-tile-shadow: var(--stat-card-shadow);
+  --nmr-tile-hover-shadow: var(--stat-card-shadow);
+  --nmr-tile-press-shadow: var(--shadow-pressed);
+  --nmr-hidden-bg: var(--stat-card-bg);
+  --nmr-hidden-border: var(--stat-card-border);
+  --nmr-hidden-shadow: var(--stat-card-shadow);
+
+  --nmr-hud-bg: var(--surface-inset);
+  --nmr-hud-shadow: var(--shadow-pressed);
+  --nmr-playground-bg: var(--surface-inset);
+  --nmr-playground-shadow: var(--shadow-pressed);
+  --nmr-row-bg: var(--card-bg);
+  --nmr-row-border: var(--card-border);
+  --nmr-row-shadow: var(--card-shadow);
+  --nmr-board-bg: var(--surface-inset);
+  --nmr-board-shadow: var(--shadow-pressed);
+  --nmr-cell-bg: transparent;
+  --nmr-cell-shadow: none;
+}
+
+.nmr-scope *,
+.nmr-scope *::before,
+.nmr-scope *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Full-bleed page backdrop — scoped, and fully token-driven. */
+.nmr-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: calc(100vh - 64px);
+  padding: clamp(12px, 3vw, 28px) 12px 48px;
+  overflow-x: hidden;
+  background-color: var(--bg-app);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(var(--color-accent-rgb), 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, color-mix(in srgb, var(--color-secondary) 12%, transparent) 0px, transparent 50%);
+}
+
+/* ── GAME SHELL vs BOARD — two distinct width concepts ────────────────────────
+   `.nmr-column` is the GAME SHELL: it carries the back link, header card, stats
+   card, playground card (and, on the dedicated route, the leaderboard card). It
+   follows the app's content-area convention (the shared `PageContainer` prim-
+   itive uses `max-w-[1280px] mx-auto`, see src/components/common/Antigravity-
+   Layout.tsx) so the shell expands to the available content width on desktop
+   instead of inheriting the board's narrow max-width.
+
+   The BOARD is a separate concept and stays controlled: `.board-wrapper` (below)
+   caps the grid at 520px, centered inside the wide playground card. The shell
+   width must NEVER be derived from the board width. */
+.nmr-column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+}
+
+/* ── Game shell: one elevated PLAYGROUND wrapper (grid-driven) ──────────────── */
+/* Every surface reuses the app's Admin Leaderboard container system verbatim —
+   `<Card variant="elevated">` supplies the radius, surface, border, shadow,
+   light-mode gold material and hover. The game's `* { margin: 0; padding: 0 }`
+   reset is scoped to a child `.nmr-scope`, so it never wipes the Card's own
+   padding (kept on the Card root).
+
+   The shell stacks two full-width rows: the header card and THE PLAYGROUND. The
+   playground is the single elevated wrapper that CONTAINS the metric columns
+   and the central play card — on narrow screens the two 3-metric flank cards
+   sit ABOVE the play area; on wide screens the wrapper becomes three columns
+   (3 metrics LEFT / central play / 3 metrics RIGHT). The three-column split
+   lives entirely inside `.nmr-playground`, so the metrics can never visually
+   escape the wrapper. */
+.nmr-game-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'header'
+    'playground';
+  gap: clamp(12px, 2vw, 18px);
+  width: 100%;
+}
+
+.nmr-header-card {
+  grid-area: header;
+}
+
+/* The PLAYGROUND wrapper — the elevation/surface container that holds the left
+   metric column, the central play card and the right metric column. Recessed
+   surface (dark) / carved (inset) surface (light) so the elevated Cards inside
+   read as metric cards. Content-aware height only — no fixed height, it grows
+   with whichever child (a flank column or the play card) is tallest. */
+.nmr-playground {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'left'
+    'right'
+    'center';
+  gap: clamp(12px, 2vw, 18px);
+  width: 100%;
+  padding: clamp(12px, 2vw, 20px);
+  background: var(--nmr-playground-bg);
+  border: 1px solid var(--nmr-card-border);
+  border-radius: var(--nmr-radius-lg);
+  box-shadow: var(--nmr-playground-shadow);
+}
+
+.nmr-metric-flank {
+  /* LAYOUT-ONLY column — intentionally NO background / border / box-shadow /
+     elevation. Only the individual metric cards inside carry the surface. */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nmr-metric-flank--left {
+  grid-area: left;
+}
+
+.nmr-metric-flank--right {
+  grid-area: right;
+}
+
+.nmr-metric-flank .nmr-stats-body {
+  flex: 1;
+}
+
+.nmr-play-card {
+  grid-area: center;
+  min-width: 0;
+}
+
+/* Wide canvas: three columns INSIDE the same playground wrapper —
+   metrics LEFT / central play / metrics RIGHT. Flanks auto-size to their
+   content; the play card takes the rest and its already-520px-capped board
+   stays centred inside it. The metric group on each side is a COMPACT,
+   VERTICALLY-CENTRED stack (never stretched to the playground's top/bottom
+   edges — `justify-content: center` + padding-block supply the breathing
+   space). */
+@media (min-width: 1000px) {
+  .nmr-playground {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'left center right';
+    align-items: stretch;
+  }
+
+  .nmr-metric-flank .stats-grid {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: center;
+    gap: clamp(10px, 2vw, 18px);
+    padding-block: clamp(8px, 2vw, 16px);
+  }
+}
+
+/* ── Memory Games landing (catalog of titles) ───────────────────────────────── */
+.nmr-page-back {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.nmr-landing-column {
+  max-width: 680px;
+}
+
+.nmr-landing-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nmr-landing-title {
+  font-size: clamp(1.4rem, 5vw, 1.9rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.nmr-landing-subtitle {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.memory-games-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 560px) {
+  .memory-games-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.memory-game-card {
+  height: 100%;
+}
+
+.memory-game-card-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding: 18px 16px;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-container);
+  transition: background-color 0.2s ease;
+}
+
+.memory-game-card-link:hover {
+  background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+}
+
+.memory-game-card-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.memory-game-card-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.memory-game-card-subtitle {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.memory-game-card-desc {
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.memory-game-card-cta {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.nmr-header-body,
+.nmr-stats-body,
+.nmr-game-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.nmr-stats-body {
+  gap: 0;
+}
+
+.nmr-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.title-group h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(1.05rem, 4.5vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.title-emoji {
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+.subtitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nmr-accent-text);
+}
+
+.icon-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--text-primary);
+  cursor: pointer;
+  background: var(--bg-hover);
+  border: 1px solid var(--nmr-border);
+  border-radius: var(--nmr-radius-sm);
+  box-shadow: var(--elevation-1);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: var(--bg-active);
+  border-color: var(--color-accent);
+  box-shadow: var(--elevation-2);
+}
+
+.icon-btn:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: var(--elevation-1);
+}
+
+/* ── HUD piece: the six-metric grid ──────────────────────────────────────── */
+/* A plain responsive grid with NO surface of its own — each metric inside
+   renders its own individual `.metric-card`. `auto-fit` renders as many equal
+   columns as there are metrics, so the shared bar works when the wide layout
+   splits it into 3 LEFT / 3 RIGHT (mobile/tablet: 3 cards side by side per
+   flank, each still an independent card). On wide screens the flank grids
+   switch to a vertical flex stack and the group is VERTICALLY-CENTRED with
+   breathing space (see the ≥1000px block above). */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* ── Metric cards (six independent cards, never one shared container) ───────── */
+/* Each metric is its OWN card: background/surface, border, radius, elevation,
+   padding, label and value. The surrounding flank column and `.stats-grid`
+   carry no surface of their own, so the three cards on each side never read as
+   one big container. Sizes are content-aware with a small consistent
+   `min-height` so every card on a side lines up; cards are never stretched to
+   fill the playground. */
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 68px;
+  padding: 12px 10px;
+  text-align: center;
+  background: var(--nmr-card-bg);
+  border: 1px solid var(--nmr-card-border);
+  border-radius: var(--nmr-radius-md);
+  box-shadow: var(--nmr-card-shadow);
+}
+
+.stat-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.stat-value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.tone-cyan {
+  color: var(--nmr-accent-text);
+}
+
+.tone-amber {
+  color: var(--nmr-warning);
+}
+
+.tone-indigo {
+  color: var(--nmr-secondary);
+}
+
+.tone-emerald {
+  color: var(--nmr-success);
+}
+
+.tone-rose {
+  color: var(--nmr-danger);
+}
+
+/* ── Lives ──────────────────────────────────────────────────────────────────── */
+.nmr-hearts {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  color: var(--nmr-danger);
+}
+
+.nmr-hearts .heart.off {
+  color: var(--text-muted);
+  opacity: 0.45;
+}
+
+/* ── Recall timer pill ──────────────────────────────────────────────────────── */
+.nmr-hud-timer {
+  display: flex;
+  justify-content: center;
+}
+
+.nmr-hud-timer[hidden] {
+  display: none;
+}
+
+.nmr-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border: 1px solid var(--nmr-border);
+  border-radius: 999px;
+  box-shadow: var(--elevation-1);
+  transition: color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nmr-timer.warn {
+  color: var(--nmr-warning);
+  border-color: color-mix(in srgb, var(--color-warning) 55%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-warning) 25%, transparent);
+}
+
+.nmr-timer.critical {
+  color: var(--nmr-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 60%, transparent);
+  box-shadow: 0 0 14px var(--nmr-danger-soft);
+}
+
+/* ── Status line ────────────────────────────────────────────────────────────── */
+.status-msg {
+  min-height: 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.status-msg.highlight {
+  color: var(--nmr-accent-text);
+  animation: nmr-pulse 1.6s ease-in-out infinite;
+}
+
+.status-msg.urgent {
+  color: var(--nmr-danger);
+}
+
+@keyframes nmr-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ── Board: recessed sockets holding elevated tiles ─────────────────────────── */
+/* The board intentionally stays narrower than the game shell (see `.nmr-column`
+   above): extremely large memory tiles are undesirable. 520px is a comfortable
+   memorisation size that still yields safe touch targets down to 320px
+   viewports. It is the ONLY element that carries this constraint. */
+.board-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* Shared pre-game play area: titles whose board unmounts before "Start Game"
+   (Tile Matching re-deals the face-down grid only once active) render this
+   square so the playground never collapses while the run is idle. Responsive
+   by the same `aspect-ratio: 1 / 1` rule the real boards use — never a fixed
+   pixel height. */
+.nmr-idle-slot {
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+
+.grid-board {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-size, 4), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--grid-size, 4), minmax(0, 1fr));
+  gap: clamp(4px, 1.4vw, 8px);
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--nmr-board-bg);
+  border-radius: var(--nmr-radius-md);
+  box-shadow: var(--nmr-board-shadow);
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nmr-cell-bg);
+  border-radius: var(--nmr-radius-sm);
+  box-shadow: var(--nmr-cell-shadow);
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-weight: 800;
+  line-height: 1;
+  /* Numbers are the primary target: use the neutral foreground, which resolves
+     to a high-contrast value in both themes. */
+  color: var(--text-primary);
+  cursor: pointer;
+  background: var(--nmr-tile-bg);
+  border: 1px solid var(--nmr-tile-border);
+  border-radius: var(--nmr-radius-sm);
+  box-shadow: var(--nmr-tile-shadow);
+  transition:
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.tile:hover:not(:disabled):not(.correct):not(.wrong) {
+  transform: translateY(-2px);
+  box-shadow: var(--nmr-tile-hover-shadow);
+}
+
+.tile:active:not(:disabled):not(.correct):not(.wrong) {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: var(--nmr-tile-press-shadow);
+}
+
+.tile.inactive {
+  color: transparent;
+  background: var(--nmr-hidden-bg);
+  border-color: var(--nmr-hidden-border);
+  box-shadow: var(--nmr-hidden-shadow);
+}
+
+.tile.correct {
+  pointer-events: none;
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 55%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-success) 20%, transparent),
+    var(--elevation-1);
+}
+
+.tile.wrong {
+  color: var(--text-on-danger);
+  background: var(--color-danger);
+  border-color: var(--color-danger-hover);
+  box-shadow: 0 0 20px var(--nmr-danger-soft);
+  animation: nmr-shake 0.35s ease-in-out;
+}
+
+/* Pattern preview highlight (Visual Memory Matrix): the tiles the player must
+   memorise glow with a soft accent pulse while the pattern is visible. */
+.tile.preview {
+  color: var(--nmr-accent-text);
+  background: color-mix(in srgb, var(--color-accent) 24%, transparent);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 14px var(--nmr-accent-glow);
+  animation: nmr-preview-pulse 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile.preview {
+    animation: none;
+  }
+}
+
+@keyframes nmr-preview-pulse {
+  0%,
+  100% {
+    background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+    box-shadow: 0 0 10px var(--nmr-accent-glow);
+  }
+  50% {
+    background: color-mix(in srgb, var(--color-accent) 34%, transparent);
+    box-shadow: 0 0 18px var(--nmr-accent-glow);
+  }
+}
+
+@keyframes nmr-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────────── */
+.main-btn {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--text-on-accent);
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
+  border: none;
+  border-radius: var(--nmr-radius-md);
+  box-shadow:
+    var(--elevation-3),
+    0 8px 20px var(--nmr-accent-glow);
+  transition: filter 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+/* Light theme mirrors the app's certified primary button (forest material +
+   carved depth) so the CTA reads as a native PrepareForU control. */
+.light .main-btn {
+  background: var(--material-button-primary-surface);
+  color: var(--material-button-primary-text);
+  box-shadow:
+    var(--material-button-primary-shadow),
+    0 8px 20px var(--nmr-accent-glow);
+}
+
+.main-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow:
+    var(--elevation-4),
+    0 10px 26px var(--nmr-accent-glow);
+}
+
+.main-btn:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow:
+    var(--elevation-2),
+    0 4px 12px var(--nmr-accent-glow);
+}
+
+.nmr-controls {
+  display: flex;
+  justify-content: center;
+}
+
+.action-btn,
+.nmr-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 22px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  background: var(--bg-hover);
+  border: 1px solid var(--nmr-border);
+  border-radius: var(--nmr-radius-md);
+  box-shadow: var(--elevation-1);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.action-btn:hover,
+.nmr-btn-ghost:hover {
+  background: var(--bg-active);
+  border-color: var(--color-accent);
+  box-shadow: var(--elevation-2);
+}
+
+.action-btn:active,
+.nmr-btn-ghost:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: var(--elevation-1);
+}
+
+/* ── Best Score ─────────────────────────────────────────────────────────────── */
+/* The old standalone "Your best … pts" chip was removed; the personal best now
+   renders as metric 6 ("Best") inside the SHARED right metric column, consuming
+   the SAME `personalBest` the result screen uses (single source of truth). */
+
+/* ── Result modal ───────────────────────────────────────────────────────────── */
+/* The run summary is a CONTENT-DRIVEN block inside the play card — never a
+   nested scroll container and never anchored over a collapsed board. It flows
+   after the status line, takes its height from its content, and the page
+   handles any overflow, so it can never clip on short cards or small screens. */
+.modal-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 18px;
+  text-align: center;
+  background: color-mix(in srgb, var(--bg-app) 88%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-radius: var(--nmr-radius-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-title {
+  font-size: clamp(1.2rem, 5vw, 1.6rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+.modal-title.win {
+  color: var(--nmr-warning);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--color-warning) 50%, transparent);
+}
+
+.rank-badge {
+  padding: 5px 14px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--nmr-accent-text);
+  background: var(--bg-accent-subtle);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  border-radius: 999px;
+}
+
+.modal-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.modal-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 8px;
+  background: var(--nmr-row-bg);
+  border: 1px solid var(--nmr-row-border);
+  border-radius: var(--nmr-radius-sm);
+  box-shadow: var(--nmr-row-shadow);
+}
+
+.modal-stat-card .label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.modal-stat-card .val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.modal-actions .main-btn {
+  width: auto;
+  padding: 12px 34px;
+}
+
+.nmr-submit {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.nmr-submit.ok {
+  color: var(--nmr-success);
+}
+
+.nmr-submit.err {
+  color: var(--nmr-danger);
+}
+
+.nmr-submit.loading {
+  animation: nmr-pulse 1.4s ease-in-out infinite;
+}
+
+.st-target {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  margin-inline: auto;
+  padding: 8px 18px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nmr-accent-text);
+  background: var(--bg-accent-subtle);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  border-radius: 999px;
+  user-select: none;
+}
+
+.st-target-value {
+  font-size: 1.15rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Tile Matching — face-down pair grid + pairs-remaining pill ──────────── */
+/* Grids are NOT square below Level 2 (4×3, 5×4, 6×4, 6×5), so the board uses
+   `--tm-cols`/`--tm-rows` with a matching `aspect-ratio` instead of the shared
+   square `.grid-board` — same recessed tray, same 520px board-wrapper ceiling. */
+.tm-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--tm-cols, 4), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--tm-rows, 4), minmax(0, 1fr));
+  gap: clamp(4px, 1.4vw, 8px);
+  width: 100%;
+  aspect-ratio: var(--tm-cols, 4) / var(--tm-rows, 4);
+  background: var(--nmr-board-bg);
+  border-radius: var(--nmr-radius-md);
+  box-shadow: var(--nmr-board-shadow);
+}
+
+.tm-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-weight: 800;
+  line-height: 1;
+  /* Face-up symbols use the neutral foreground, which resolves to a
+     high-contrast value in both themes. */
+  color: var(--text-primary);
+  cursor: pointer;
+  background: var(--nmr-tile-bg);
+  border: 1px solid var(--nmr-tile-border);
+  border-radius: var(--nmr-radius-sm);
+  box-shadow: var(--nmr-tile-shadow);
+  transition:
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.tm-tile:hover:not(:disabled):not(.matched):not(.wrong) {
+  transform: translateY(-2px);
+  box-shadow: var(--nmr-tile-hover-shadow);
+}
+
+.tm-tile:active:not(:disabled):not(.matched):not(.wrong) {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: var(--nmr-tile-press-shadow);
+}
+
+/* Face-down state: symbol hidden, muted recessed tile. */
+.tm-tile.hidden {
+  color: transparent;
+  background: var(--nmr-hidden-bg);
+  border-color: var(--nmr-hidden-border);
+  box-shadow: var(--nmr-hidden-shadow);
+}
+
+/* A soft accent lift tells the player the hidden tile is pickable. */
+.tm-tile.hidden:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.tm-tile.matched {
+  pointer-events: none;
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 55%, transparent);
+}
+
+.tm-tile.wrong {
+  color: var(--text-on-danger);
+  background: var(--color-danger);
+  border-color: var(--color-danger-hover);
+  box-shadow: 0 0 20px var(--nmr-danger-soft);
+  animation: nmr-shake 0.35s ease-in-out;
+}
+
+/* Live pairs-remaining pill (reuses the accent pill anatomy of `.st-target`). */
+.tm-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  margin-inline: auto;
+  padding: 8px 18px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nmr-accent-text);
+  background: var(--bg-accent-subtle);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  border-radius: 999px;
+  user-select: none;
+}
+
+/* ── Focus & motion accessibility ───────────────────────────────────────────── */
+/* Focus intentionally has NO game-local rule: the app-wide `:focus-visible`
+   ring (--focus-ring-width/-color/-offset) is inherited, so the game uses the
+   exact same focus treatment as every other control in both themes. */
+
+@media (prefers-reduced-motion: reduce) {
+  .nmr-scope *,
+  .nmr-scope *::before,
+  .nmr-scope *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 420px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 360px) {
+  /* Reclaim horizontal space so even a 6×6 board keeps ≥44px tap targets at 320px. */
+  .nmr-page {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .grid-board {
+    gap: 3px;
+  }
+
+  .stat-value {
+    font-size: 0.85rem;
+  }
+
+  .title-group h1 {
+    font-size: 1rem;
+  }
+}

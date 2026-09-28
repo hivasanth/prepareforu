@@ -11,6 +11,7 @@ import {
 
 import type { Session } from '@supabase/supabase-js'
 import * as authService from '../services/authService'
+import { invalidateCache as invalidateAdminQueryCache } from '../services/adminQueryCache'
 import { getProfile }  from '../services/userService'
 import type { UserProfile } from '../types/auth.types'
 import Loader from '../components/Loader'
@@ -159,18 +160,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser])
 
   // Fix C — Flush Supabase local storage on logout
+  // Targeted sessionStorage cleanup helper: clears Prepare & Write and
+  // exam engine session keys. Admin query-cache entries ('qc_*') are purged
+  // via invalidateAdminQueryCache in logout() — they are RLS-scoped to the
+  // signed-in identity and must never outlive it (F-3 / SA-1).
+  const clearPerUserSessionStorage = useCallback(() => {
+    try {
+      sessionStorage.removeItem('prepare_write_active_session')
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const key = sessionStorage.key(i)
+        if (key && key.startsWith('pfu_exam_session')) {
+          sessionStorage.removeItem(key)
+        }
+      }
+    } catch {
+      // sessionStorage may be unavailable (private mode, locked browser); ignore.
+    }
+  }, [])
+
   const logout = useCallback(async () => {
+    // F-3 / SA-1: purge RLS-scoped admin query cache BEFORE sign-out so no
+    // later identity in this tab can hydrate the previous identity's data.
+    // The cross-tab signed-out listener also purges; this closes the same-tab path.
+    invalidateAdminQueryCache()
     clearUser()
     try {
       await authService.logout()
     } catch (e) {
       logError('auth.signOut', { message: e instanceof Error ? e.message : 'Unknown error' })
     }
+    clearPerUserSessionStorage()
     // Trigger cross-tab sync logout event
     localStorage.setItem('p4u_logout_event', Date.now().toString())
     setLoading(false)
     window.location.href = '/login'
-  }, [clearUser])
+  }, [clearUser, clearPerUserSessionStorage])
 
   useEffect(() => {
     mountedRef.current = true
@@ -180,6 +204,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (e.key === 'p4u_logout_event' && mountedRef.current) {
         logDebug('auth.cross_tab_logout', {});
         clearUser()
+        // F-3: another tab's identity ended — this tab's cached RLS-scoped
+        // admin data is no longer bound to a live session. Purge it.
+        invalidateAdminQueryCache()
+        clearPerUserSessionStorage()
         setLoading(false)
         window.location.href = '/login'
       }
@@ -269,6 +297,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (incomingUserId && incomingUserId !== currentUserId) {
             logDebug('auth.signed_in', { action: 'account_switch', from: currentUserId ?? 'none', to: incomingUserId });
+            // Identity change: purge privileged caches BEFORE any new-identity
+            // hydration so Admin A's data can never flash for identity B.
+            invalidateAdminQueryCache()
+            clearPerUserSessionStorage()
             setUserSync(null)
             setLoading(true)
             refreshUser().catch(() => logError('auth.refreshUser_failed', {}))
@@ -290,6 +322,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         case 'SIGNED_OUT':
           if (mountedRef.current) {
             logDebug('auth.signed_out', { action: 'wiping_state' });
+            // SDK-initiated sign-out (other tab / scope:'others') must purge
+            // privileged caches exactly like the explicit logout() path.
+            invalidateAdminQueryCache()
+            clearPerUserSessionStorage()
             setUserSync(null)
             setSession(null)
             setLoading(false)

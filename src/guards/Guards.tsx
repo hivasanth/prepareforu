@@ -27,7 +27,7 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, requireExamSelection = true }: AuthGuardProps) {
-  const { user, loading } = useAuth()
+  const { user, loading, isEmailVerified } = useAuth()
   const location = useLocation()
 
   if (loading) return <GuardLoader />
@@ -42,6 +42,24 @@ export function AuthGuard({ children, requireExamSelection = true }: AuthGuardPr
   if (user.is_active === false) {
     logDebug('guard.auth.account_suspended', {});
     return <Navigate to="/login?error=disabled" replace />
+  }
+
+  // Defense-in-depth verification gate: an authenticated but UNVERIFIED user
+  // must not gain application access. Redirect to the verification page.
+  // Authentication/session-related routes are allow-listed so this never
+  // causes a redirect loop (they are public routes, but guard defensively).
+  if (!isEmailVerified) {
+    const allowlist = new Set([
+      '/verify-email',
+      '/auth/callback',
+      '/auth/update-password',
+      '/login',
+      '/signup',
+    ])
+    if (!allowlist.has(location.pathname)) {
+      logDebug('guard.auth.email_not_verified', { path: location.pathname });
+      return <Navigate to="/verify-email?pending=1" replace />
+    }
   }
 
   const isPrivilegedUser = user.role === 'admin' || user.role === 'sub_admin';

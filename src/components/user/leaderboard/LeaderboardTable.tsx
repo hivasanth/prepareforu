@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Card } from '../../common/AntigravityUI'
+import { SelectionContainer } from '../../common/AntigravityLayout'
 import { LeaderboardRow } from './LeaderboardComponents'
 import type { LeaderboardEntry } from './types'
 
@@ -17,18 +17,21 @@ export const LeaderboardTable = memo(function LeaderboardTable({
   formatDuration,
 }: LeaderboardTableProps) {
   return (
-    <Card className="shadow-2xl overflow-hidden p-0 border-none">
+    <div className="flex flex-col gap-3">
+      {/* Header — SelectionContainer material */}
+      <SelectionContainer>
+        <div className="flex items-center w-full">
+          <th className="px-4 py-2 text-[11px] font-semibold text-text-secondary uppercase tracking-widest text-center w-16 md:w-24">Rank</th>
+          <th className="px-4 py-2 text-[11px] font-semibold text-text-secondary uppercase tracking-widest text-left flex-1">Student</th>
+          <th className="hidden sm:block px-4 py-2 text-[11px] font-semibold text-text-secondary uppercase tracking-widest text-center w-24">Score</th>
+          <th className="hidden md:block px-4 py-2 text-[11px] font-semibold text-text-secondary uppercase tracking-widest text-center w-32">Accuracy</th>
+          <th className="hidden lg:block px-4 py-2 text-[11px] font-semibold text-text-secondary uppercase tracking-widest text-center w-24">Time</th>
+        </div>
+      </SelectionContainer>
+
+      {/* Items — independent floating table rows */}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-hover-bg/50 border-b border-border-subtle">
-              <th className="px-4 py-4 text-[11px] font-semibold text-text-secondary uppercase tracking-widest text-center w-16 md:w-24">Rank</th>
-              <th className="px-4 py-4 text-[11px] font-semibold text-text-secondary uppercase tracking-widest text-left">Student</th>
-              <th className="hidden sm:table-cell px-4 py-4 text-[11px] font-semibold text-text-secondary uppercase tracking-widest text-center w-24">Score</th>
-              <th className="hidden md:table-cell px-4 py-4 text-[11px] font-semibold text-text-secondary uppercase tracking-widest text-center w-32">Accuracy</th>
-              <th className="hidden lg:table-cell px-4 py-4 text-[11px] font-semibold text-text-secondary uppercase tracking-widest text-center w-24">Time</th>
-            </tr>
-          </thead>
           <tbody>
             {leaderboard.map((entry) => (
               <LeaderboardRow
@@ -42,6 +45,6 @@ export const LeaderboardTable = memo(function LeaderboardTable({
           </tbody>
         </table>
       </div>
-    </Card>
+    </div>
   )
 })

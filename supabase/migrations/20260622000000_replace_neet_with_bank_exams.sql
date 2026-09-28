@@ -27,23 +27,31 @@ INSERT INTO public.exam_configs (
     duration_minutes = EXCLUDED.duration_minutes;
 
 -- Insert default paper for Bank Exams
+-- Guarded: on a fresh chain the paper does not exist yet and is created here;
+-- on LIVE the paper is already provisioned out-of-band, so this is a no-op and
+-- must NOT create a duplicate "Prelims Paper".
 DO $$
 DECLARE
     v_paper_id uuid;
 BEGIN
-    INSERT INTO public.exam_papers (
-        exam_id, paper_name, stage, total_questions, total_marks, duration_minutes, negative_marking, negative_mark_value
-    ) VALUES (
-        'BANK_EXAMS', 'Prelims Paper', 'SINGLE', 100, 100, 60, true, 0.25
-    ) RETURNING id INTO v_paper_id;
+    IF NOT EXISTS (
+        SELECT 1 FROM public.exam_papers
+        WHERE exam_id = 'BANK_EXAMS' AND paper_name = 'Prelims Paper'
+    ) THEN
+        INSERT INTO public.exam_papers (
+            exam_id, paper_name, stage, total_questions, total_marks, duration_minutes, negative_marking, negative_mark_value
+        ) VALUES (
+            'BANK_EXAMS', 'Prelims Paper', 'SINGLE', 100, 100, 60, true, 0.25
+        ) RETURNING id INTO v_paper_id;
 
-    -- Insert subjects for Bank Exams
-    INSERT INTO public.exam_subjects (
-        exam_id, paper_id, subject_name, question_count, marks_per_question
-    ) VALUES 
-        ('BANK_EXAMS', v_paper_id, 'Quantitative Aptitude & Data Interpretation', 20, 1),
-        ('BANK_EXAMS', v_paper_id, 'Reasoning Ability & Computer Aptitude', 20, 1),
-        ('BANK_EXAMS', v_paper_id, 'English Language', 20, 1),
-        ('BANK_EXAMS', v_paper_id, 'General, Banking & Financial Awareness', 20, 1),
-        ('BANK_EXAMS', v_paper_id, 'Computer Knowledge', 20, 1);
+        -- Insert subjects for Bank Exams
+        INSERT INTO public.exam_subjects (
+            exam_id, paper_id, subject_name, question_count, marks_per_question
+        ) VALUES 
+            ('BANK_EXAMS', v_paper_id, 'Quantitative Aptitude & Data Interpretation', 20, 1),
+            ('BANK_EXAMS', v_paper_id, 'Reasoning Ability & Computer Aptitude', 20, 1),
+            ('BANK_EXAMS', v_paper_id, 'English Language', 20, 1),
+            ('BANK_EXAMS', v_paper_id, 'General, Banking & Financial Awareness', 20, 1),
+            ('BANK_EXAMS', v_paper_id, 'Computer Knowledge', 20, 1);
+    END IF;
 END $$;

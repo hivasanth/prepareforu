@@ -1,0 +1,23 @@
+-- =============================================================================
+-- MIGRATION: Enable pg_cron — reproducibility reconciliation
+-- Date: 2026-05-27 (back-dated envelope; authored 2026-09-10 during the
+--       reproducibility remediation)
+--
+-- WHY THIS FILE EXISTS:
+--   20260527000001_critical_submit_fixes.sql and
+--   20260527000003_observability_and_mv.sql call cron.unschedule(...) /
+--   cron.schedule(...) and query cron.job. On the LIVE project pg_cron was
+--   enabled out-of-band in the Dashboard (Database → Extensions), so the
+--   `cron` schema existed when those migrations ran. On a fresh database that
+--   had no manual extension provisioning, the chain failed at
+--   20260527000001 with `schema "cron" does not exist (SQLSTATE 3F000)`.
+--
+--   This file makes the pg_cron dependency explicit and idempotent. On LIVE it
+--   is a no-op (extension already created); on a fresh datbase it guarantees
+--   the required extension is present before the first cron.* consumer.
+--
+--   NOTE: pg_cron requires superuser privileges and is already provisioned on
+--   the production project; IF NOT EXISTS only installs when absent.
+-- =============================================================================
+
+CREATE EXTENSION IF NOT EXISTS pg_cron;

@@ -1,11 +1,45 @@
 import { motion } from 'framer-motion'
 import { useTheme } from '../../../context/ThemeContext'
-import { useCanHover } from '../../../hooks/useCanHover'
 import { FormattedBodyText } from '../../common/FormattedBodyText'
 import { H3, Body, Label } from '../../common/AntigravityTypography'
 import { TagBadge } from '../TagBadge'
 import { parseHeading } from '../../../utils/parseOutlineText'
+import { CARD_HOVER, GHOST_HOVER } from '../../common/AntigravityMotion'
 import type { TopicSection } from '../../../types/exam.types'
+
+/* ─── Neobrutalist Shadow System ─────────────────────────────────────────────
+ * DESIGN ROLE:
+ *   Offset (hard-edge) shadows for the topic content neobrutalist visual style.
+ *   These are semantically DISTINCT from the soft elevation system (shadow-elevation-*)
+ *   and MUST NOT be replaced with elevation tokens.
+ *
+ * USE FOR:
+ *   Topic content surfaces (TopicSectionRenderer + TopicReader).
+ *
+ * DO NOT USE FOR:
+ *   Standard cards, buttons, inputs, or any other Foundation component.
+ *
+ * TIERS:
+ *   SM  (1.5px) — icon badges, number badges
+ *   MD  (2px)   — sites, navigation buttons
+ *   LG  (2.5px) — key feature cards, topic badges
+ *   XL  (4px)   — section containers (quick summary, memory trick)
+ *   HERO (8px)  — main content card (TopicReader hero container)
+ *
+ * THEME: Dark uses softer opacity; Light uses stronger offset for contrast.
+ * ────────────────────────────────────────────────────────────────────────── */
+export const SHADOW_BRUTAL_SM = '1.5px 1.5px 0px rgba(15,23,42,0.12)'
+export const SHADOW_BRUTAL_MD = '2px 2px 0px rgba(15,23,42,0.12)'
+export const SHADOW_BRUTAL_LG = '2.5px 2.5px 0px rgba(15,23,42,0.12)'
+export const SHADOW_BRUTAL_XL = '4px 4px 0px rgba(15,23,42,0.12)'
+export const SHADOW_BRUTAL_HERO = '8px 8px 0px rgba(15,23,42,0.12)'
+
+/* Shared light-mode surface classes for topic section cards. */
+const LIGHT_SURFACE = 'bg-[var(--management-surface)] border-border-default'
+const LIGHT_BORDER_STRONG = 'border-2'
+const LIGHT_SHADOW_MD = `shadow-[${SHADOW_BRUTAL_MD}]`
+const LIGHT_SHADOW_LG = `shadow-[${SHADOW_BRUTAL_LG}]`
+const LIGHT_SHADOW_XL = `shadow-[${SHADOW_BRUTAL_XL}]`
 
 interface TopicSectionRendererProps {
   section: TopicSection
@@ -14,7 +48,6 @@ interface TopicSectionRendererProps {
 
 export function TopicSectionRenderer({ section, lang }: TopicSectionRendererProps) {
   const { isDark } = useTheme()
-  const canHover = useCanHover()
   const label = lang === 'en' ? section.label_en : section.label_te
   const items = section.items ?? []
 
@@ -40,25 +73,24 @@ export function TopicSectionRenderer({ section, lang }: TopicSectionRendererProp
               return (
                 <motion.div
                   key={item.heading_en ?? item.heading_te ?? i}
-                  whileHover={!isDark && canHover ? { y: -2, x: -2, boxShadow: "4px 4px 0px rgba(15, 23, 42, 0.12)" } : {}}
-                  className={`flex flex-col sm:flex-row gap-2.5 sm:gap-3 p-4 rounded-2xl border transition-colors ${
+                  className={`flex flex-col sm:flex-row gap-2.5 sm:gap-3 p-4 rounded-2xl border ${CARD_HOVER} ${
                     isTableCard ? 'col-span-1 sm:col-span-2' : ''
                   } ${
                     !isDark
-                      ? 'bg-[var(--management-surface)] border-2 border-border-default shadow-[2.5px_2.5px_0px_rgba(15,23,42,0.12)]'
+                      ? `${LIGHT_SURFACE} ${LIGHT_BORDER_STRONG} ${LIGHT_SHADOW_LG} lg:hover:bg-[var(--bg-hover)]`
                       : 'bg-hover-bg/30 border-border-subtle/40 lg:hover:border-primary/30'
                   }`}
                 >
                   {item.icon ? (
                     <span className={`text-2xl flex-shrink-0 leading-none w-fit ${
                       !isDark 
-                        ? 'bg-[var(--bg-elevated)] border-[1.5px] border-border-default shadow-[1.5px_1.5px_0px_rgba(15,23,42,0.12)] w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0' 
+                        ? `bg-[var(--bg-elevated)] border-[1.5px] border-border-default shadow-[${SHADOW_BRUTAL_SM}] w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0` 
                         : ''
                     }`}>{item.icon}</span>
                   ) : parsed.numberPrefix ? (
                     <Label className={`flex-shrink-0 inline-flex items-center justify-center px-2 py-0.5 h-6 text-[10px] font-black tracking-wider rounded-lg border leading-none w-fit m-0 ${
                       !isDark 
-                        ? 'bg-[var(--bg-elevated)] border-[1.5px] border-border-default shadow-[1.5px_1.5px_0px_rgba(15,23,42,0.12)] text-text-primary' 
+                        ? `bg-[var(--bg-elevated)] border-[1.5px] border-border-default shadow-[${SHADOW_BRUTAL_SM}] text-text-primary` 
                         : 'bg-primary/20 border-primary/30 text-primary'
                     }`}>
                       {parsed.numberPrefix}
@@ -101,9 +133,9 @@ export function TopicSectionRenderer({ section, lang }: TopicSectionRendererProp
               return heading ? (
                 <Label
                   key={item.heading_en ?? item.heading_te ?? i}
-                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black border transition-colors m-0 ${
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black border ${GHOST_HOVER} m-0 ${
                     !isDark
-                      ? 'bg-[var(--management-surface)] border-2 border-border-default shadow-[2px_2px_0px_rgba(15,23,42,0.12)] text-text-primary'
+                      ? `${LIGHT_SURFACE} ${LIGHT_BORDER_STRONG} ${LIGHT_SHADOW_MD} text-text-primary`
                       : 'bg-primary/10 border-primary/20 text-primary'
                   }`}
                 >
@@ -157,7 +189,7 @@ export function TopicSectionRenderer({ section, lang }: TopicSectionRendererProp
       return (
         <div key={section.label_en} className={`rounded-2xl p-5 border space-y-3 ${
           !isDark
-            ? 'bg-[var(--management-surface)] border-2 border-border-default shadow-[4px_4px_0px_rgba(15,23,42,0.12)]'
+            ? `${LIGHT_SURFACE} ${LIGHT_BORDER_STRONG} ${LIGHT_SHADOW_XL}`
             : 'bg-hover-bg/20 border-border-subtle/40'
         }`}>
           {sectionHeader}
@@ -197,7 +229,7 @@ export function TopicSectionRenderer({ section, lang }: TopicSectionRendererProp
         <div key={section.label_en}>
           <div className={`rounded-2xl p-5 border-l-[6px] border ${
             !isDark
-              ? 'bg-[var(--bg-elevated)] border-border-default border-l-[var(--border-default)] shadow-[4px_4px_0px_rgba(15,23,42,0.12)] text-text-title'
+              ? `bg-[var(--bg-elevated)] border-border-default border-l-[var(--border-default)] shadow-[${SHADOW_BRUTAL_XL}] text-text-title`
               : 'bg-primary/5 border-primary text-text-primary'
           }`}>
             {label && (

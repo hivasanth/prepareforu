@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
-import { ChevronLeft, ChevronRight, FileText, Settings2, BarChart3, CalendarDays, Clock } from 'lucide-react'
-import { Button } from '../../common/AntigravityUI'
+import { ChevronLeft, ChevronRight, FileText, Settings2, BarChart3, CalendarDays, Clock, RotateCcw } from 'lucide-react'
+import { Button, Card } from '../../common/AntigravityUI'
+import { FieldError } from '../../common/SharedComponents'
 import { CompactDateTimePicker } from './CompactDateTimePicker'
 import { getLocalISOTime, getTypo } from './types'
 import { examConfigSchema } from '../../../validations/securitySchemas'
@@ -12,12 +13,20 @@ type SetupFieldErrors = Partial<Record<SetupField, string>>
 interface CreateStepSetupProps {
   examConfig: ExamConfig
   setExamConfig: (v: ExamConfig) => void
+  endTimeManuallyOverridden: boolean
+  onStartTimeChange: (v: string) => void
+  onEndTimeChange: (v: string) => void
+  onResetEndToDefault: () => void
   onConfirm: () => void
   onBack: () => void
   breakpoint: string
 }
 
-export function CreateStepSetup({ examConfig, setExamConfig, onConfirm, onBack, breakpoint }: CreateStepSetupProps) {
+export function CreateStepSetup({
+  examConfig, setExamConfig, endTimeManuallyOverridden,
+  onStartTimeChange, onEndTimeChange, onResetEndToDefault,
+  onConfirm, onBack, breakpoint
+}: CreateStepSetupProps) {
   const [fieldErrors, setFieldErrors] = useState<SetupFieldErrors>({})
   const submittedRef = useRef(false)
 
@@ -55,14 +64,13 @@ export function CreateStepSetup({ examConfig, setExamConfig, onConfirm, onBack, 
   const errorId = (field: string) => `${field}-error`
 
   const errorSpan = (id: string, message?: string) =>
-    message ? (
-      <span id={`${id}-error`} aria-live="polite" className="text-xs font-bold text-danger mt-1 block">{message}</span>
-    ) : null
+    message ? <FieldError id={`${id}-error`}>{message}</FieldError> : null
 
   return (
     <div className="space-y-6">
-      <div className="bg-card-bg border border-border-subtle/20 rounded-2xl p-5">
-        <div className="grid gap-6 md:grid-cols-2">
+      <Card variant="elevated" className="w-full" padding={0}>
+        <div className="p-5 md:p-6">
+          <div className="grid gap-6 md:grid-cols-2">
           <div className="md:col-span-2 space-y-2">
             <label htmlFor="exam-title" className="text-[10px] font-black text-text-secondary uppercase tracking-widest flex items-center gap-1.5 opacity-70">
               <FileText size={11} /> Exam Title
@@ -76,7 +84,7 @@ export function CreateStepSetup({ examConfig, setExamConfig, onConfirm, onBack, 
               aria-invalid={!!fieldErrors.title}
               aria-describedby={fieldErrors.title ? errorId('exam-title') : undefined}
               placeholder="e.g. APPSC Group 1 Mock Test — Paper I"
-              className="w-full bg-hover-bg/60 border-2 border-border-subtle/20 rounded-xl px-4 py-3.5 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all text-text-primary placeholder:text-text-secondary/30"
+              className="w-full bg-hover-bg/60 border-2 border-border-subtle/20 rounded-xl px-4 py-3.5 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-interaction duration-fast ease-standard text-text-primary placeholder:text-text-secondary/30"
               style={{ fontSize: typo('body') }}
             />
             {errorSpan('exam-title', fieldErrors.title)}
@@ -96,7 +104,7 @@ export function CreateStepSetup({ examConfig, setExamConfig, onConfirm, onBack, 
                 onBlur={() => handleFieldBlur('duration_minutes')}
                 aria-invalid={!!fieldErrors.duration_minutes}
                 aria-describedby={fieldErrors.duration_minutes ? errorId('exam-duration') : undefined}
-                className="w-full bg-hover-bg/60 border-2 border-border-subtle/20 rounded-xl pl-10 pr-4 py-3.5 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all text-text-primary"
+                className="w-full bg-hover-bg/60 border-2 border-border-subtle/20 rounded-xl pl-10 pr-4 py-3.5 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-interaction duration-fast ease-standard text-text-primary"
                 style={{ fontSize: typo('body') }}
               />
             </div>
@@ -117,10 +125,11 @@ export function CreateStepSetup({ examConfig, setExamConfig, onConfirm, onBack, 
                 onBlur={() => handleFieldBlur('marks_per_question')}
                 aria-invalid={!!fieldErrors.marks_per_question}
                 aria-describedby={fieldErrors.marks_per_question ? errorId('exam-marks') : undefined}
-                className="w-full bg-hover-bg/60 border-2 border-border-subtle/20 rounded-xl pl-10 pr-4 py-3.5 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all text-text-primary"
+                className="w-full bg-hover-bg/60 border-2 border-border-subtle/20 rounded-xl pl-10 pr-4 py-3.5 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-interaction duration-fast ease-standard text-text-primary"
                 style={{ fontSize: typo('body') }}
                 step="0.25"
                 min="0.25"
+                max="99.99"
               />
             </div>
             {errorSpan('exam-marks', fieldErrors.marks_per_question)}
@@ -140,7 +149,7 @@ export function CreateStepSetup({ examConfig, setExamConfig, onConfirm, onBack, 
                 onBlur={() => handleFieldBlur('negative_mark_value')}
                 aria-invalid={!!fieldErrors.negative_mark_value}
                 aria-describedby={fieldErrors.negative_mark_value ? errorId('exam-negative') : undefined}
-                className="w-full bg-hover-bg/60 border-2 border-border-subtle/20 rounded-xl pl-10 pr-4 py-3.5 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all text-text-primary"
+                className="w-full bg-hover-bg/60 border-2 border-border-subtle/20 rounded-xl pl-10 pr-4 py-3.5 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-interaction duration-fast ease-standard text-text-primary"
                 style={{ fontSize: typo('body') }}
                 min="0"
               />
@@ -156,30 +165,43 @@ export function CreateStepSetup({ examConfig, setExamConfig, onConfirm, onBack, 
               id="exam-start"
               minStr={getLocalISOTime()}
               value={examConfig.start_time}
-              onChange={(v) => updateField('start_time', v)}
+              onChange={onStartTimeChange}
               getTypo={(element) => getTypo(breakpoint, element)}
             />
             {errorSpan('exam-start', fieldErrors.start_time)}
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <label htmlFor="exam-end" className="text-[10px] font-black text-text-secondary uppercase tracking-widest flex items-center gap-1.5 opacity-70">
-              <CalendarDays size={11} /> End Date & Time
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="exam-end" className="text-[10px] font-black text-text-secondary uppercase tracking-widest flex items-center gap-1.5 opacity-70">
+                <CalendarDays size={11} /> End Date & Time
+              </label>
+              {endTimeManuallyOverridden && (
+                <Button variant="soft" size="sm" onClick={onResetEndToDefault} className="h-8 px-3">
+                  <RotateCcw size={12} /> Reset to Start + 30 min
+                </Button>
+              )}
+            </div>
             <CompactDateTimePicker
               id="exam-end"
               minStr={getLocalISOTime()}
               value={examConfig.end_time}
-              onChange={(v) => updateField('end_time', v)}
+              onChange={onEndTimeChange}
               getTypo={(element) => getTypo(breakpoint, element)}
             />
             {errorSpan('exam-end', fieldErrors.end_time)}
+            {!endTimeManuallyOverridden && (
+              <p className="text-[11px] font-medium text-text-secondary opacity-50">
+                Defaults to 30 minutes after the start time. Adjust manually to override.
+              </p>
+            )}
           </div>
         </div>
-      </div>
+        </div>
+      </Card>
 
       <div className="flex items-center justify-between pt-1">
-        <Button variant="secondary" onClick={onBack}>
+        <Button variant="soft" onClick={onBack}>
           <ChevronLeft size={16} /> Back
         </Button>
         <Button onClick={handleValidateAndNext}>

@@ -27,26 +27,29 @@ export function ExamSummaryCards({ summaryStats, totalMarks }: ExamSummaryCardsP
   return (
     <section aria-label="Exam summary overview">
       <SectionHeader title="Overview" icon={Target} />
-      <div className="grid gap-3 mt-3" style={{ gridTemplateColumns: summaryGridCols }}>
-        {cards.map((card, i) => (
-          <Card
-            key={i}
-            variant="default"
-            className="flex flex-col justify-between border-border-subtle/20"
-            style={{ minHeight: cardH, padding: cardPad }}
-          >
-            <div className={`flex items-center gap-1.5 ${card.color} opacity-70`}>
-              {card.icon}
-              <span className="font-bold uppercase tracking-widest truncate" style={{ fontSize: cardLbl }}>
-                {card.label}
+      {/* Leaderboard-style wrapper container hosting the summary cards */}
+      <Card variant="elevated" className="animate-in mt-3">
+        <div className="grid gap-3" style={{ gridTemplateColumns: summaryGridCols }}>
+          {cards.map((card, i) => (
+            <Card
+              key={i}
+              variant="default"
+              className="flex flex-col justify-between border-border-subtle/20"
+              style={{ minHeight: cardH, padding: cardPad }}
+            >
+              <div className={`flex items-center gap-1.5 ${card.color} opacity-70`}>
+                {card.icon}
+                <span className="font-bold uppercase tracking-widest truncate" style={{ fontSize: cardLbl }}>
+                  {card.label}
+                </span>
+              </div>
+              <span className="font-black text-text-primary leading-none" style={{ fontSize: cardVal }}>
+                {card.value}
               </span>
-            </div>
-            <span className="font-black text-text-primary leading-none" style={{ fontSize: cardVal }}>
-              {card.value}
-            </span>
-          </Card>
-        ))}
-      </div>
+            </Card>
+          ))}
+        </div>
+      </Card>
     </section>
   )
 }

@@ -16,10 +16,10 @@ export interface Question {
   paper_id: string
   subject_name: string
 
-  correct_option: 'A' | 'B' | 'C' | 'D'
+  correct_option?: 'A' | 'B' | 'C' | 'D'
   difficulty: 'easy' | 'medium' | 'hard'
   negative_marks: number
-  visual?: QuestionVisual
+  visual?: QuestionVisual | null
   diagram?: DiagramData
 
   // ── Bilingual fields (optional, service-layer populated) ──
@@ -39,12 +39,13 @@ export interface Question {
   explanation_te?: string | null
 }
 
-export type VisualType = 'venn' | 'chart' | 'geometry' | 'table' | 'mermaid' | 'latex' | 'svg' | 'map_overlay';
+export const SUPPORTED_VISUAL_TYPES = ['venn', 'chart', 'geometry', 'table', 'mermaid', 'latex', 'svg', 'map_overlay'] as const;
+export type VisualType = typeof SUPPORTED_VISUAL_TYPES[number];
 
 export interface QuestionVisual {
-  type: VisualType;
-  title?: string;
-  data: Record<string, unknown>; 
+  type: VisualType
+  title?: string | null
+  data: Record<string, unknown>
 }
 
 export interface ExamConfig {
@@ -63,6 +64,11 @@ export interface ExamConfig {
   created_by?: string | null
   created_at?: string
   updated_at?: string
+  pass_marks?: number | null
+  active_version_id?: string | null
+  start_time?: string | null
+  end_time?: string | null
+  max_attempts?: number | null
 }
 
 export interface ExamPaper {
@@ -76,6 +82,8 @@ export interface ExamPaper {
   negative_marking: boolean
   negative_mark_value: number
   display_order: number
+  start_time: string | null
+  end_time: string | null
 }
 
 export interface ExamSubject {
@@ -86,6 +94,18 @@ export interface ExamSubject {
   question_count: number
   marks_per_question: number
   display_order: number
+}
+
+export interface ExamTopicConfig {
+  id: string
+  topic_en: string
+  topic_te: string | null
+  display_order: number
+  required_questions: number
+  test_20_required: number
+  test_30_required: number
+  test_50_required: number
+  actual_count: number
 }
 
 export type AttemptSource = 'exam_tab' | 'subject_test' | 'prepare_write' | 'teacher_exam' | 'topic_exam';
@@ -120,14 +140,37 @@ export interface AttemptWithRelations extends Attempt {
   exam_configs?: { name: string };
 }
 
+/**
+ * Subset of an Attempt used by the performance/dashboard analytics flows.
+ * Populated from the narrow `fetchPerformanceAttempts`/`fetchRecentAttempts`
+ * queries (attempt.repository.ts) — only these fields are guaranteed present,
+ * plus the resolved paper/exam names.
+ */
+export interface PerformanceAttemptSummary {
+  id: string
+  exam_id: string
+  paper_id: string | null
+  score: number
+  accuracy: number
+  correct_count: number
+  wrong_count: number
+  skipped_count: number
+  submitted_at: string
+  /** Whether the one-time review gate (`review_accessed`) has been tripped.
+   *  Optional because pre-change cached summaries lack the field; absence
+   *  means "not reviewed" and keeps the card's Full Review affordance. */
+  review_accessed?: boolean
+  exam_papers?: { paper_name: string }
+  exam_configs?: { name: string }
+}
+
 export interface AttemptAnswer {
   id: string
   attempt_id: string
   question_id: string
   selected_option: 'A' | 'B' | 'C' | 'D' | null
-  correct_option: 'A' | 'B' | 'C' | 'D'
   is_correct: boolean | null
-  marks_awarded: number
+  marks_awarded?: number
   time_spent_secs: number
   visited: boolean
   marked_for_review: boolean
@@ -141,8 +184,7 @@ export interface TeacherExam {
   instructions: string | null
   start_time: string
   end_time: string
-  duration: number
-  duration_minutes?: number
+  duration_minutes: number
   status: 'published' | 'draft' | 'expired'
   marks_per_question: number
   negative_marking: boolean
@@ -156,10 +198,13 @@ export interface TeacherExam {
 export type TeacherExamStatus = 'upcoming' | 'live' | 'ended'
 
 export interface TeacherExamAttempt {
-  status: string;
-  id: string;
-  score: number;
-  accuracy: number;
+  status: string
+  id: string
+  score: number
+  accuracy: number
+  source: AttemptSource
+  started_at: string
+  submitted_at: string | null
 }
 
 export interface TeacherExamWithAttempt extends TeacherExam {

@@ -17,3 +17,16 @@ export function formatDateDDMMYYYY(date: string | Date): string {
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
 }
+
+// Local-calendar month key ("YYYY-MM") for a timestamp. Uses the LOCAL
+// calendar domain so it matches month-picker labels rendered via
+// toLocaleString and dates displayed via toLocaleDateString; never slice a UTC
+// ISO prefix, which drifts from the calendar month under non-UTC timezones.
+export function getLocalMonthKey(date: string | Date | null | undefined): string {
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}

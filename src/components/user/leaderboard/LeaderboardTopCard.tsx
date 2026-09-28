@@ -14,7 +14,7 @@ export const LeaderboardTopCard = memo(function LeaderboardTopCard({ entry }: Le
 
   return (
     <section className="flex justify-center">
-      <div className="w-full max-w-[400px] md:max-w-[500px] lg:max-w-[600px] bg-gradient-to-br from-[#FFD700] to-[#B8860B] rounded-[24px] shadow-[0_20px_50px_rgba(184,134,11,0.2)] p-6 md:p-8 lg:p-10 flex flex-col items-center justify-center relative overflow-hidden min-h-[200px] md:min-h-[240px]">
+      <div className="w-full max-w-[400px] md:max-w-[500px] lg:max-w-[600px] rounded-[24px] shadow-elevation-3 p-6 md:p-8 lg:p-10 flex flex-col items-center justify-center relative overflow-hidden min-h-[200px] md:min-h-[240px]" style={{ backgroundImage: 'var(--gradient-hero)' }}>
         <div className="absolute inset-0 bg-white/10 opacity-0 lg:group-hover:opacity-100 transition-opacity" />
         <div className="absolute top-4 right-4 text-white/20">
           <Trophy size={isMobile ? 60 : 80} strokeWidth={1} />

@@ -5,9 +5,14 @@ import { AuthThemeProvider } from '../../components/common/AntigravityUI'
 import LoadingScreen from '../../components/LoadingScreen'
 
 /**
- * AuthCallbackPage — Handles all Supabase redirect flows:
+ * AuthCallbackPage — Handles NON-invite Supabase redirect flows only:
  *   - Email verification  → /auth/callback (fires SIGNED_IN)
  *   - Password recovery   → /auth/callback (fires PASSWORD_RECOVERY)
+ *
+ * Admin-invitation onboarding is deliberately handled by the DEDICATED
+ * `/auth/invite` route + isolated invite client (`InviteCallbackPage`). If an
+ * invite link is misrouted here, we hand it off to `/auth/invite` rather than
+ * re-implementing invite logic on this page (single source of truth).
  *
  * WHY we navigate to /verify-email (not /) on email confirmation:
  *   When this page loads in a new tab after clicking the verification link,
@@ -41,57 +46,73 @@ export default function AuthCallbackPage() {
     const queryParams = new URLSearchParams(window.location.search)
 
     const type           = hashParams.get('type') || queryParams.get('type')
+    const isInvite       = type === 'invite' || queryParams.has('invite') || hashParams.has('invite')
     const hasCode        = queryParams.has('code')
     const hasAccessToken = hashParams.has('access_token')
+
+    // Invites are owned by the dedicated invite onboarding route. Hand off so
+    // this page never duplicates invite/session-isolation logic.
+    if (isInvite) {
+      navigate('/auth/invite', { replace: true })
+      return
+    }
 
     // Early error exit: Supabase passes error details as query params or hash params on bad links
     const errorMsg = queryParams.get('error_description') || queryParams.get('error') || hashParams.get('error_description') || hashParams.get('error')
     if (errorMsg) {
-      console.error('[AuthCallback] Redirect error detected:', errorMsg)
       navigate(`/login?error=${encodeURIComponent(errorMsg)}`, { replace: true })
       return
     }
 
     const { data: { subscription } } = authService.onAuthStateChange((event, session) => {
-      console.log('[AuthCallback] Auth event:', event, '| session:', !!session, '| type:', type)
-
       // ── Password Recovery flow ───────────────────────────────────────────────
-      if (
-        event === 'PASSWORD_RECOVERY' ||
-        (event === 'INITIAL_SESSION' && session && type === 'recovery')
-      ) {
+      // Self-service RESET (change password). (Admin INVITE onboarding is handled
+      // on /auth/invite, never here.)
+      if (event === 'PASSWORD_RECOVERY') {
         subscription.unsubscribe()
-        navigate('/auth/update-password', {
-          replace: true,
-          state: { fromRecovery: true },
-        })
+        navigate('/auth/update-password', { replace: true, state: { fromRecovery: true } })
         return
       }
 
-      // ── Successful email confirmation / magic link ────────────────────────────
-      // Navigate to /verify-email rather than / so it can wait for the AuthContext
-      // profile fetch to complete before redirecting to /dashboard.
-      // VerifyEmailPage watches `isEmailVerified` reactively and auto-redirects.
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+      // ── SIGNED_IN (after hash tokens processed) ──────────────────────────────
+      if (event === 'SIGNED_IN') {
         subscription.unsubscribe()
         navigate('/verify-email', { replace: true })
         return
       }
 
-      // ── INITIAL_SESSION with no session and no pending token exchange ─────────
-      // Guard: if there IS a code or access_token in the URL, keep waiting
-      // because the async PKCE exchange hasn't fired SIGNED_IN yet.
-      if (event === 'INITIAL_SESSION' && !session && !hasCode && !hasAccessToken) {
-        subscription.unsubscribe()
-        navigate('/login', { replace: true })
-        return
+      // ── INITIAL_SESSION ──────────────────────────────────────────────────────
+      if (event === 'INITIAL_SESSION') {
+        // Password recovery via INITIAL_SESSION (legacy path — type=recovery
+        // in the URL instead of PASSWORD_RECOVERY event).
+        if (session && type === 'recovery') {
+          subscription.unsubscribe()
+          navigate('/auth/update-password', { replace: true, state: { fromRecovery: true } })
+          return
+        }
+
+        // Successful email confirmation / magic link — navigate to /verify-email
+        // so it can wait for the AuthContext profile fetch before redirecting.
+        if (session) {
+          subscription.unsubscribe()
+          navigate('/verify-email', { replace: true })
+          return
+        }
+
+        // No session and no pending token exchange — nothing to wait for.
+        if (!hasCode && !hasAccessToken) {
+          subscription.unsubscribe()
+          navigate('/login', { replace: true })
+          return
+        }
+        // Guard: if there IS a code or access_token in the URL, keep waiting
+        // because the async PKCE exchange hasn't fired SIGNED_IN yet.
       }
     })
 
     // Safety timeout — if nothing fires within 10 seconds, redirect to login
     const timeout = setTimeout(() => {
       subscription.unsubscribe()
-      console.warn('[AuthCallback] Timeout — redirecting to login.')
       navigate('/login', { replace: true })
     }, 10000)
 

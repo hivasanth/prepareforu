@@ -3,7 +3,7 @@ import { Sparkles } from 'lucide-react'
 import { AdminModal } from '../../../common/AdminModal'
 import { Badge, Button, Tabs } from '../../../common/AntigravityUI'
 import { BulkUploadPanel, type BulkUploadPanelHandle } from '../BulkUploadPanel'
-import type { ParsedDataItem } from '../useBulkUpload'
+import { BULK_WORKFLOW_TABS, bulkTabInstruction, type ParsedDataItem } from '../useBulkUpload'
 
 interface BulkUploadModalProps {
   isOpen: boolean
@@ -14,13 +14,12 @@ interface BulkUploadModalProps {
   paperLabel?: string
   subjectName: string
   onSuccess: () => void
-  showToast: (message: string, type: 'success' | 'error' | 'warning') => void
 }
 
 type TabType = 'generate' | 'instructions' | 'json' | 'preview'
 
 export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
-  isOpen, onClose, examId, examLabel, paperId, paperLabel, subjectName, onSuccess, showToast
+  isOpen, onClose, examId, examLabel, paperId, paperLabel, subjectName, onSuccess
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('instructions')
   const [parsedData, setParsedData] = useState<ParsedDataItem[]>([])
@@ -35,29 +34,14 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     }
   }
 
-  const getTabHeader = () => {
-    switch (activeTab) {
-      case 'instructions':
-        return "→ Copy a prompt which are available and then click on Generate tab."
-      case 'generate':
-        return "→ Click any AI model, paste your documents and the prompt. Copy the output and return here for Paste JSON tab."
-      case 'json':
-        return "→ Paste the JSON text you copied from the AI model into the box below."
-      case 'preview':
-        return "→ Check the preview below and click Sync to save the questions to database."
-      default:
-        return "→ Bulk Ingest"
-    }
-  }
-
-  const dynamicInstruction = getTabHeader()
+  const dynamicInstruction = bulkTabInstruction(activeTab)
 
   return (
     <AdminModal
       isOpen={isOpen}
       onClose={onClose}
       title={dynamicInstruction}
-      titleClassName="!text-sm sm:!text-base !font-bold !tracking-wide opacity-90"
+      titleClassName="text-sm sm:text-base font-bold tracking-wide opacity-90"
       headerBadge={(
         <Badge variant="primary" icon={Sparkles}>AI Powered</Badge>
       )}
@@ -65,12 +49,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
         <div className="mt-6">
           <Tabs
             ariaLabel="Bulk upload steps"
-            options={[
-              { id: 'instructions', label: '1. Instructions' },
-              { id: 'generate', label: '2. Generate' },
-              { id: 'json', label: '3. Paste JSON' },
-              { id: 'preview', label: '4. Preview & Sync' }
-            ]}
+            options={BULK_WORKFLOW_TABS}
             activeId={activeTab}
             onChange={(id) => setActiveTab(id as TabType)}
           />
@@ -128,7 +107,6 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
         parsedData={parsedData}
         setParsedData={setParsedData}
         onIsUploadingChange={setIsUploading}
-        showToast={showToast}
       />
     </AdminModal>
   )

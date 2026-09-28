@@ -1,11 +1,17 @@
-import * as attemptRepo from '../lib/repositories/attempt.repository';
 import * as examRepo from '../lib/repositories/exam.repository';
-import * as questionRepo from '../lib/repositories/question.repository';
+import { supabase } from '../lib/supabase';
 import { getAllowedExamIds } from '../utils/examUtils';
+import { shuffleArray as shuffleArrayImpl } from '../utils/shuffle';
 import { queryCache } from '../utils/queryCache';
 import { assertValidEnFields } from '../utils/languageUtils';
-import { logDebug, logWarn } from '../utils/logger';
+import { logWarn } from '../utils/logger';
 import type { Question, ExamPaper, QuestionVisual } from '../types/exam.types';
+import { NoAvailableQuestionsError } from './errors/NoAvailableQuestionsError';
+
+// Re-exported from the shared domain-error module so existing consumers of
+// `subjectTestService.NoAvailableQuestionsError` keep working. Subject Tests
+// and Topic Exams both depend on the shared error — never on each other.
+export { NoAvailableQuestionsError };
 
 export interface SubjectQuestion {
   id: string;
@@ -78,156 +84,79 @@ export async function fetchSubjectCounts(examSelection: string, paperId?: string
 }
 
 /**
- * Fetches and shuffles questions for a specific subject
+ * Maps RPC-delivered question rows (server-authoritative test selection) to the
+ * array-based SubjectQuestion shape used by the practice/test engine.
+ *
+ * correct_option is intentionally UNKNOWN (0): the RPC never ships it to the
+ * browser before submission — scoring is authoritative server-side in
+ * set_question_answer / submit_attempt.
+ */
+export function mapRpcRowsToSubjectQuestions(rows: Record<string, unknown>[]): SubjectQuestion[] {
+  return rows.map((q) => {
+    const options_en = [
+      String(q.option_a_en ?? '').trim(),
+      String(q.option_b_en ?? '').trim(),
+      String(q.option_c_en ?? '').trim(),
+      String(q.option_d_en ?? '').trim(),
+    ];
+    const options_te = [
+      String(q.option_a_te ?? '').trim(),
+      String(q.option_b_te ?? '').trim(),
+      String(q.option_c_te ?? '').trim(),
+      String(q.option_d_te ?? '').trim(),
+    ];
+    return {
+      id: String(q.id),
+      question_text_en: q.question_text_en == null ? '' : String(q.question_text_en),
+      question_text_te: q.question_text_te == null ? '' : String(q.question_text_te),
+      options_en,
+      options_te,
+      options: options_en,
+      correct_option: 0,
+      explanation_en: q.explanation_en == null ? '' : String(q.explanation_en),
+      explanation_te: q.explanation_te == null ? '' : String(q.explanation_te),
+      diagram: q.visual == null ? null : (q.visual as QuestionVisual),
+      subject_name: String(q.subject_name ?? ''),
+    } satisfies SubjectQuestion;
+  });
+}
+
+/**
+ * Fetches and shuffles questions for a specific subject.
+ *
+ * CT-2: question selection is SERVER-authoritative. The get_subject_test_questions
+ * SECURITY DEFINER RPC enforces the Admin-configured exam_subjects.question_count,
+ * excludes questions already attempted, and never ships correct_option to the
+ * browser. The client-supplied `count` is a display target only and is NOT used
+ * as the selection authority.
  */
 export async function fetchSubjectTestQuestions(params: {
   examId: string;
   paperId?: string;
   subjectName: string;
   count?: number;
-  userId?: string;
 }): Promise<SubjectQuestion[]> {
-  
-  let attemptedQuestionIds: string[] = [];
-  if (params.userId) {
-    const userAttempts = await attemptRepo.fetchAttemptsByUserId(params.userId);
-    
-    if (userAttempts && userAttempts.length > 0) {
-      const attemptIds = userAttempts.map(a => a.id);
-      const answeredQuestions = await attemptRepo.findAnsweredQuestionIds(attemptIds);
-      
-      if (answeredQuestions) {
-        const rawIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
-        attemptedQuestionIds = [...new Set(rawIds)];
-
-        logDebug('subjectTest.exclusionMetrics', {
-          subjectName: params.subjectName,
-          rawCount: rawIds.length,
-          uniqueCount: attemptedQuestionIds.length,
-          duplicatesRemoved: rawIds.length - attemptedQuestionIds.length,
-          attemptCount: userAttempts.length,
-        });
-      }
-    }
-  }
-
-  const selectFields = `
-    id, 
-    question_text_en, question_text_te,
-    option_a_en, option_a_te,
-    option_b_en, option_b_te,
-    option_c_en, option_c_te,
-    option_d_en, option_d_te,
-    correct_option, 
-    explanation_en, explanation_te,
-    visual, subject_name
-  `;
-
-  const count = params.count || 20;
-  const allowedIds = getAllowedExamIds(params.examId);
-  const poolLimit = Math.max(count * 3, 100);
-
-  // 1. Fetch unattempted questions from a larger pool
-  let finalPool: Record<string, unknown>[];
-
-  if (attemptedQuestionIds.length > 0) {
-    finalPool = (await questionRepo.fetchQuestionsBySubject(
-      selectFields, params.subjectName, allowedIds, params.paperId, attemptedQuestionIds, poolLimit
-    )) ?? [];
-  } else {
-    finalPool = (await questionRepo.fetchQuestionsBySubject(
-      selectFields, params.subjectName, allowedIds, params.paperId, [], poolLimit
-    )) ?? [];
-  }
-
-  // Shuffle and slice to the requested count
-  let selectedQuestions = finalPool
-    .sort(() => Math.random() - 0.5)
-    .slice(0, count);
-
-  // 2. If not enough questions, fallback to attempted questions pool
-  if (selectedQuestions.length < count && attemptedQuestionIds.length > 0) {
-    const remainingNeeded = count - selectedQuestions.length;
-
-    const fallbackPoolData = await questionRepo.fetchQuestionsBySubjectIncluding(
-      selectFields, params.subjectName, allowedIds, params.paperId, attemptedQuestionIds, poolLimit
-    );
-
-    if (fallbackPoolData) {
-      const shuffledFallback = (fallbackPoolData as Record<string, unknown>[])
-        .sort(() => Math.random() - 0.5);
-      selectedQuestions.push(...shuffledFallback.slice(0, remainingNeeded));
-    }
-  }
-
-  if (selectedQuestions.length === 0) {
-    logWarn('subjectTestService.fetchSubjectTestQuestions.warn', { subjectName: params.subjectName });
-    throw new Error(`No questions available for ${params.subjectName}`);
-  }
-
-  // Guard: verify all fetched questions have valid _en content
-  assertValidEnFields(selectedQuestions, 'fetchSubjectTestQuestions');
-
-  // 2. Map and Transform
-  type RawQuestionRow = Record<string, unknown> & {
-    id: string;
-    option_a_en?: string | null;
-    option_b_en?: string | null;
-    option_c_en?: string | null;
-    option_d_en?: string | null;
-    option_a_te?: string | null;
-    option_b_te?: string | null;
-    option_c_te?: string | null;
-    option_d_te?: string | null;
-    correct_option: string | number;
-    question_text_en?: string | null;
-    question_text_te?: string | null;
-    explanation_en?: string | null;
-    explanation_te?: string | null;
-    visual?: QuestionVisual | null;
-    subject_name?: string;
-  };
-
-  const mappedQuestions = (selectedQuestions as RawQuestionRow[]).map((q) => {
-    const options_en = [
-      q.option_a_en?.trim() || '',
-      q.option_b_en?.trim() || '',
-      q.option_c_en?.trim() || '',
-      q.option_d_en?.trim() || ''
-    ];
-
-    const options_te = [
-      q.option_a_te?.trim() || '',
-      q.option_b_te?.trim() || '',
-      q.option_c_te?.trim() || '',
-      q.option_d_te?.trim() || ''
-    ];
-
-    // Support both char 'A' and index 0
-    let correctIndex = 0;
-    if (typeof q.correct_option === 'string') {
-      correctIndex = q.correct_option.charCodeAt(0) - 65;
-    } else {
-      correctIndex = parseInt(String(q.correct_option)) || 0;
-    }
-
-    return {
-      id: q.id,
-      question_text_en: q.question_text_en,
-      question_text_te: q.question_text_te,
-      options_en,
-      options_te,
-      options: options_en, // legacy
-      correct_option: correctIndex,
-      explanation_en: q.explanation_en,
-      explanation_te: q.explanation_te,
-      diagram: q.visual ?? null,
-      subject_name: q.subject_name ?? ''
-    };
+  // F-02: identity is SERVER-authoritative. get_subject_test_questions
+  // resolves the caller via auth.uid() — no user id is sent to the RPC.
+  const { data, error } = await supabase.rpc('get_subject_test_questions', {
+    p_exam_id: params.examId,
+    p_paper_id: params.paperId ?? null,
+    p_subject_name: params.subjectName,
   });
+  if (error) throw error;
+
+  const rows = ((data ?? []) as Record<string, unknown>[]) ?? [];
+  if (rows.length === 0) {
+    logWarn('subjectTestService.fetchSubjectTestQuestions.warn', { subjectName: params.subjectName });
+    throw new NoAvailableQuestionsError(params.subjectName);
+  }
+
+  // Guard: verify all fetched questions have valid _en content.
+  const mapped = mapRpcRowsToSubjectQuestions(rows);
+  assertValidEnFields(mapped as unknown as Question[], 'fetchSubjectTestQuestions');
 
   // 3. Shuffle questions only (disable option shuffling to preserve explanation references)
-  return shuffleArray(mappedQuestions);
+  return shuffleArray(mapped);
 }
 
 
@@ -272,17 +201,18 @@ export function mapQuestionsToStandard(raw: SubjectQuestion[]): Question[] {
 }
 
 export function shuffleArray<T>(array: T[]): T[] {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
+  return shuffleArrayImpl(array);
 }
 
 
-export function getCachedSubjects(examSelection: string): string[] {
-  const cached: unknown[] = queryCache.get(`subjects_exam_${examSelection}`) || [];
+/* Cache-read helpers (FIX-4, subject-tests audit): getters MUST read the exact
+   key the corresponding fetcher writes, and MUST return `null` on a cache miss
+   so the loading gates (`!getCachedSubjects(...)`) distinguish "not cached"
+   (→ skeleton) from "cached empty" (→ EmptyState). */
+export function getCachedSubjects(examSelection: string): string[] | null {
+  const raw = queryCache.get(`subjects_exam_${examSelection}`);
+  if (raw === null || raw === undefined) return null;
+  const cached: unknown[] = raw as unknown[];
   const normalized = cached.map((s: unknown) => typeof s === 'string' ? s : String((s as Record<string, unknown>)?.subject_name ?? '')).filter(Boolean);
   // Normalize cache if it contained objects from previous schema
   if (normalized.some((_s, i) => typeof cached[i] !== 'string')) {
@@ -291,8 +221,24 @@ export function getCachedSubjects(examSelection: string): string[] {
   return normalized;
 }
 
-export function getCachedSubjectCounts(examSelection: string): Record<string, number> {
-  return queryCache.get(`subject_counts_${examSelection}_all`) || {};
+export function getCachedSubjectsByPaper(paperId: string): string[] | null {
+  if (!paperId) return null;
+  const raw = queryCache.get(`subjects_paper_${paperId}`);
+  if (raw === null || raw === undefined) return null;
+  const cached: unknown[] = raw as unknown[];
+  const normalized = cached.map((s: unknown) => typeof s === 'string' ? s : String((s as Record<string, unknown>)?.subject_name ?? '')).filter(Boolean);
+  return normalized;
+}
+
+export function getCachedSubjectCounts(examSelection: string): Record<string, number> | null {
+  const raw = queryCache.get(`subject_counts_${examSelection}_all`);
+  return (raw === null || raw === undefined) ? null : (raw as Record<string, number>);
+}
+
+export function getCachedSubjectCountsByPaper(examSelection: string, paperId: string): Record<string, number> | null {
+  if (!paperId) return null;
+  const raw = queryCache.get(`subject_counts_${examSelection}_${paperId}`);
+  return (raw === null || raw === undefined) ? null : (raw as Record<string, number>);
 }
 
 export function getCachedPapers(examSelection: string): ExamPaper[] {
@@ -301,7 +247,19 @@ export function getCachedPapers(examSelection: string): ExamPaper[] {
 
 export async function clearSubjectTestCache(examSelection: string) {
   if (!examSelection) return;
+  // FIND-4: capture the exam's paper IDs BEFORE invalidating the papers cache
+  // (getCachedPapers reads appsc_papers_*), so every per-paper subject cache
+  // (subjects_paper_{id}) is a clear target. Only THIS exam's papers are
+  // invalidated — unrelated exams' subjects_paper_* keys are preserved.
+  const paperIds = getCachedPapers(examSelection).map(p => p.id).filter(Boolean);
   queryCache.invalidateByPrefix(`subjects_exam_${examSelection}`);
   queryCache.invalidateByPrefix(`appsc_papers_${examSelection}`);
+  // subject_counts_{exam}_all AND subject_counts_{exam}_{paperId} share the
+  // same prefix, so one invalidateByPrefix clears both.
   queryCache.invalidateByPrefix(`subject_counts_${examSelection}`);
+  // Exact-key invalidation for the backend-driven min-question threshold.
+  queryCache.invalidate(`min_questions_${examSelection}`);
+  for (const id of paperIds) {
+    queryCache.invalidate(`subjects_paper_${id}`);
+  }
 }

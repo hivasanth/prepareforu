@@ -1,5 +1,14 @@
 import type { ElementType, ReactNode } from 'react'
 import { useTheme } from '../../context/ThemeContext'
+import { Typography } from './Typography'
+
+/* ─── Phase 5.4C wrapper layer ───────────────────────────────────────────────
+   AdminText now renders through the single Foundation `Typography` component.
+   Its size sub-language (body/metadata/heading tokens) and the light-only
+   cinzel/garamond identity variants are preserved exactly for render-identity;
+   the size→token mapping is a thin compatibility surface (retired during
+   consumer migration phases).
+--------------------------------------------------------------------------- */
 
 type CanonicalSize = 'body' | 'metadata' | 'heading'
 
@@ -18,33 +27,36 @@ interface AdminTextProps {
   variant?: 'cinzel' | 'garamond' | 'sans'
   size?: CanonicalSize
   className?: string
+  /** Forwarded to Typography — enables aria-describedby target linkage. */
+  id?: string
   children: ReactNode
 }
 
 export function AdminText({
-  as: Tag = 'span',
+  as = 'span',
   variant = 'cinzel',
   size,
   className = '',
+  id,
   children,
 }: AdminTextProps) {
   const { isDark } = useTheme()
 
-  const classes: Record<string, string> = {
-    'cinzel': !isDark ? 'font-cinzel' : '',
-    'garamond': !isDark ? 'font-garamond italic' : '',
-    'sans': '',
-  }
+  const fontVariant = !isDark ? variant : 'sans'
 
   const fontSize = size ? canonicalSizeTokens[size] : undefined
   const lineHeight = size ? canonicalLineHeightTokens[size] : undefined
 
   return (
-    <Tag
-      className={`${classes[variant]} ${className}`}
+    <Typography
+      as={as}
+      id={id}
+      color="inherit"
+      variant={fontVariant}
+      className={className}
       style={fontSize || lineHeight ? { fontSize, lineHeight } : undefined}
     >
       {children}
-    </Tag>
+    </Typography>
   )
 }

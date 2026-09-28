@@ -3,7 +3,7 @@ import { renderHook, act, cleanup, waitFor } from '@testing-library/react'
 import { usePrepareWrite } from './components/user/prepare-write/usePrepareWrite'
 import { queryCache } from './utils/queryCache'
 import * as attemptRepo from './lib/repositories/attempt.repository'
-import type { ExamPaper, ExamConfig, ExamSubject, Question } from './types/exam.types'
+import type { ExamPaper, ExamConfig, Question } from './types/exam.types'
 import type { UserProfile } from './types/auth.types'
 
 const { authState, supabaseMock } = vi.hoisted(() => {
@@ -41,12 +41,20 @@ vi.mock('./components/common/AntigravityCard', () => ({
   GOLD_LIGHT_MATERIAL: '',
 }))
 
+const { navigation } = vi.hoisted(() => ({ navigation: { fn: vi.fn() } }))
+
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => navigation.fn,
+}))
+
 const { pwService, examSvc } = vi.hoisted(() => ({
   pwService: {
     fetchExams: vi.fn(),
     fetchPapers: vi.fn(),
     fetchPaperDistribution: vi.fn(),
-    fetchPrepareQuestions: vi.fn(),
+    prepareExamQuestions: vi.fn(),
+    startPreparedExam: vi.fn(),
+    recordPracticeSession: vi.fn().mockResolvedValue('session-id'),
   },
   examSvc: {
     batchCheckAvailability: vi.fn(),
@@ -81,17 +89,14 @@ function paper(id: string, examId: string = G1): ExamPaper {
   }
 }
 
-function subject(name: string, count: number): ExamSubject {
-  return { id: `s-${name}`, exam_id: G1, paper_id: 'p', subject_name: name, question_count: count, marks_per_question: 1, display_order: 1 }
-}
-
-function question(id: string, paperId: string): Question {
+/** Student-safe question rows as returned by prepare_exam_questions (F-01:
+ *  correct_option / explanation_* are NEVER projected by the server). */
+function lockedQuestion(id: string, paperId: string): Question {
   return {
     id,
     exam_id: G1,
     paper_id: paperId,
     subject_name: 'S1',
-    correct_option: 'A',
     difficulty: 'easy',
     negative_marks: 0,
     question_text_en: `Question ${id}`,
@@ -99,11 +104,30 @@ function question(id: string, paperId: string): Question {
     option_b_en: 'B',
     option_c_en: 'C',
     option_d_en: 'D',
+  } as Question
+}
+
+function prepResult(preparationId: string, paperId: string, ids: string[] = ['q1', 'q2', 'q3']) {
+  return {
+    preparation_id: preparationId,
+    exam_id: G1,
+    paper_id: paperId,
+    question_count: ids.length,
+    expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+    questions: ids.map(id => lockedQuestion(id, paperId)),
   }
 }
 
-const DIST = { subjects: [subject('S1', 3)], totalRequired: 3 }
-const THREE_QS = [question('q1', 'pA'), question('q2', 'pA'), question('q3', 'pA')]
+function startedResult(preparationId: string, paperId: string, ids: string[] = ['q1', 'q2', 'q3']) {
+  return {
+    attempt_id: `att-${preparationId}`,
+    is_resumed: false,
+    exam_id: G1,
+    paper_id: paperId,
+    question_count: ids.length,
+    questions: ids.map(id => lockedQuestion(id, paperId)),
+  }
+}
 
 function deferred<T>() {
   let resolve!: (v: T) => void
@@ -123,52 +147,71 @@ function configureSelection(paperIds: string[] = ['pA'], valid = true) {
 beforeEach(() => {
   sessionStorage.clear()
   queryCache.clear()
+  navigation.fn.mockReset()
   pwService.fetchExams.mockReset()
   pwService.fetchPapers.mockReset()
   pwService.fetchPaperDistribution.mockReset()
-  pwService.fetchPrepareQuestions.mockReset()
+  pwService.prepareExamQuestions.mockReset()
+  pwService.startPreparedExam.mockReset()
+  pwService.recordPracticeSession.mockReset()
   examSvc.batchCheckAvailability.mockReset()
   supabaseMock.in.mockClear()
   pwService.fetchExams.mockResolvedValue([])
   pwService.fetchPapers.mockResolvedValue([])
   examSvc.batchCheckAvailability.mockResolvedValue({})
-  pwService.fetchPaperDistribution.mockResolvedValue(DIST)
-  pwService.fetchPrepareQuestions.mockResolvedValue(THREE_QS)
+  pwService.prepareExamQuestions.mockResolvedValue(prepResult('prep-1', 'pA'))
+  pwService.startPreparedExam.mockResolvedValue(startedResult('prep-1', 'pA'))
 })
 
 afterEach(() => {
   cleanup()
 })
 
-describe('P-S1 — clicked paper is authoritative for the fetch', () => {
-  it('fetches the clicked paper, never the previously selected paper', async () => {
+describe('P-S1 — clicked paper is authoritative for the locked fetch', () => {
+  it('prepares the clicked paper, never the previously selected paper', async () => {
     configureSelection(['pA', 'pB'])
-    pwService.fetchPrepareQuestions.mockResolvedValue([question('qb1', 'pB'), question('qb2', 'pB'), question('qb3', 'pB')])
+    const paperB = paper('pB')
+    pwService.prepareExamQuestions.mockResolvedValue(prepResult('prep-B', 'pB'))
     const { result } = renderHook(() => usePrepareWrite())
     await waitFor(() => expect(result.current.loading).toBe(false))
-    const paperB = paper('pB')
 
     await act(async () => {
       await result.current.startPreparation(paperB)
     })
 
-    expect(pwService.fetchPaperDistribution).toHaveBeenLastCalledWith('pB')
-    expect(pwService.fetchPrepareQuestions).toHaveBeenLastCalledWith('pB', expect.anything(), 'u1')
-    expect(pwService.fetchPrepareQuestions.mock.calls.every(call => call[0] === 'pB')).toBe(true)
+    expect(pwService.prepareExamQuestions).toHaveBeenLastCalledWith('pB')
+    expect(pwService.prepareExamQuestions.mock.calls.every(call => call[0] === 'pB')).toBe(true)
     expect(result.current.state.selectedPaper?.id).toBe('pB')
     expect(result.current.state.view).toBe('PREPARATION')
+    expect(result.current.state.preparationId).toBe('prep-B')
     expect(result.current.state.questions.every(q => q.paper_id === 'pB')).toBe(true)
   })
 })
 
-describe('P-S5 — overlapping paper action is blocked', () => {
+describe('P-S2 — locked preparation never leaks answers pre-exam (F-01)', () => {
+  it('maps server rows into Question[] without correct_option/explanation fields', async () => {
+    configureSelection(['pA'])
+    const { result } = renderHook(() => usePrepareWrite())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => { await result.current.startPreparation(paper('pA')) })
+    expect(result.current.state.view).toBe('PREPARATION')
+    expect(result.current.state.questionCount).toBe(3)
+    expect(result.current.state.preparationId).toBe('prep-1')
+    expect(result.current.state.questions).toHaveLength(3)
+    expect(result.current.state.questions.every(q => (q as Question).correct_option === undefined)).toBe(true)
+    expect(result.current.state.questions[0].diagram).toBe(null)
+  })
+})
+
+describe('P-S5 — overlapping paper preparation is blocked', () => {
   it('returns false and does not refetch when a second paper is clicked while the first is loading', async () => {
     configureSelection(['pA', 'pB'])
     const { result } = renderHook(() => usePrepareWrite())
     await waitFor(() => expect(result.current.loading).toBe(false))
-    const d = deferred<typeof DIST>()
+    const d = deferred<ReturnType<typeof prepResult>>()
 
-    pwService.fetchPaperDistribution.mockImplementationOnce(() => d.promise)
+    pwService.prepareExamQuestions.mockImplementationOnce(() => d.promise)
 
     act(() => { void result.current.startPreparation(paper('pA')) })
     await waitFor(() => expect(result.current.actionLoading).toBe(true))
@@ -176,13 +219,67 @@ describe('P-S5 — overlapping paper action is blocked', () => {
     let second: boolean | undefined
     await act(async () => { second = await result.current.startPreparation(paper('pB')) })
     expect(second).toBe(false)
-    expect(pwService.fetchPaperDistribution).toHaveBeenCalledTimes(1)
+    expect(pwService.prepareExamQuestions).toHaveBeenCalledTimes(1)
 
-    await act(async () => { d.resolve(DIST) })
+    await act(async () => { d.resolve(prepResult('prep-A', 'pA')) })
     await waitFor(() => expect(result.current.state.view).toBe('PREPARATION'))
     expect(result.current.state.selectedPaper?.id).toBe('pA')
-    expect(pwService.fetchPrepareQuestions).toHaveBeenCalledWith('pA', expect.anything(), 'u1')
-    expect(pwService.fetchPrepareQuestions).not.toHaveBeenCalledWith('pB', expect.anything(), expect.anything())
+    expect(pwService.prepareExamQuestions).toHaveBeenCalledWith('pA')
+    expect(pwService.prepareExamQuestions).not.toHaveBeenCalledWith('pB')
+  })
+})
+
+describe('P-LAUNCH — startRealExam consumes the server-locked preparation', () => {
+  it('calls start_prepared_exam(preparationId) and navigates to the real exam with the same IDs', async () => {
+    configureSelection(['pA'])
+    const { result } = renderHook(() => usePrepareWrite())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => { await result.current.startPreparation(paper('pA')) })
+    expect(result.current.state.view).toBe('PREPARATION')
+
+    await act(async () => { await result.current.startRealExam() })
+
+    expect(pwService.startPreparedExam).toHaveBeenCalledWith('prep-1')
+    expect(navigation.fn).toHaveBeenCalledWith('/active-exam/pA', expect.objectContaining({
+      state: expect.objectContaining({
+        source: 'prepare_write',
+        preparationId: 'prep-1',
+        attemptId: 'att-prep-1',
+      }),
+    }))
+    // Session is cleared after handing off to the active-exam page.
+    expect(result.current.state.view).toBe('SELECTION')
+    expect(result.current.state.preparationId).toBeNull()
+  })
+
+  it('never trusts a client-supplied question list (server decides the set)', async () => {
+    configureSelection(['pA'])
+    pwService.startPreparedExam.mockResolvedValue(startedResult('prep-2', 'pA', ['server-q1', 'server-q2']))
+    const { result } = renderHook(() => usePrepareWrite())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => { await result.current.startPreparation(paper('pA')) })
+    await act(async () => { await result.current.startRealExam() })
+
+    const navCall = navigation.fn.mock.calls[0]
+    const navState = (navCall[1] as { state: Record<string, unknown> }).state
+    expect(navState.questions).toBeUndefined()
+    expect(navState.source).toBe('prepare_write')
+  })
+
+  it('surfaces a server rejection and keeps the preparation intact', async () => {
+    configureSelection(['pA'])
+    pwService.startPreparedExam.mockRejectedValue(new Error('PREPARATION_EXPIRED'))
+    const { result } = renderHook(() => usePrepareWrite())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => { await result.current.startPreparation(paper('pA')) })
+    await act(async () => { await result.current.startRealExam() })
+
+    expect(result.current.errorState).toBe('error')
+    expect(result.current.state.view).toBe('PREPARATION')
+    expect(result.current.state.preparationId).toBe('prep-1')
   })
 })
 
@@ -211,66 +308,42 @@ describe('P-S4 — stale exam-switch errors are ignored', () => {
   })
 })
 
-describe('P-S2 — visited question tracking', () => {
-  it('tracks only the questions the user actually navigates to', async () => {
-    configureSelection(['pA'])
-    const { result } = renderHook(() => usePrepareWrite())
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    pwService.fetchPrepareQuestions.mockResolvedValue(THREE_QS)
-
-    await act(async () => { await result.current.startPreparation(paper('pA')) })
-    expect(result.current.state.visitedQuestions).toEqual([])
-
-    act(() => { result.current.startExam() })
-    expect(result.current.state.visitedQuestions).toEqual(['q1'])
-
-    act(() => { result.current.handleJumpToQuestion(2) })
-    expect(result.current.state.visitedQuestions).toEqual(['q1', 'q3'])
-
-    act(() => { result.current.handlePrev() })
-    expect(result.current.state.visitedQuestions).toEqual(['q1', 'q3', 'q2'])
-
-    act(() => { result.current.handleNextOrSubmit() })
-    expect(result.current.state.visitedQuestions).toEqual(['q1', 'q3', 'q2'])
-
-    act(() => { result.current.handleJumpToQuestion(2) })
-    expect(result.current.state.visitedQuestions).toEqual(['q1', 'q3', 'q2'])
-    expect(result.current.state.visitedQuestions).toHaveLength(3)
-  })
-
-  it('never marks every question visited at exam start', async () => {
-    configureSelection(['pA'])
-    const { result } = renderHook(() => usePrepareWrite())
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    pwService.fetchPrepareQuestions.mockResolvedValue([question('q1', 'pA'), question('q2', 'pA')])
-
-    await act(async () => { await result.current.startPreparation(paper('pA')) })
-    act(() => { result.current.startExam() })
-
-    expect(result.current.state.visitedQuestions).toEqual(['q1'])
-    expect(result.current.state.visitedQuestions).toHaveLength(1)
-  })
-})
-
 describe('P-S3 — session ownership', () => {
   it('discards a session persisted by a different account', () => {
     sessionStorage.setItem('prepare_write_active_session', JSON.stringify({
-      view: 'EXAM', questions: [], answers: {}, markedForReview: {}, visitedQuestions: [],
-      selectedPaper: null, selectedExamId: G1, userId: 'other-user', startTime: 1, endTime: null, currentIndex: 0,
+      view: 'PREPARATION', questions: [], selectedPaper: null, selectedExamId: G1,
+      userId: 'other-user', preparationId: 'prep-x', expiresAt: null, questionCount: 0,
     }))
 
     const { result } = renderHook(() => usePrepareWrite())
     expect(result.current.state.view).toBe('SELECTION')
   })
 
-  it('discards a legacy session that has no userId', () => {
+  it('discards a session that carries no server preparation id', () => {
     sessionStorage.setItem('prepare_write_active_session', JSON.stringify({
-      view: 'EXAM', questions: [], answers: {}, markedForReview: {},
-      selectedPaper: null, selectedExamId: G1, startTime: 1, endTime: null, currentIndex: 0,
+      view: 'PREPARATION', questions: [], selectedPaper: null, selectedExamId: G1,
+      userId: 'u1', preparationId: null, expiresAt: null, questionCount: 0,
     }))
 
     const { result } = renderHook(() => usePrepareWrite())
     expect(result.current.state.view).toBe('SELECTION')
+  })
+
+  it('restores a server-locked preparation owned by the current user', () => {
+    sessionStorage.setItem('prepare_write_active_session', JSON.stringify({
+      view: 'PREPARATION',
+      questions: [lockedQuestion('q1', 'pA')],
+      selectedPaper: paper('pA'),
+      selectedExamId: G1,
+      userId: 'u1',
+      preparationId: 'prep-9',
+      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+      questionCount: 1,
+    }))
+
+    const { result } = renderHook(() => usePrepareWrite())
+    expect(result.current.state.view).toBe('PREPARATION')
+    expect(result.current.state.preparationId).toBe('prep-9')
   })
 })
 
@@ -311,111 +384,15 @@ describe('P-S7 — bounded exclusion query', () => {
   })
 })
 
-describe('P-S9 — practice result copy', () => {
-  it('announces local practice completion only when the practice is actually finished', async () => {
-    configureSelection(['pA'])
-    const { result } = renderHook(() => usePrepareWrite())
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    pwService.fetchPrepareQuestions.mockResolvedValue([question('q1', 'pA'), question('q2', 'pA')])
-
-    await act(async () => { await result.current.startPreparation(paper('pA')) })
-    act(() => { result.current.startExam() })
-
-    act(() => { result.current.handleNextOrSubmit() })
-    const toastsAfterNext = result.current.toasts.map(t => t.message)
-    expect(toastsAfterNext).not.toContain('Practice completed. Results are saved locally.')
-
-    act(() => { result.current.handleNextOrSubmit() })
-    expect(result.current.state.view).toBe('RESULT')
-    expect(result.current.toasts.some(t => t.message === 'Practice completed. Results are saved locally.')).toBe(true)
-  })
-
-  it('uses practice-local wording on submit', async () => {
-    configureSelection(['pA'])
-    const { result } = renderHook(() => usePrepareWrite())
-    await waitFor(() => expect(result.current.loading).toBe(false))
-
-    await act(async () => { await result.current.startPreparation(paper('pA')) })
-    act(() => { result.current.submitExam() })
-
-    expect(result.current.state.view).toBe('RESULT')
-    expect(result.current.toasts.some(t => t.message === 'Practice completed. Results are saved locally.')).toBe(true)
-  })
-})
-
-describe('P-REM1 — last-question submit uses authoritative state (no stale closure)', () => {
-  it('navigates forward on second-to-last question without triggering RESULT', async () => {
-    configureSelection(['pA'])
-    pwService.fetchPrepareQuestions.mockResolvedValue([question('q1', 'pA'), question('q2', 'pA'), question('q3', 'pA')])
-    const { result } = renderHook(() => usePrepareWrite())
-    await waitFor(() => expect(result.current.loading).toBe(false))
-
-    await act(async () => { await result.current.startPreparation(paper('pA')) })
-    act(() => { result.current.startExam() })
-    // At question 0 (q1) — next should go to question 1
-    act(() => { result.current.handleNextOrSubmit() })
-    expect(result.current.state.view).toBe('EXAM')
-    expect(result.current.state.currentIndex).toBe(1)
-
-    // At question 1 (q2) — next should go to question 2 (last)
-    act(() => { result.current.handleNextOrSubmit() })
-    expect(result.current.state.view).toBe('EXAM')
-    expect(result.current.state.currentIndex).toBe(2)
-
-    // At question 2 (q3, last) — next should transition to RESULT
-    act(() => { result.current.handleNextOrSubmit() })
-    expect(result.current.state.view).toBe('RESULT')
-    expect(result.current.state.endTime).toBeGreaterThan(0)
-  })
-
-  it('transitions to RESULT exactly once on last question', async () => {
-    configureSelection(['pA'])
-    pwService.fetchPrepareQuestions.mockResolvedValue([question('q1', 'pA'), question('q2', 'pA')])
-    const { result } = renderHook(() => usePrepareWrite())
-    await waitFor(() => expect(result.current.loading).toBe(false))
-
-    await act(async () => { await result.current.startPreparation(paper('pA')) })
-    act(() => { result.current.startExam() })
-
-    // Question 0 → next → question 1
-    act(() => { result.current.handleNextOrSubmit() })
-    expect(result.current.state.view).toBe('EXAM')
-    expect(result.current.state.currentIndex).toBe(1)
-
-    // Question 1 (last) → next → RESULT
-    act(() => { result.current.handleNextOrSubmit() })
-    expect(result.current.state.view).toBe('RESULT')
-
-    // Calling again should not crash (already in RESULT)
-    act(() => { result.current.handleNextOrSubmit() })
-    expect(result.current.state.view).toBe('RESULT')
-  })
-})
-
 describe('P-REM2 — exitSession uses synchronized view ref', () => {
   it('does not require confirmation when exiting from SELECTION', async () => {
     configureSelection(['pA'])
     const { result } = renderHook(() => usePrepareWrite())
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    // Should not prompt confirmation — just clears session
     act(() => { result.current.exitSession() })
     expect(result.current.state.view).toBe('SELECTION')
     expect(result.current.state.questions).toEqual([])
-  })
-
-  it('does not require confirmation when exiting from RESULT', async () => {
-    configureSelection(['pA'])
-    const { result } = renderHook(() => usePrepareWrite())
-    await waitFor(() => expect(result.current.loading).toBe(false))
-
-    await act(async () => { await result.current.startPreparation(paper('pA')) })
-    act(() => { result.current.submitExam() })
-    expect(result.current.state.view).toBe('RESULT')
-
-    // Exiting from RESULT should not confirm
-    act(() => { result.current.exitSession() })
-    expect(result.current.state.view).toBe('SELECTION')
   })
 
   it('requires confirmation when exiting from PREPARATION', async () => {
@@ -429,21 +406,6 @@ describe('P-REM2 — exitSession uses synchronized view ref', () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     act(() => { result.current.exitSession() })
     expect(result.current.state.view).toBe('PREPARATION')
-    confirmSpy.mockRestore()
-  })
-
-  it('requires confirmation when exiting from EXAM', async () => {
-    configureSelection(['pA'])
-    const { result } = renderHook(() => usePrepareWrite())
-    await waitFor(() => expect(result.current.loading).toBe(false))
-
-    await act(async () => { await result.current.startPreparation(paper('pA')) })
-    act(() => { result.current.startExam() })
-    expect(result.current.state.view).toBe('EXAM')
-
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
-    act(() => { result.current.exitSession() })
-    expect(result.current.state.view).toBe('EXAM')
     confirmSpy.mockRestore()
   })
 })

@@ -5,23 +5,24 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.21.0?target
 
 // 1. Setup Redis & Clients
 // Best Practice: Use Deno.env.get() and set secrets via Supabase Dashboard or CLI
-const redis = new Redis({
-  url: Deno.env.get("UPSTASH_REDIS_REST_URL")!,
-  token: Deno.env.get("UPSTASH_REDIS_REST_TOKEN")!,
-})
+const redisUrl = Deno.env.get("UPSTASH_REDIS_REST_URL")
+const redisToken = Deno.env.get("UPSTASH_REDIS_REST_TOKEN")
+
+let ratelimit: Ratelimit | null = null
+if (redisUrl && redisToken) {
+  const redis = new Redis({ url: redisUrl, token: redisToken })
+  ratelimit = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(10, "60 s"),
+    analytics: true,
+    prefix: "@upstash/ratelimit",
+  })
+}
 
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 )
-
-// 2. Setup Ratelimit
-const ratelimit = new Ratelimit({
-  redis: redis,
-  limiter: Ratelimit.slidingWindow(10, "60 s"),
-  analytics: true,
-  prefix: "@upstash/ratelimit",
-})
 
 /**
  * Verifies a Turnstile token with Cloudflare's siteverify endpoint.
@@ -29,8 +30,13 @@ const ratelimit = new Ratelimit({
 async function verifyTurnstileToken(token: string): Promise<boolean> {
   const secretKey = Deno.env.get("TURNSTILE_SECRET_KEY")
   if (!secretKey) {
-    console.warn('[security-gateway] TURNSTILE_SECRET_KEY not configured — skipping verification')
-    return true // Fail-open: allow if not configured
+    // F4 hardening (remediation): verifyTurnstileToken is only invoked when a
+    // captchaToken WAS presented on an auth route. If the secret is missing we
+    // must NOT silently accept that token (this function returned true before,
+    // i.e. fail-open). Fail closed instead — the client-visible 403 tells the
+    // operator the gateway needs TURNSTILE_SECRET_KEY set.
+    console.error('[security-gateway] TURNSTILE_SECRET_KEY not configured — refusing presented token (fail-closed)')
+    return false
   }
 
   const formData = new URLSearchParams()
@@ -68,6 +74,25 @@ serve(async (req) => {
   }
 
   try {
+    // 0. Rate Limiting availability — FAIL-CLOSED (F-07).
+    // If Upstash is unconfigured the gateway must REFUSE to bless traffic, never
+    // silently drop protection. 503 → clients treat the request as rejected.
+    if (!ratelimit) {
+      await supabaseAdmin.rpc('log_security_event', {
+        p_type: 'rate_limit_misconfigured',
+        p_identifier: 'gateway',
+        p_severity: 'high',
+        p_metadata: { pathname }
+      })
+      return new Response(JSON.stringify({
+        error: "RATE_LIMIT_UNAVAILABLE",
+        message: "Security service is temporarily unavailable."
+      }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" }
+      })
+    }
+
     // 1. Rate Limiting
     const fingerprintInput = `${ip}-${userAgent}`
     const encoder = new TextEncoder()
@@ -75,7 +100,7 @@ serve(async (req) => {
     const hashBuffer = await crypto.subtle.digest("SHA-256", data)
     const fingerprint = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("")
 
-    const { success, limit, remaining, reset } = await ratelimit.limit(fingerprint)
+    const { success, reset } = await ratelimit.limit(fingerprint)
 
     if (!success) {
       await supabaseAdmin.rpc('log_security_event', {
@@ -94,8 +119,27 @@ serve(async (req) => {
       })
     }
 
-    // 2. Turnstile Verification (auth routes only)
-    if (isAuthRoute && captchaToken) {
+    // 2. Turnstile Verification (auth routes only — REQUIRED).
+    // F-07 remediation: the captcha was previously verified ONLY when the client
+    // sent captchaToken, so a client that omitted the field sailed through. Now
+    // a MISSING token on an auth route is itself a failure (CAPTCHA_REQUIRED),
+    // and a presented token is verified fail-closed (missing secret => rejected).
+    if (isAuthRoute) {
+      if (!captchaToken) {
+        await supabaseAdmin.rpc('log_security_event', {
+          p_type: 'captcha_missing',
+          p_identifier: fingerprint,
+          p_severity: 'medium',
+          p_metadata: { ip, userAgent, pathname }
+        })
+        return new Response(JSON.stringify({
+          error: "CAPTCHA_REQUIRED",
+          message: "A security check must be completed."
+        }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" }
+        })
+      }
       const isValid = await verifyTurnstileToken(captchaToken)
       if (!isValid) {
         await supabaseAdmin.rpc('log_security_event', {
@@ -116,14 +160,16 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { "Content-Type": "application/json" } })
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[security-gateway] Error:', err)
-    
-    // Fail-Closed for Auth
-    if (isAuthRoute) {
-      return new Response(JSON.stringify({ error: "Security layer error" }), { status: 503 })
-    }
-    
-    return new Response(JSON.stringify({ success: true, warning: "Security check bypassed" }), { status: 200 })
+
+    // F-07 remediation: the previous fail-open branch
+    //   ({ success:true, warning:"Security check bypassed" })
+    // let ANY edge error defeat the security pre-check. Remove it: unknown
+    // errors fail closed on EVERY route. For auth routes this is critical; for
+    // the exam-start pre-check the actual enforcement lives in the RPC layer
+    // (create_attempt / RLS / check_availability), so a 503 is a safe,
+    // retryable refusal rather than a security gap.
+    return new Response(JSON.stringify({ error: "Security layer error" }), { status: 503 })
   }
 })

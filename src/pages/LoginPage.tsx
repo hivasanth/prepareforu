@@ -2,14 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, CheckCircle, Mail } from 'lucide-react';
 import { Turnstile } from '@marsidev/react-turnstile';
 
-import { loginWithEmail, sendPasswordReset } from '../services/authService';
+import { loginWithEmail, sendPasswordReset, resendVerificationEmail } from '../services/authService';
 import { loginSchema, resetSchema } from '../validations/authSchemas';
 import type { LoginFormData, ResetFormData } from '../validations/authSchemas';
 import { useAuth } from '../context/AuthContext';
-import { useToast, ToastContainer } from '../hooks/useToast';
 import { useStableFetch } from '../hooks/useStableFetch';
 import { getRouteForRole } from '../utils/getRouteForRole';
 import {
@@ -28,6 +27,7 @@ import {
   AuthThemeProvider,
 } from '../components/common/AntigravityUI';
 import { AdminModal } from '../components/common/AdminModal';
+import { FieldError } from '../components/common/SharedComponents';
 import { LogoSVG } from '../components/Logo';
 import { t } from '../utils/i18n';
 
@@ -41,7 +41,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { updateUser, setManualLoginActive, clearUser } = useAuth();
-  const { toasts, showToast } = useToast();
   
   const { mountedRef } = useStableFetch();
   const forgotPasswordBtnRef = useRef<HTMLButtonElement>(null);
@@ -54,6 +53,13 @@ export default function LoginPage() {
   const [resetCooldown, setResetCooldown] = useState(0);
   const [resetSent, setResetSent] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  // Verify-gated login state (unverified email): tracks the account awaiting
+  // confirmation so the user can resend the verification email or go back.
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendError, setResendError] = useState<string | null>(null);
+  const [resendSent, setResendSent] = useState(false);
 
   const {
     register: registerLogin,
@@ -92,6 +98,20 @@ export default function LoginPage() {
     }
   }, [searchParams, setSearchParams]);
 
+  // Success banner after invitation onboarding completes. The educator set
+  // their password on the isolated invite flow and is now prompted to sign in
+  // with their email + new password (never auto-logged-in to a dashboard).
+  const [inviteComplete, setInviteComplete] = useState(false);
+  useEffect(() => {
+    const ic = searchParams.get('invite');
+    if (ic === 'complete' && !inviteComplete) {
+      setInviteComplete(true);
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('invite');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, inviteComplete]);
+
   // Cooldown Timer
   useEffect(() => {
     if (resetCooldown <= 0) return;
@@ -100,6 +120,15 @@ export default function LoginPage() {
     }, 1000);
     return () => clearInterval(timer);
   }, [resetCooldown]);
+
+  // Resend verification cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown(c => c - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   // ─── Login Flow ─────────────────────────────────────────────────────────────
   const onLogin = async (data: LoginFormData) => {
@@ -111,6 +140,11 @@ export default function LoginPage() {
     setLoginError(null);
     // Wipes any stale account details first as requested in Fix A
     clearUser();
+
+    // Reset verify-gated state when a fresh attempt begins
+    setUnverifiedEmail(null);
+    setResendError(null);
+    setResendSent(false);
 
     // Acquire manual login lock to suppress global SIGNED_IN auth state changes
     setManualLoginActive(true);
@@ -128,6 +162,10 @@ export default function LoginPage() {
         setCaptchaToken(null);
         turnstileRef.current?.reset();
         setManualLoginActive(false);
+        // Unverified email: keep the email so the resend flow can target it.
+        if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
+          setUnverifiedEmail(data.email);
+        }
         setLoginError(result.error?.message || t('Login failed.'));
         return;
       }
@@ -184,7 +222,6 @@ export default function LoginPage() {
       }
       
       setResetSent(true);
-      showToast(t("Reset link sent — check your email"), "success");
       setResetCooldown(60);
     } catch (err: any) {
       if (!mountedRef.current) return;
@@ -198,6 +235,37 @@ export default function LoginPage() {
     setResetError(null);
     resetResetForm();
     forgotPasswordBtnRef.current?.focus();
+  };
+
+  // ─── Unverified-email: resend verification / back to login ───────────────────
+  const handleResendVerification = async () => {
+    if (resending || resendCooldown > 0 || !unverifiedEmail) return;
+    setResending(true);
+    setResendError(null);
+    setResendSent(false);
+    try {
+      const result = await resendVerificationEmail(unverifiedEmail);
+      if (!mountedRef.current) return;
+      if (result.error) throw result.error;
+      setResendSent(true);
+      setResendCooldown(60);
+    } catch (err) {
+      if (!mountedRef.current) return;
+      const msg =
+        typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
+          ? (err as { message: string }).message
+          : undefined;
+      setResendError(msg || t('Failed to resend the verification email. Please try again.'));
+    } finally {
+      if (mountedRef.current) setResending(false);
+    }
+  };
+
+  const handleBackFromUnverified = () => {
+    setUnverifiedEmail(null);
+    setLoginError(null);
+    setResendError(null);
+    setResendSent(false);
   };
 
   return (
@@ -266,6 +334,60 @@ export default function LoginPage() {
                   </div>
                 )}
 
+                {inviteComplete && (
+                  <div aria-live="polite">
+                    <Alert variant="success" icon={CheckCircle} title={t("Password created")} className="w-full">
+                      {t("Your password has been created successfully. Please sign in with your email and new password.")}
+                    </Alert>
+                  </div>
+                )}
+
+                {unverifiedEmail && (
+                  <div className="rounded-xl p-4 bg-warning/5 border border-warning/20">
+                    <Stack gap="sm">
+                      <Body className="text-sm font-semibold break-all">{unverifiedEmail}</Body>
+
+                      {resendSent && (
+                        <Alert variant="success" icon={CheckCircle} title={t("Email sent")} className="w-full">
+                          {t("Verification email sent.")}
+                        </Alert>
+                      )}
+
+                      {resendError && (
+                        <div aria-live="polite">
+                          <Alert variant="error" icon={AlertCircle} title={t("Action failed")} className="w-full">
+                            {resendError}
+                          </Alert>
+                        </div>
+                      )}
+
+                      <Button
+                        type="button"
+                        variant="primary"
+                        fullWidth
+                        loading={resending}
+                        disabled={resendCooldown > 0 || resending}
+                        onClick={handleResendVerification}
+                        id="resend-verification-from-login"
+                      >
+                        {resendCooldown > 0
+                          ? `${t('Resend in')} ${resendCooldown}s`
+                          : t('Resend Verification Email')}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        fullWidth
+                        onClick={handleBackFromUnverified}
+                        id="back-to-login-from-unverified"
+                      >
+                        {t('Back to Login')}
+                      </Button>
+                    </Stack>
+                  </div>
+                )}
+
                 <Stack gap="xs">
                   <Label>{t("Email Address")}</Label>
                   <Input 
@@ -278,9 +400,7 @@ export default function LoginPage() {
                     {...registerLogin("email", { onChange: () => setLoginError(null) })}
                   />
                   {loginErrors.email && (
-                    <span id="login-email-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                      {loginErrors.email.message}
-                    </span>
+                    <FieldError id="login-email-error">{loginErrors.email.message}</FieldError>
                   )}
                 </Stack>
 
@@ -309,9 +429,7 @@ export default function LoginPage() {
                     </IconButton>
                   </div>
                   {loginErrors.password && (
-                    <span id="login-password-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                      {loginErrors.password.message}
-                    </span>
+                    <FieldError id="login-password-error">{loginErrors.password.message}</FieldError>
                   )}
                 </Stack>
 
@@ -411,7 +529,7 @@ export default function LoginPage() {
       >
         {resetSent ? (
           <Stack gap="lg" className="text-center items-center">
-            <div className="text-5xl mb-2">📬</div>
+            <Mail size={56} className="text-primary mx-auto mb-2" aria-hidden />
             <Body secondary className="mb-4">
               {t("We sent a reset link to your email. Check your spam folder if you don't see it.")}
             </Body>
@@ -439,9 +557,7 @@ export default function LoginPage() {
                   autoFocus
                 />
                 {resetErrors.email && (
-                  <span id="reset-email-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                    {resetErrors.email.message}
-                  </span>
+                  <FieldError id="reset-email-error">{resetErrors.email.message}</FieldError>
                 )}
               </Stack>
 
@@ -456,8 +572,6 @@ export default function LoginPage() {
           </form>
         )}
       </AdminModal>
-
-      <ToastContainer toasts={toasts} />
     </PageContainer>
     </AuthThemeProvider>
   );

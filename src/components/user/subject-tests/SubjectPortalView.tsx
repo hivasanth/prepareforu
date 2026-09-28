@@ -53,7 +53,6 @@ export function SubjectPortalView({
               customPapers={paperOptions}
               showSubjects={false}
               hideAll={true}
-              bare
             />
           </SectionReveal>
         )}
@@ -71,9 +70,9 @@ export function SubjectPortalView({
                 const count = subjectCounts[subjectKey] || 0;
                 const hasMinimum = count >= minQuestions;
                 return (
-                  <Card key={subjectKey} variant="premium-dark-neutral" className="relative !p-5 text-left flex flex-col gap-4">
+                  <Card key={subjectKey} variant="premium-dark-neutral" className="relative p-5 text-left flex flex-col gap-4">
                     <div className="flex items-center justify-between w-full">
-                      <IconBadge icon={BookOpen} size="xl" shape="rounded" className="rounded-[14px]" />
+                      <IconBadge icon={BookOpen} size="xl" shape="rounded" className="rounded-button-md" />
                       <TopicInfoButton displayTitle={subjectKey} heading="Subject Name" />
                     </div>
                     <div title={subjectKey}>
@@ -81,7 +80,7 @@ export function SubjectPortalView({
                         {subjectKey}
                       </Body>
                     </div>
-                    <StartTestButton hasMinimum={hasMinimum} onClick={() => onSubjectClick(subjectKey)} />
+                    <StartTestButton hasMinimum={hasMinimum} subjectName={subjectKey} onClick={() => onSubjectClick(subjectKey)} />
                   </Card>
                 );
               })}

@@ -5,9 +5,9 @@ import type { Question } from '../types/exam.types';
 interface UsePortalLaunchOptions {
   guard: () => boolean;
   fetchQuestions: () => Promise<Question[]>;
-  buildNavState: () => Record<string, unknown>;
+  buildNavState: (questions: Question[]) => Record<string, unknown>;
   navPath: string;
-  onError: (message: string) => void;
+  onError: (error: unknown) => void;
 }
 
 export function usePortalLaunch({
@@ -21,19 +21,21 @@ export function usePortalLaunch({
   const navigate = useNavigate();
   const mountedRef = useRef(true);
 
-  const launchTest = useCallback(async () => {
-    if (!guard() || isLaunching) return;
+  const launchTest = useCallback(async (): Promise<boolean> => {
+    if (!guard() || isLaunching) return false;
     setIsLaunching(true);
 
     try {
       const questions = await fetchQuestions();
-      if (!mountedRef.current) return;
+      if (!mountedRef.current) return false;
 
-      navigate(navPath, { state: { ...buildNavState(), questions } });
+      navigate(navPath, { state: { ...buildNavState(questions), questions } });
+      return true;
     } catch (err: unknown) {
       if (mountedRef.current) {
-        onError(err instanceof Error ? err.message : "Failed to launch");
+        onError(err);
       }
+      return false;
     } finally {
       if (mountedRef.current) {
         setIsLaunching(false);

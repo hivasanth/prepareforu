@@ -17,7 +17,7 @@ const qs: Question[] = [
 const makeAnswer = (
   questionId: string,
   selected: 'A' | 'B' | 'C' | 'D' | null,
-  correct: 'A' | 'B' | 'C' | 'D',
+  _correct: 'A' | 'B' | 'C' | 'D',
   isCorrect: boolean | null,
   opts?: { visited?: boolean; markedForReview?: boolean },
 ): AttemptAnswer => ({
@@ -25,7 +25,6 @@ const makeAnswer = (
   attempt_id: '',
   question_id: questionId,
   selected_option: selected,
-  correct_option: correct,
   is_correct: isCorrect,
   marks_awarded: 0,
   time_spent_secs: 0,

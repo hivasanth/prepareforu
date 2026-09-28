@@ -1,39 +1,45 @@
-import { useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertCircle, RefreshCcw, Download, Copy, Check,
-  ChevronLeft, FileText,
+  ArrowLeft, FileText,
 } from 'lucide-react'
-import { Button, IconButton, Spinner } from '../../../components/common/AntigravityUI'
+import { Button, Spinner, Alert } from '../../../components/common/AntigravityUI'
+import { MOTION_DURATION, MOTION_EASE } from '../../../components/common/AntigravityMotion'
 import { LoadingSkeleton, EmptyState } from '../../../components/common/SharedComponents'
 import { formatNumber, formatDurationShort } from '../../../utils/timeUtils'
 import { downloadCSV, sanitizeFilename } from '../../../utils/csvUtils'
-import { copyToClipboard } from './ExamSubComponents'
+import { copyToClipboard } from './clipboard'
 import { useExamResponsive } from './useExamResponsive'
+import { ExamSectionNav, type ExamSectionOption } from './ExamSectionNav'
+import { EXAM_SECTIONS } from './sections'
 import { ExamSummaryCards } from './ExamSummaryCards'
 import { ExamScoreDistribution } from './ExamScoreDistribution'
 import { ExamQuestionAnalysis } from './ExamQuestionAnalysis'
 import { ExamPerformers } from './ExamPerformers'
-import { ExamStudentTable } from './ExamStudentTable'
+import { ExamQuestions } from './ExamQuestions'
+import { ExamLeaderboardSection } from './ExamLeaderboardSection'
 import type { TeacherExamOption, EvalData } from './types'
 
 interface ExamDetailSectionProps {
   selectedExam: TeacherExamOption
+  activeSection?: string
   evalData: EvalData | null
   dataLoading: boolean
   dataError: string | null
   summaryStats: { total: number; avg: number; hi: number; lo: number; avgTime: number } | null
   scoreDistribution: { label: string; count: number; pct: number }[]
-  topPerformers: EvalData['attempts']
-  bottomPerformers: EvalData['attempts']
   onBack: () => void
+  onSectionChange?: (id: string) => void
   onRetry: () => void
 }
 
+const NAV_OPTIONS: ExamSectionOption[] = EXAM_SECTIONS.map(s => ({ id: s.id, label: s.label }))
+
 export function ExamDetailSection({
-  selectedExam, evalData, dataLoading, dataError,
-  summaryStats, scoreDistribution, topPerformers, bottomPerformers,
-  onBack, onRetry,
+  selectedExam, activeSection = 'overview', evalData, dataLoading, dataError,
+  summaryStats, scoreDistribution,
+  onBack, onSectionChange = () => {}, onRetry,
 }: ExamDetailSectionProps) {
   const {
     layout: { summaryGridCols, cardH, btnH },
@@ -41,8 +47,17 @@ export function ExamDetailSection({
     charts: { barH },
   } = useExamResponsive()
   const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState<string | null>(null)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const idPrefix = useId()
 
-  const copyText = () => {
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    }
+  }, [])
+
+  const copyText = async () => {
     if (!summaryStats) return
     const text = [
       `Exam: ${selectedExam.title}`,
@@ -52,10 +67,15 @@ export function ExamDetailSection({
       `Lowest Score: ${summaryStats.lo} / ${selectedExam.total_marks}`,
       `Average Time: ${formatDurationShort(Math.round(summaryStats.avgTime))}`,
     ].join('\n')
-    copyToClipboard(text, () => {
+    const ok = await copyToClipboard(text)
+    if (ok) {
+      setCopyError(null)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
+    } else {
+      setCopyError('Unable to copy to clipboard.')
+    }
   }
 
   const downloadCSVFile = () => {
@@ -78,14 +98,60 @@ export function ExamDetailSection({
     })
   }
 
+  const renderSection = () => {
+    const hasAttempts = (evalData?.attempts.length ?? 0) > 0
+    const questions = evalData?.questions ?? []
+    const attempts = evalData?.attempts ?? []
+    const questionStats = evalData?.questionStats ?? []
+
+    switch (activeSection) {
+      case 'questions':
+        return <ExamQuestions questions={questions} />
+      case 'leaderboard':
+        return (
+          <ExamLeaderboardSection
+            attempts={attempts}
+            examId={selectedExam.id}
+            examTitle={selectedExam.title}
+          />
+        )
+      case 'score-distribution':
+        return <ExamScoreDistribution scoreDistribution={scoreDistribution} />
+      case 'question-analysis':
+        return <ExamQuestionAnalysis questionStats={questionStats} />
+      case 'performers':
+        return (
+          <ExamPerformers
+            attempts={attempts}
+            examId={selectedExam.id}
+            examTitle={selectedExam.title}
+          />
+        )
+      case 'overview':
+      default:
+        if (!hasAttempts) return renderNoSubmissions()
+        return <ExamSummaryCards summaryStats={summaryStats} totalMarks={selectedExam.total_marks} />
+    }
+  }
+
+  const showAttemptsEmptyState = activeSection !== 'questions' && (evalData?.attempts.length ?? 0) === 0
+
+  const renderNoSubmissions = () => (
+    <EmptyState
+      icon={<FileText size={48} />}
+      title="No Submissions Yet"
+      subtitle="Students haven't submitted this exam yet. Check back after the exam window closes."
+    />
+  )
+
   return (
     <>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <IconButton variant="ghost" size="sm" onClick={onBack} aria-label="Go back to exam list">
-            <ChevronLeft size={20} />
-          </IconButton>
+          <Button variant="soft" size="sm" onClick={onBack} aria-label="Back">
+            <ArrowLeft size={16} /> Back
+          </Button>
           <div>
             <h2 className="font-black text-text-primary" style={{ fontSize: titleFont }}>{selectedExam.title}</h2>
             <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
@@ -121,6 +187,23 @@ export function ExamDetailSection({
         )}
       </div>
 
+      {copyError && (
+        <Alert variant="error" icon={AlertCircle} title="Could not copy" className="mb-4 w-full" onDismiss={() => setCopyError(null)}>
+          {copyError}
+        </Alert>
+      )}
+
+      {/* Segmented section navigation */}
+      <div className="mb-6">
+        <ExamSectionNav
+          options={NAV_OPTIONS}
+          value={activeSection}
+          onChange={onSectionChange}
+          ariaLabel="Exam detail sections"
+          idPrefix={idPrefix}
+        />
+      </div>
+
       {/* Loading State */}
       {dataLoading && (
         <div className="space-y-5" role="status" aria-label="Loading exam data">
@@ -134,7 +217,7 @@ export function ExamDetailSection({
           </div>
           <LoadingSkeleton height={barH} borderRadius={16} />
           <div className="flex items-center justify-center gap-3 py-8">
-            <Spinner size="sm" className="text-primary border-primary/20 border-t-primary" />
+            <Spinner size="sm" />
             <span className="text-text-secondary font-bold text-sm">Loading evaluation data…</span>
           </div>
         </div>
@@ -142,54 +225,35 @@ export function ExamDetailSection({
 
       {/* Error State */}
       {dataError && !dataLoading && (
-        <div className="bg-red-500/8 border border-red-500/20 rounded-2xl p-6 flex flex-col items-center gap-4 text-center" role="alert">
-          <AlertCircle size={28} className="text-red-500" />
+        <div className="bg-danger/5 border border-danger/20 rounded-2xl p-6 flex flex-col items-center gap-4 text-center" role="alert" aria-live="assertive">
+          <AlertCircle size={28} className="text-danger" />
           <div>
-            <p className="font-black text-red-500 text-sm">{dataError}</p>
+            <p className="font-black text-danger text-sm">{dataError}</p>
           </div>
-          <Button variant="primary" size="sm" onClick={onRetry} aria-label="Retry loading exam data">
+          <Button variant="primary" size="sm" onClick={onRetry} disabled={dataLoading} aria-label="Retry loading exam data">
             <RefreshCcw size={13} /> Retry
           </Button>
         </div>
       )}
 
-      {/* Empty State */}
-      {!dataLoading && !dataError && evalData && evalData.attempts.length === 0 && (
-        <EmptyState
-          icon={<FileText size={48} />}
-          title="No Submissions Yet"
-          subtitle="Students haven't submitted this exam yet. Check back after the exam window closes."
-        />
-      )}
-
-      {/* Main Content */}
-      <AnimatePresence>
-        {!dataLoading && !dataError && evalData && evalData.attempts.length > 0 && (
+      {/* Main Content — only the active section is rendered */}
+      {!dataLoading && !dataError && evalData && (
+        <AnimatePresence mode="wait">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            key={`${selectedExam.id}-${activeSection}`}
+            role="tabpanel"
+            id={`${idPrefix}-panel-${activeSection}`}
+            aria-labelledby={`${idPrefix}-tab-${activeSection}`}
+            tabIndex={0}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-6"
+            transition={{ duration: MOTION_DURATION.slow, ease: MOTION_EASE.enter }}
           >
-            <ExamSummaryCards
-              summaryStats={summaryStats}
-              totalMarks={selectedExam.total_marks}
-            />
-            <ExamScoreDistribution scoreDistribution={scoreDistribution} />
-            <ExamQuestionAnalysis questionStats={evalData.questionStats} />
-            <ExamPerformers
-              topPerformers={topPerformers}
-              bottomPerformers={bottomPerformers}
-              totalMarks={selectedExam.total_marks ?? 0}
-            />
-            <ExamStudentTable
-              attempts={evalData.attempts}
-              examTitle={selectedExam.title}
-            />
+            {showAttemptsEmptyState ? renderNoSubmissions() : renderSection()}
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      )}
     </>
   )
 }

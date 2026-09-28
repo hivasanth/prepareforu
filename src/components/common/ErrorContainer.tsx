@@ -7,6 +7,40 @@ import { IconBadge } from './IconBadge'
 import { SectionReveal } from './AntigravityAnimation'
 import type { ErrorCategory, ErrorSeverity, ErrorContainerVariant } from '../../types/error.types'
 
+/* ─── ErrorContainer ───────────────────────────────────────────────────────
+ * Design role:
+ *   Standard application error surface for retryable failures.
+ *   Composes SectionReveal + Card + IconBadge into a centered error view.
+ *
+ * Variants:
+ *   page   — Centered max-width error card (page-level failures)
+ *   inline — Full-width error block (section-level failures)
+ *
+ * Categories: network, offline, timeout, authentication, authorization,
+ *   server, validation, rateLimit, maintenance, business, unknown
+ *
+ * Severity mapping:
+ *   low/medium → warning (yellow)
+ *   high/critical → danger (red)
+ *
+ * Use for:
+ *   - Network/server errors during data loading
+ *   - Authentication/authorization failures
+ *   - Retryable page-level failures
+ *   - API timeout errors
+ *
+ * Do NOT use for:
+ *   - Field validation errors (use inline Alert or helper text)
+ *   - Success messages (use Alert variant="success")
+ *   - Inline form errors (use Label with error prop)
+ *
+ * Retry contract: ErrorContainer does NOT own retry logic.
+ *   Consumers pair it with <RetryButton onRetry={...} /> as a child.
+ *
+ * Theme: Light + Dark (inherits Card default variant)
+ * Consumers: 7 files (admin overview, user dashboard, sub-admin, settings)
+ * ────────────────────────────────────────────────────────────────────────── */
+
 // ─── Category → Icon Mapping ───────────────────────────────────────────────
 // Uses lucide-react icons already present in the PrepareForU codebase.
 
@@ -60,6 +94,10 @@ interface ErrorContainerProps {
   severity?: ErrorSeverity
   icon?: LucideIcon
   variant?: ErrorContainerVariant
+  /** Card padding override for compact placements (e.g. inline save-bar
+   *  errors). Omitted → the DS default (24) — existing consumers unchanged.
+   *  Uses the Card design-system padding scale. */
+  padding?: 0 | 16 | 20 | 24
   className?: string
 }
 
@@ -69,6 +107,7 @@ export const ErrorContainer: React.FC<ErrorContainerProps> = ({
   severity = 'medium',
   icon: IconProp,
   variant = 'page',
+  padding,
   className = '',
 }) => {
   const Icon = IconProp ?? CATEGORY_ICONS[category]
@@ -77,7 +116,7 @@ export const ErrorContainer: React.FC<ErrorContainerProps> = ({
 
   return (
     <SectionReveal>
-      <Card variant="default" padding={24} className={`${variantClass} ${className}`}>
+      <Card variant="default" {...(padding !== undefined ? { padding } : {})} className={`${variantClass} ${className}`}>
         <div
           role="alert"
           aria-live="assertive"

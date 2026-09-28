@@ -49,38 +49,42 @@ When `examSelection === 'APPSC_GROUPS'`:
 Page → useTopicExams hook → presentation components
 
 useTopicExams (hook)
-  Phase 1 (mount): usePortalInit → loadData → fetch subjects or APPSC papers
+  Phase 1 (mount): usePortalInit → loadData → fetch subjects or APPSC papers (cache-aware init)
   Phase 2 (auto-subject): subjects change → setSelectedSubject(first)
   Phase 3 (topic load): selectedSubject/paper change → fetchTopicsBySubject + fetchTopicCounts
   Phase 4 (topic click): validate minQuestions → set CONFIG view
   Phase 5 (launch): usePortalLaunch → fetchTopicTestQuestions → map to standard → navigate
-  → on error: captureNetworkError / captureServerError → retry via loadData(true)
+  → on error (metadata/topics/launch): captureError → retry re-runs the SAME failing operation
+  → on launch "no questions": NoAvailableQuestionsError (shared typed domain error) →
+    captureError({ category: 'business', retryable: false }) → "Back to Topic List"
 ```
 
 ## Caching
 
 | Cache Key | TTL | Description |
 |-----------|-----|-------------|
-| `subjects_exam_{examSelection}` | 10 min | Subject names for exam |
-| `appsc_papers_{examSelection}` | 10 min | APPSC paper list |
-| `subjects_by_paper_{paperId}` | 10 min | Subjects linked to APPSC paper |
-| `topics_{examId}_{paperId}_{subject}` | 10 min | Topic items for subject |
-| `topic_counts_{examId}_{paperId}_{subject}` | 10 min | Question counts per topic |
+| `subjects_exam_{examSelection}` | 5 min | Subject names for exam |
+| `appsc_papers_{examSelection}` | 5 min | APPSC paper list |
+| `subjects_by_paper_{paperId}` | 5 min | Subjects linked to APPSC paper |
+| `topics_{examId}_{paperId}_{subject}` | 5 min | Topic items for subject |
+| `topic_counts_{examId}_{paperId}_{subject}` | 5 min | Question counts per topic |
 
-Cache is invalidated via `clearTopicTestCache()` on force-refresh or retry.
+- **Authoritative TTL**: Topic Exams uses ONE constant, `TOPIC_CACHE_TTL_MS = 300_000` (5 min), for both `topics_` and `topic_counts_` keys. This is the single source of truth — never hardcode another TTL for this cache family.
+- Cache is invalidated via `clearTopicTestCache()` on force-refresh or retry — it clears `subjects_`, `appsc_papers_`, `subjects_by_paper_`, `topics_`, AND `topic_counts_` prefixes (narrow, cache-family-scoped; never a global `queryCache.clear()`).
+- Warm-cache reads use `getCachedTopics` / `getCachedTopicCounts` (exact same keys as the fetchers) so a cache hit renders content immediately with no skeleton flash.
 
 ## Component Hierarchy
 
 ```
 PageContainer
-├── [loading] PortalLoadingSkeleton
-├── [error] ErrorContainer → RetryButton
+├── [loading] TopicExamsLoadingSkeleton (ONE role="status" region)
+├── [error] ErrorContainer → RetryButton (retryable) | Back to Topic List (business)
 ├── [PORTAL] TopicPortalView
 │     ├── [isAppsc] SectionReveal → UserSelectionTabs (exam, paper, subject)
 │     ├── [!isAppsc && subjects] SelectionContainer → Tabs (subject selector)
 │     ├── [subjects] BilingualToggle (EN/TE)
 │     └── Topics Area
-│           ├── [loading] GridSkeleton
+│           ├── [loading] role="status" region → GridSkeleton (decorative, gap-4)
 │           ├── [empty] EmptyState
 │           └── [data] Grid → Card ×N → IconBadge + TopicInfoButton + StartTestButton
 └── [CONFIG] TopicConfigView → TestConfigView
@@ -150,12 +154,41 @@ PageContainer
 ## Accessibility
 
 - Subject/topic selection: uses semantic Tabs and Card components
-- Topic grid: `role="list"` with `aria-live="polite"` for dynamic content
-- Loading: `PortalLoadingSkeleton` (full page) + `GridSkeleton` (topic area)
+- Topic grid: `aria-live="polite"` for dynamic content
+- Loading: ONE `role="status"` live region per state — the full-page
+  `TopicExamsLoadingSkeleton` (`aria-label="Loading topic exams"`) and the
+  topics-grid region (`aria-label="Loading topics"`); all inner skeleton units
+  are `decorative`
 - Topic info: `TopicInfoButton` provides accessible tooltip
-- Error: `ErrorContainer` with `RetryButton` and alert role semantics
+- Error: `ErrorContainer` with `RetryButton` (retryable) or `Back to Topic List`
+  (business-empty), with alert role semantics
 - Empty state: descriptive message when no topics available for subject
 - Language toggle: `BilingualToggle` with clear label
+
+## Remediation (2026-08-16)
+
+Production-hardening pass for `/topic-exams` (unit coverage in `src/ds033-topic-exams.test.tsx`):
+
+1. **Topic fetch failures are never swallowed** — the topics effect propagates errors
+   to `captureError` with a retry that re-runs the CURRENT subject/paper context
+   (`reloadTopicsRef`); the previous silent catch that painted a misleading
+   EmptyState is gone.
+2. **Force retry always raises the loading gate** (`loadData(force)`), and the portal
+   initializer is cache-aware (`hasCachedPortalData`) — a cache hit renders content
+   immediately, a cold mount raises the skeleton.
+3. **Business-empty is a shared typed domain error** — `NoAvailableQuestionsError`
+   lives in `src/services/errors/` and is consumed by both `subjectTestService`
+   (re-exported) and `topicTestService`. Detection is `instanceof`, NEVER message
+   matching. Launch errors of this type render a non-retryable screen with
+   `Back to Topic List` (which resets the page error state).
+4. **No stale data under a new selection** — subject/paper/exam change clears the
+   previous subject's topics + counts synchronously; paper switching also clears
+   subjects, and the shared `paperLoading` gate keeps the skeleton up until the new
+   paper's data lands (including when the new paper's fetch fails).
+5. **`fetchTopicCounts` is cached** under `topic_counts_...` with the authoritative
+   5-min TTL and is invalidated by `clearTopicTestCache`.
+6. **Error classification is explicit** — server/network errors are retryable and
+   auto-classified; business-empty is `category: 'business'`, `retryable: false`.
 
 ## Governance Rules
 
@@ -178,3 +211,5 @@ PageContainer
 | `useTopicExams.ts` | Data fetching + state + view management hook |
 | `TopicPortalView.tsx` | Subject selector + language toggle + topic grid |
 | `TopicConfigView.tsx` | Question count configuration (wraps TestConfigView) |
+| `src/services/errors/NoAvailableQuestionsError.ts` | Shared typed business-empty error (NOT owned by this feature — shared with subject-tests) |
+| `src/ds033-topic-exams.test.tsx` | Remediation regression tests (FIX-1/3/4/10/11) |

@@ -1,5 +1,6 @@
 import { User, Mail, Lock } from 'lucide-react'
 import { Card, Stack, Input, Button, Label } from '../../../components/common/AntigravityUI'
+import { FieldError } from '../../../components/common/SharedComponents'
 
 interface IdentitySectionProps {
   name: string
@@ -35,7 +36,7 @@ export function IdentitySection({ name, onNameChange, email, password, onPasswor
               aria-describedby={fieldErrors.name ? 'identity-name-error' : undefined}
             />
             {fieldErrors.name && (
-              <span id="identity-name-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.name}</span>
+              <FieldError id="identity-name-error">{fieldErrors.name}</FieldError>
             )}
           </Stack>
 
@@ -63,7 +64,7 @@ export function IdentitySection({ name, onNameChange, email, password, onPasswor
               aria-describedby={fieldErrors.password ? 'identity-password-error' : undefined}
             />
             {fieldErrors.password && (
-              <span id="identity-password-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.password}</span>
+              <FieldError id="identity-password-error">{fieldErrors.password}</FieldError>
             )}
           </Stack>
 

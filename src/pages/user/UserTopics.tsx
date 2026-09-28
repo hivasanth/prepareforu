@@ -1,11 +1,12 @@
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, BookMarked } from 'lucide-react'
 import { UserSelectionTabs } from '../../components/user/UserSelectionTabs'
 import {
   PageContainer, Stack, SectionReveal,
   ErrorContainer, RetryButton, H2, Body,
 } from '../../components/common/AntigravityUI'
-import { EmptyState, GridSkeleton } from '../../components/common/SharedComponents'
+import { EmptyState } from '../../components/common/SharedComponents'
 import { useTopics } from '../../components/user/topics/useTopics'
+import { TopicListViewSkeleton } from '../../components/user/topics/TopicListViewSkeleton'
 import { TopicReader } from '../../components/user/topics/TopicReader'
 import { TopicListView } from '../../components/user/topics/TopicListView'
 
@@ -28,8 +29,10 @@ export default function UserTopics() {
     openTopic,
     goNext,
     goPrev,
-    setActiveTopic,
+    closeReader,
   } = useTopics()
+
+  const isRetrying = errorState === 'retrying'
 
   return (
     <PageContainer>
@@ -41,7 +44,6 @@ export default function UserTopics() {
             selectedSubject={selectedSubject} setSelectedSubject={setSelectedSubject}
             hideAll={true}
             flattenAppsc={true}
-            bare
           />
         </SectionReveal>
 
@@ -51,21 +53,21 @@ export default function UserTopics() {
               <H2>{pageError.title}</H2>
               <Body>{pageError.message}</Body>
               {pageError.retryable && (
-                <RetryButton onRetry={retryError} />
+                <RetryButton onRetry={retryError} loading={isRetrying} />
               )}
             </ErrorContainer>
           </SectionReveal>
         ) : !isContextValid && topics.length === 0 && !activeTopic ? (
           <SectionReveal>
             <EmptyState
-              icon="📖"
+              icon={<BookMarked size={48} aria-hidden />}
               title="Select a Subject"
               subtitle="Pick an Exam, Paper, and Subject above to start reading topics."
             />
           </SectionReveal>
         ) : isLoading && topics.length === 0 && !activeTopic ? (
           <SectionReveal>
-            <GridSkeleton count={4} columns="grid-cols-1" />
+            <TopicListViewSkeleton />
           </SectionReveal>
         ) : activeTopic ? (
           <SectionReveal>
@@ -73,7 +75,7 @@ export default function UserTopics() {
               topic={activeTopic}
               topics={topics}
               currentIndex={activeIndex}
-              onBack={() => setActiveTopic(null)}
+              onBack={closeReader}
               onNext={goNext}
               onPrev={goPrev}
             />

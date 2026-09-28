@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion'
 import { Rocket, Plus, BookOpen, Check } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { MOTION_DURATION, MOTION_EASE } from '../../common/AntigravityMotion'
+import { Button } from '../../common/AntigravityUI'
 
 interface SuccessViewProps {
   examTitle: string
@@ -14,7 +16,7 @@ export function SuccessView({ examTitle, onReset }: SuccessViewProps) {
     <motion.div
       initial={{ opacity: 0, scale: 0.92, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+      transition={{ duration: MOTION_DURATION.slow, ease: MOTION_EASE.emphasized }}
       className="flex flex-col items-center justify-center min-h-[65vh] text-center space-y-8"
     >
       <div className="relative">
@@ -38,18 +40,19 @@ export function SuccessView({ examTitle, onReset }: SuccessViewProps) {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm pt-2">
-        <button
+        <Button
           onClick={() => navigate('/sub-admin/my-exams')}
-          className="flex-1 font-black uppercase tracking-widest text-xs py-4 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 bg-primary text-white shadow-md"
+          className="flex-1 h-[52px]"
         >
           <BookOpen size={15} /> View My Exams
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={onReset}
-          className="flex-1 bg-card-bg border-2 border-border-subtle text-text-primary font-black uppercase tracking-widest text-xs py-4 rounded-2xl hover:bg-hover-bg hover:border-primary/30 transition-all flex items-center justify-center gap-2"
+          variant="soft"
+          className="flex-1 h-[52px]"
         >
           <Plus size={15} /> Create Another
-        </button>
+        </Button>
       </div>
     </motion.div>
   )

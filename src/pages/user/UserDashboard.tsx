@@ -5,6 +5,7 @@ import {
   Stack,
   PrimaryButton,
 } from '../../components/common/AntigravityUI'
+import { H1 } from '../../components/common/AntigravityTypography'
 import { WelcomeBanner } from '../../components/user/WelcomeBanner'
 import { useUserDashboard } from '../../components/user/dashboard/useUserDashboard'
 import { DashboardStatsGrid } from '../../components/user/dashboard/DashboardStatsGrid'
@@ -17,18 +18,22 @@ export default function UserDashboard() {
     stats, recentActivity,
     loadingStats, loadingActivity,
     errorStats, errorActivity,
+    refreshFailedStats, refreshFailedActivity,
     isRetrying, handleRetry,
   } = useUserDashboard(user?.id, user?.exam_selection ?? undefined)
 
   return (
     <PageContainer>
       <Stack gap="lg">
+        <H1 className="sr-only">Dashboard</H1>
+
         <WelcomeBanner displayName={user?.full_name || 'Learner'} />
 
         <DashboardStatsGrid
           stats={stats}
           loading={loadingStats}
           error={errorStats}
+          refreshFailed={refreshFailedStats}
           isRetrying={isRetrying}
           onRetry={handleRetry}
         />
@@ -37,6 +42,7 @@ export default function UserDashboard() {
           recentActivity={recentActivity}
           loading={loadingActivity}
           error={errorActivity}
+          refreshFailed={refreshFailedActivity}
           isRetrying={isRetrying}
           onRetry={handleRetry}
           onViewPerformance={() => navigate('/performance')}

@@ -6,12 +6,21 @@ import { promptTemplateSchema, topicMetadataSchema } from './adminSchemas'
 
 describe('promptTemplateSchema', () => {
   const VALID = {
+    topic_id: '3f2504e0-4f89-11d3-9a0c-0305e82c3301',
     topic_name: 'Indian History - Modern India',
     prompt_text: 'Generate MCQs based on the syllabus below.',
   }
 
   it('accepts a valid prompt template', () => {
     expect(promptTemplateSchema.safeParse(VALID).success).toBe(true)
+  })
+
+  it('rejects a missing topic id', () => {
+    expect(promptTemplateSchema.safeParse({ ...VALID, topic_id: '' }).success).toBe(false)
+  })
+
+  it('rejects a non-uuid topic id', () => {
+    expect(promptTemplateSchema.safeParse({ ...VALID, topic_id: 'not-a-uuid' }).success).toBe(false)
   })
 
   it('rejects an empty topic name', () => {

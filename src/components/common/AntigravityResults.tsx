@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Card } from './AntigravityCard'
 import { Label } from './AntigravityTypography'
 import { H3 } from './AntigravityTypography'
+import { TRANSITION_INTERACTION } from './AntigravityMotion'
 
 export const ScoreCard: React.FC<{ score: number; total?: number; label?: string; subtitle?: string; children?: React.ReactNode; className?: string }> = ({ score, total, label = 'Final Score', subtitle, children, className = '' }) => {
   return (
@@ -28,7 +29,7 @@ export const ResultStatCard: React.FC<{ label: string; value: string | number; i
   }
   return (
     <Card variant="premium-dark-neutral" className="flex items-center gap-6 group">
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-sm transition-transform group-hover:scale-110 ${colors[variant]}`}>
+      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-sm ${TRANSITION_INTERACTION} ${colors[variant]}`}>
         <Icon size={28} />
       </div>
       <div>

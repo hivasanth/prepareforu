@@ -21,6 +21,8 @@ export default function Unauthorized() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
+          role="alert"
+          aria-live="assertive"
           className="max-w-md w-full bg-card-bg border border-border-subtle rounded-[40px] p-8 sm:p-12 shadow-2xl text-center ancient-overlay"
         >
           <IconBadge icon={ShieldAlert} size="5xl" status="danger" className="mx-auto mb-8 rounded-3xl" />

@@ -1,22 +1,22 @@
 import { useMemo, type FC } from 'react';
-import { 
-  Trophy, 
-  CheckCircle2, 
-  XCircle, 
-  Brain, 
-  RefreshCw 
+import {
+  Trophy,
+  CheckCircle2,
+  XCircle,
+  Brain,
+  RefreshCw
 } from 'lucide-react';
-import { 
-  Stack, 
-  Grid, 
-  StatCard, 
-  Card, 
-  H3, 
-  Body, 
-  Button 
+import {
+  Stack,
+  Grid,
+  StatCard,
+  Card,
+  H3,
+  Body,
+  Button
 } from '../../common/AntigravityUI';
 import { H1, Label } from '../../common/AntigravityTypography';
-import { computeExamStatistics, convertAnswersRecord } from '../../../utils/examStateCalculator';
+import { computePracticeSessionStats, convertAnswersRecord } from '../../../utils/examStateCalculator';
 import type { Question } from '../../../types/exam.types';
 
 interface ResultViewProps {
@@ -35,9 +35,8 @@ export const ResultView: FC<ResultViewProps> = ({
   onNewSession
 }) => {
   const stats = useMemo(() => {
-    const visitedSet = new Set(Object.keys(answers));
     const answerDetails = convertAnswersRecord(questions, answers);
-    return computeExamStatistics(questions, answers, new Set(), visitedSet, answerDetails, durationSeconds);
+    return computePracticeSessionStats(questions, answers, answerDetails, durationSeconds);
   }, [questions, answers, durationSeconds]);
 
   return (
@@ -91,16 +90,23 @@ export const ResultView: FC<ResultViewProps> = ({
               <Brain size={20} />
               <Label>Diagnostic Review</Label>
             </Button>
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               size="xl"
-              onClick={onNewSession} 
+              onClick={onNewSession}
             >
               <Label>New Session</Label>
               <RefreshCw size={20} />
             </Button>
          </div>
       </Card>
+
+      <p
+        role="note"
+        className="text-center text-[11px] text-text-muted max-w-2xl mx-auto"
+      >
+        Practice mode — this session is a self-test. Results are computed locally and are not recorded as official attempts.
+      </p>
     </Stack>
   );
 };

@@ -10,6 +10,16 @@ export const PERF_ATTEMPTS_PREFIX = 'perf_attempts_';
 export const PERF_METADATA_PREFIX = 'perf_metadata_';
 export const PERF_SUBJECT_STATS_PREFIX = 'perf_subject_';
 
+// Educator exams — leaderboard cache key. Deliberately user-scoped first so
+// one account can never hydrate another account's cached rows, even though the
+// board content is shared per exam. Invalidation after a submit targets this
+// exact key (never a wildcard prefix).
+export const TEACHER_EXAM_LB_PREFIX = 'teacher_exam_lb_';
+
+export function teacherExamLeaderboardKey(userId: string, examId: string): string {
+  return `${TEACHER_EXAM_LB_PREFIX}${userId}_${examId}`;
+}
+
 export function dashStatsKey(userId: string): string {
   return `${DASH_STATS_PREFIX}${userId}`;
 }

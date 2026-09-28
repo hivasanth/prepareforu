@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Location, NavigateFunction } from 'react-router-dom';
 import type { UserProfile } from '../../../types/auth.types';
 import {
@@ -11,6 +11,8 @@ import {
   submitAttempt,
 } from '../../../services/examService';
 import { clearAllPendingOperations } from '../../../services/persistenceRetry';
+import { getAllowedExamIds } from '../../../utils/examUtils';
+import { startPreparedExamRpc } from '../../../lib/repositories/question.repository';
 import {
   lockExamLanguage,
   clearExamSession,
@@ -51,7 +53,6 @@ interface UseExamInitializationReturn {
   teluguAvailable: boolean;
   initExam: () => Promise<void>;
   handleLanguageSelect: (lang: SupportedLanguage) => void;
-  subjectMarksRef: React.MutableRefObject<Record<string, number>>;
 }
 
 export function useExamInitialization({
@@ -81,7 +82,6 @@ export function useExamInitialization({
   const [initComplete, setInitComplete] = useState(false);
   const [rawQuestions, setRawQuestions] = useState<Question[]>([]);
   const [teluguAvailable, setTeluguAvailable] = useState(false);
-  const subjectMarksRef = useRef<Record<string, number>>({});
 
   const restoreAttemptState = useCallback(async (
     attemptId: string,
@@ -89,10 +89,10 @@ export function useExamInitialization({
     isResumed: boolean,
     attemptData: Attempt | null,
   ) => {
-    let restoredAnswers: Record<string, string | null> = {};
-    let restoredVisited = new Set<string>();
-    let restoredMarked = new Set<string>();
-    let restoredTimeSpent: Record<string, number> = {};
+    const restoredAnswers: Record<string, string | null> = {};
+    const restoredVisited = new Set<string>();
+    const restoredMarked = new Set<string>();
+    const restoredTimeSpent: Record<string, number> = {};
     let restoredCurrentIdx = 0;
 
     if (isResumed && attemptData) {
@@ -157,28 +157,42 @@ export function useExamInitialization({
       setError(null);
       setLoading(true);
       setPhase('loading');
-      const qs: Question[] = [...state.questions];
+      // P0-01: pass selection CONTEXT only. The server samples the question set
+      // itself, so the client's own fetch is just a preview/fallback -- the
+      // attempt is scored and reviewed against the server's snapshot.
       const result = await createAttempt({
         userId: user.id,
+        examId: state.examId,
+        paperId: state.paperId,
         source: state.source || 'subject_test',
-        totalMarks: state.totalMarks || qs.length,
-        questionsSnapshot: qs,
-        forceNew: false,
+        subjectName: state.subjectName,
+        topicName: state.topicName,
+        questionCount: state.questionCount,
       });
       const attemptData = result.attemptData || null;
-      const restored = await restoreAttemptState(attemptData?.id || '', qs, result.isResumed, attemptData);
-      applyRestoredState(restored, attemptData, qs);
+      const served: Question[] = (
+        attemptData?.questions_snapshot?.length
+          ? attemptData.questions_snapshot
+          : state.questions
+      ) as Question[];
+      // The 1 question = 1 mark = 1 minute contract must follow what the server
+      // ACTUALLY served, which can differ from the requested count.
+      const servedCount = served.length;
+      const restored = await restoreAttemptState(attemptData?.id || '', served, result.isResumed, attemptData);
+      applyRestoredState(restored, attemptData, served);
       setPaper({
         id: paperId || 'practice',
         exam_id: '',
         paper_name: state.title || 'Practice Exam',
         stage: 'SINGLE',
-        total_questions: qs.length,
-        total_marks: state.totalMarks || qs.length,
-        duration_minutes: state.durationMinutes || 30,
+        total_questions: servedCount,
+        total_marks: servedCount,
+        duration_minutes: servedCount,
         negative_marking: state.negativeMarkValue > 0,
         negative_mark_value: state.negativeMarkValue || 0,
         display_order: 0,
+        start_time: null,
+        end_time: null,
       });
       setDisplayLang('en');
       setPhase('exam');
@@ -203,9 +217,6 @@ export function useExamInitialization({
         paperId: paperId,
         examId: paperData.exam_id,
         source: 'exam_tab',
-        totalMarks: paperData.total_marks,
-        questionsSnapshot: resolvedQuestions,
-        forceNew: false,
       });
       if (isResumed && attemptData && paperData.duration_minutes > 0) {
         const elapsed = Date.now() - new Date(attemptData.started_at).getTime();
@@ -236,8 +247,95 @@ export function useExamInitialization({
     }
   }, [paperId, user?.id, navigate, restoreAttemptState, applyRestoredState]);
 
+  /**
+   * Prepare & Write real-exam launch (F-01 locked flow).
+   *
+   * prepare_write is the ONLY state-backed source that does NOT carry client
+   * questions: the locked set is stored server-side in exam_preparations and is
+   * consumed by start_prepared_exam (authority = server). Two entry points:
+   *   • Resume  — an in-progress attempt for this paper already exists (e.g.
+   *     interrupted reload), restore its locked snapshot.
+   *   • Launch  — otherwise consume the pending preparation via
+   *     start_prepared_exam(preparationId) into a fresh attempt.
+   */
+  const initPreparedExam = useCallback(async (state: any) => {
+    if (!user || !paperId) {
+      setError('Invalid exam link.');
+      setInitComplete(true);
+      setLoading(false);
+      return;
+    }
+    try {
+      setError(null);
+      setLoading(true);
+      setPhase('loading');
+      clearExamSession();
+
+      const { paper: paperData } = await fetchPaperWithSubjects(paperId);
+      setPaper(paperData);
+
+      // 1. Resume path: an in-progress attempt for this PAPER wins (matches the
+      // server's one-active-attempt-per-paper resume semantics in create_attempt,
+      // regardless of source — a previously started real exam on this paper is
+      // the authoritative continuation).
+      const existingAttempt = await findInProgressAttempt({
+        userId: user.id,
+        paperId,
+      });
+      if (existingAttempt?.questions_snapshot?.length) {
+        const qs = existingAttempt.questions_snapshot as Question[];
+        if (paperData.duration_minutes > 0) {
+          const elapsed = Date.now() - new Date(existingAttempt.started_at).getTime();
+          const durationMs = paperData.duration_minutes * 60 * 1000;
+          if (elapsed >= durationMs) {
+            try {
+              const result = await submitAttempt(existingAttempt.id, user.id);
+              clearExamSession();
+              navigate(`/review/${existingAttempt.id}`, { replace: true, state: { result, examTitle: paperData.paper_name, paperName: paperData.paper_name } });
+            } catch {
+              setError('Your previous session has expired. Please start a new preparation.');
+            }
+            setInitComplete(true);
+            return;
+          }
+        }
+        const restored = await restoreAttemptState(existingAttempt.id, qs, true, existingAttempt as Attempt);
+        applyRestoredState(restored, existingAttempt as Attempt, qs);
+        setDisplayLang('en');
+        setPhase('exam');
+        setInitComplete(true);
+        return;
+      }
+
+      // 2. Launch path: consume the server-locked preparation.
+      if (!state?.preparationId) {
+        setError('This preparation is no longer available. Please prepare the paper again.');
+        setInitComplete(true);
+        return;
+      }
+      const started = await startPreparedExamRpc(state.preparationId);
+      const attemptData = await findAttemptById(started.attempt_id, user?.id ?? '');
+      const qs = started.questions as unknown as Question[];
+      const restored = await restoreAttemptState(started.attempt_id, qs, started.is_resumed, attemptData);
+      applyRestoredState(restored, attemptData as Attempt, qs);
+      // Fill bilingual availability for the lang-select gate.
+      setDisplayLang('en');
+      setPhase('exam');
+      setInitComplete(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to start your prepared exam.');
+      setInitComplete(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [paperId, user?.id, navigate, restoreAttemptState, applyRestoredState, setPaper, setDisplayLang]);
+
   const initExam = useCallback(async () => {
     const state = location.state as Record<string, any> | null;
+    if (state?.source === 'prepare_write') {
+      await initPreparedExam(state);
+      return;
+    }
     if (state?.source && state?.source !== 'exam_tab' && state?.source !== 'teacher_exam' && state?.questions) {
       await initStateBackedExam(state);
       return;
@@ -276,10 +374,10 @@ export function useExamInitialization({
       setPhase('loading');
       clearExamSession();
       const { paper: paperData, subjects } = await fetchPaperWithSubjects(paperId);
+      if (!getAllowedExamIds(user.exam_selection).includes(paperData.exam_id)) {
+        throw new Error('You are not authorized to access this exam.');
+      }
       setPaper(paperData);
-      const marksMap: Record<string, number> = {};
-      subjects.forEach(s => { marksMap[s.subject_name] = s.marks_per_question; });
-      subjectMarksRef.current = marksMap;
 
       const existingAttempt = await findInProgressAttempt({
         userId: user.id,
@@ -291,7 +389,7 @@ export function useExamInitialization({
       if (existingAttempt?.questions_snapshot?.length) {
         fetchedQuestions = existingAttempt.questions_snapshot as Question[];
       } else {
-        fetchedQuestions = await fetchQuestionsForPaper(paperId, subjects, user.id);
+        fetchedQuestions = await fetchQuestionsForPaper(paperId, subjects, paperData.exam_id, user.id);
       }
 
       const hasTE = detectTeluguAvailability(fetchedQuestions);
@@ -304,7 +402,7 @@ export function useExamInitialization({
       setInitComplete(true);
       setLoading(false);
     }
-  }, [paperId, user?.id, location.state, initStateBackedExam, _startExam, setPaper, restoreAttemptState, applyRestoredState]);
+  }, [paperId, user?.id, location.state, initStateBackedExam, _startExam, initPreparedExam, setPaper, restoreAttemptState, applyRestoredState]);
 
   const handleLanguageSelect = useCallback((lang: SupportedLanguage) => {
     if (paperRef.current) _startExam(paperRef.current, rawQuestions, lang);
@@ -319,7 +417,7 @@ export function useExamInitialization({
     return () => {
       clearAllPendingOperations();
     };
-  }, [attemptRef.current?.id, initComplete]);
+  }, [initComplete]);
 
   return {
     phase,
@@ -330,6 +428,5 @@ export function useExamInitialization({
     teluguAvailable,
     initExam,
     handleLanguageSelect,
-    subjectMarksRef,
   };
 }

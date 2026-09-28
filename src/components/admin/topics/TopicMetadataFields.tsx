@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { Youtube } from 'lucide-react'
 import { Label, Input, Switch } from '../../common/AntigravityUI'
+import { FieldError } from '../../common/SharedComponents'
 
 interface TopicMetadataFieldsProps {
   displayOrder: number
@@ -33,7 +34,7 @@ export const TopicMetadataFields = memo(function TopicMetadataFields({
           className="w-16"
         />
         {fieldErrors.display_order && (
-          <span id="topic-display-order-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.display_order}</span>
+          <FieldError id="topic-display-order-error">{fieldErrors.display_order}</FieldError>
         )}
       </div>
 
@@ -54,7 +55,7 @@ export const TopicMetadataFields = memo(function TopicMetadataFields({
 
       <Switch label="Visible to students" checked={isPublished} onChange={onPublishedChange} />
       {fieldErrors.youtube_url && (
-        <span id="topic-youtube-url-error" aria-live="polite" className="w-full text-xs font-bold text-danger mt-1">{fieldErrors.youtube_url}</span>
+        <FieldError id="topic-youtube-url-error" className="w-full">{fieldErrors.youtube_url}</FieldError>
       )}
     </div>
   )

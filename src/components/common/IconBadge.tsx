@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import { TRANSITION_INTERACTION } from './AntigravityMotion'
 
 const ICON_BADGE_SIZES = {
   xs: { container: 'w-6 h-6', icon: 12 },
@@ -28,13 +29,13 @@ type IconBadgeStatus =
   | 'default'
 
 const STATUS_MATERIAL: Record<IconBadgeStatus, string> = {
-  primary: 'bg-primary/10 text-primary',
-  success: 'bg-success/10 text-success',
-  warning: 'bg-warning/10 text-warning',
-  danger: 'bg-danger/10 text-danger',
-  secondary: 'bg-secondary/10 text-secondary',
-  muted: 'bg-hover-bg text-text-muted',
-  default: 'bg-primary/10 text-primary',
+  primary: 'bg-primary/10 text-primary light:bg-white',
+  success: 'bg-success/10 text-success light:bg-white',
+  warning: 'bg-warning/10 text-warning light:bg-white',
+  danger: 'bg-danger/10 text-danger light:bg-white',
+  secondary: 'bg-secondary/10 text-secondary light:bg-white',
+  muted: 'bg-hover-bg text-text-muted light:bg-white',
+  default: 'bg-primary/10 text-primary light:bg-white',
 }
 
 interface IconBadgeProps {
@@ -61,7 +62,7 @@ export function IconBadge({
   const radius = shape === 'circle' ? 'rounded-full' : 'rounded-xl'
 
   return (
-    <div className={`${container} ${radius} flex items-center justify-center shrink-0 transition-all ${material} ${className}`}>
+    <div className={`${container} ${radius} flex items-center justify-center shrink-0 ${TRANSITION_INTERACTION} ${material} ${className}`}>
       <Icon size={iconSize} />
     </div>
   )

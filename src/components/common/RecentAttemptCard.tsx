@@ -1,8 +1,8 @@
 import { AttemptCardBase } from './AttemptCardBase'
-import type { AttemptWithRelations } from '../../types/exam.types'
+import type { PerformanceAttemptSummary } from '../../types/exam.types'
 
 interface RecentAttemptCardProps {
-  attempt: AttemptWithRelations;
+  attempt: PerformanceAttemptSummary;
   onClick: () => void;
 }
 

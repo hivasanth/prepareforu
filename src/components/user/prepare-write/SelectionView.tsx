@@ -1,18 +1,18 @@
 import { useRef, type FC } from 'react';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  FileText 
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import {
-  Grid, 
-  ExamCard, 
-  MetricBlock, 
+  ExamCard,
+  MetricBlock,
   Stack,
+  Tabs,
   SelectionContainer
 } from '../../common/AntigravityUI';
-import { ExamGroupBar } from '../ExamGroupBar';
-import { LoadingSkeleton, ErrorState, EmptyState } from '../../common/SharedComponents';
+import { EmptyState } from '../../common/SharedComponents';
+import { SelectionCardSkeleton } from './PrepareWriteSkeletons';
 import type { ExamConfig, ExamPaper } from '../../../types/exam.types';
 
 interface SelectionViewProps {
@@ -24,11 +24,8 @@ interface SelectionViewProps {
   availabilityMap: Record<string, { valid: boolean; message?: string }>;
   loading: boolean;
   actionLoading: boolean;
-  error: string | null;
   onExamChange: (id: string) => void;
-  onPaperSelect: (paper: ExamPaper) => void;
-  onStartPreparation: () => void;
-  onRetry: () => void;
+  onStartPreparation: (paper: ExamPaper) => void;
 }
 
 export const SelectionView: FC<SelectionViewProps> = ({
@@ -40,11 +37,8 @@ export const SelectionView: FC<SelectionViewProps> = ({
   availabilityMap,
   loading,
   actionLoading,
-  error,
   onExamChange,
-  onPaperSelect,
-  onStartPreparation,
-  onRetry
+  onStartPreparation
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -58,35 +52,50 @@ export const SelectionView: FC<SelectionViewProps> = ({
     });
   };
 
-  if (error && !exams.length) {
-    return <ErrorState message={error} onRetry={onRetry} />;
-  }
-
   return (
     <Stack gap={32}>
       {/* Group Tabs — always mounted when available */}
       {(userSelection === 'APPSC_GROUPS' || userSelection === 'APPSC') && exams.length > 0 && (
         <SelectionContainer>
-          <ExamGroupBar
-            ariaLabel="Select exam group"
-            options={exams.map(e => ({ 
-              id: e.exam_id, 
-              label: e.exam_id.replace(/APPSC_/g, '').replace(/_/g, ' ')
-            }))}
-            activeId={selectedExamId || ''}
-            onChange={onExamChange}
-            bare
-          />
+          <div className="md:flex md:justify-center">
+            <Tabs
+              ariaLabel="Select exam group"
+              options={exams.map(e => ({ 
+                id: e.exam_id, 
+                label: e.exam_id.replace(/APPSC_/g, '').replace(/_/g, ' ')
+              }))}
+              activeId={selectedExamId || ''}
+              onChange={onExamChange}
+              bare
+            />
+          </div>
         </SelectionContainer>
       )}
 
-      {/* Card content — scoped loading skeleton */}
+      {/* Card content — scoped loading skeleton.
+          Mirrors ExamCard geometry via SelectionCardSkeleton (icon + status
+          + title + 2×2 metric grid + footer button). The mobile carousel
+          and desktop grid wrappers around the cards stay mounted to avoid
+          layout shift on exam change. */}
       {loading ? (
-        <Grid cols={4} gap={24}>
-          {[1,2,3,4,5,6,7,8].map(i => <LoadingSkeleton key={i} height={200} borderRadius={20} />)}
-        </Grid>
-      ) : error ? (
-        <ErrorState message={error} onRetry={onRetry} />
+        <>
+          <div className="sm:hidden">
+            <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 px-[3px] -mx-[3px] pb-4">
+              {[1,2,3,4,5,6,7,8].map(i => (
+                <div key={i} className="min-w-full snap-center snap-always">
+                  <SelectionCardSkeleton />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="hidden sm:block w-full">
+            <div className="grid sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 w-full auto-rows-stretch">
+              {[1,2,3,4,5,6,7,8].map(i => (
+                <SelectionCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </>
       ) : papers.length === 0 ? (
         <EmptyState
           icon={<FileText size={40} />}
@@ -111,12 +120,9 @@ export const SelectionView: FC<SelectionViewProps> = ({
                       title={paper.paper_name}
                       status={paper.stage || 'Live'}
                       isStarting={isSelected && actionLoading}
-                      disabled={!isValid}
-                      disabledMessage={!isValid ? (availabilityMap[paper.id]?.message || "Not Enough Questions") : undefined}
-                      onClick={() => {
-                        onPaperSelect(paper);
-                        onStartPreparation();
-                      }}
+                      disabled={!isValid || (actionLoading && !isSelected)}
+                      disabledMessage={!isValid ? (availabilityMap[paper.id]?.message || "Not Enough Questions") : (actionLoading && !isSelected ? 'Loading…' : undefined)}
+                      onClick={() => onStartPreparation(paper)}
                     >
                       <MetricBlock variant="metric" label="Questions" value={paper.total_questions || 100} />
                       <MetricBlock variant="metric" label="Duration" value={`${paper.duration_minutes}m`} />
@@ -138,13 +144,13 @@ export const SelectionView: FC<SelectionViewProps> = ({
               <>
                 <button 
                   onClick={() => scroll('left')}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-11 h-11 rounded-full bg-card-bg shadow-xl border border-border-subtle flex items-center justify-center text-text-primary z-10 active:scale-90 transition-transform"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-11 h-11 rounded-full bg-card-bg shadow-xl border border-border-subtle flex items-center justify-center text-text-primary z-10 active:brightness-95 transition-interaction duration-fast ease-standard ${FOCUS_RING}"
                 >
                   <ChevronLeft size={20} />
                 </button>
                 <button 
                   onClick={() => scroll('right')}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-11 h-11 rounded-full bg-card-bg shadow-xl border border-border-subtle flex items-center justify-center text-text-primary z-10 active:scale-90 transition-transform"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-11 h-11 rounded-full bg-card-bg shadow-xl border border-border-subtle flex items-center justify-center text-text-primary z-10 active:brightness-95 transition-interaction duration-fast ease-standard ${FOCUS_RING}"
                 >
                   <ChevronRight size={20} />
                 </button>
@@ -165,12 +171,9 @@ export const SelectionView: FC<SelectionViewProps> = ({
                       title={paper.paper_name}
                       status={paper.stage || 'Live'}
                       isStarting={isSelected && actionLoading}
-                      disabled={!isValid}
-                      disabledMessage={!isValid ? (availabilityMap[paper.id]?.message || "Not Enough Questions") : undefined}
-                      onClick={() => {
-                        onPaperSelect(paper);
-                        onStartPreparation();
-                      }}
+                      disabled={!isValid || (actionLoading && !isSelected)}
+                      disabledMessage={!isValid ? (availabilityMap[paper.id]?.message || "Not Enough Questions") : (actionLoading && !isSelected ? 'Loading…' : undefined)}
+                      onClick={() => onStartPreparation(paper)}
                     >
                       <MetricBlock variant="metric" label="Questions" value={paper.total_questions || 100} />
                       <MetricBlock variant="metric" label="Duration" value={`${paper.duration_minutes}m`} />

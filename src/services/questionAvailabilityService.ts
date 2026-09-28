@@ -1,6 +1,7 @@
 import * as examRepo from '../lib/repositories/exam.repository';
 import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
+import type { ExamConfig } from '../types/exam.types';
 
 const DEFAULT_MIN_QUESTIONS = 30;
 
@@ -11,25 +12,21 @@ const DEFAULT_MIN_QUESTIONS = 30;
  */
 export async function getMinQuestions(examSelection: string, force = false): Promise<number> {
   const cacheKey = `min_questions_${examSelection}`;
-  try {
-    return await queryCache.fetchWithDedup(cacheKey, async () => {
-      const allowedIds = getAllowedExamIds(examSelection);
-      if (allowedIds.length === 0) return DEFAULT_MIN_QUESTIONS;
+  const allowedIds = getAllowedExamIds(examSelection);
+  if (allowedIds.length === 0) return DEFAULT_MIN_QUESTIONS;
 
-      const data = await examRepo.fetchMinQuestions(allowedIds);
+  const records: Pick<ExamConfig, 'min_questions'>[] = await queryCache.fetchWithDedup(cacheKey, async () => {
+    const data = await examRepo.fetchMinQuestions(allowedIds);
+    return data ?? [];
+  }, 600000, force);
 
-      const records = data ?? [];
-      if (records.length === 0) return DEFAULT_MIN_QUESTIONS;
+  if (records.length === 0) return DEFAULT_MIN_QUESTIONS;
 
-      const values = records
-        .map(r => r.min_questions)
-        .filter((v): v is number => typeof v === 'number' && v > 0);
+  const values = records
+    .map(r => r.min_questions)
+    .filter((v): v is number => typeof v === 'number' && v > 0);
 
-      return values.length > 0 ? Math.min(...values) : DEFAULT_MIN_QUESTIONS;
-    }, 600000, force);
-  } catch {
-    return DEFAULT_MIN_QUESTIONS;
-  }
+  return values.length > 0 ? Math.min(...values) : DEFAULT_MIN_QUESTIONS;
 }
 
 export function getDefaultMinQuestions(): number {

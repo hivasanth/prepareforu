@@ -2,7 +2,16 @@
 
 ## Purpose
 
-Provides a complete exam preparation and simulation workflow: select an exam paper, preview questions in preparation mode, take a timed exam, view results, and review answers with diagnostic filtering.
+Provides a **practice / self-test / simulation** exam experience: select an exam paper, preview questions in preparation mode, take a timed exam, view results, and review answers with diagnostic filtering.
+
+> **Practice mode — not an official graded exam.**
+> Prepare & Write is a self-test experience:
+> * answer keys may be visible during preparation
+> * results are computed locally in the browser
+> * **no `attempts` row is written**
+> * **no `attempt_answers` row is written**
+> * **no official leaderboard entry is recorded**
+> Treat the score as a self-assessment only. For an official graded exam, use `/active-exam/:paperId`.
 
 ## Workflow
 
@@ -78,7 +87,7 @@ The entire workflow state (view, questions, answers, review marks, timing) is pe
 | Loading / action loading | `usePrepareWrite` |
 | Error state | `usePrepareWrite` |
 | Visible question count (preparation) | `usePrepareWrite` |
-| Exam UI state (fullscreen, displayLang, modals) | View components (local useState) |
+| Exam UI state (fullscreen, displayLang [prep/exam/review], modals) | View components (local useState) |
 | Three-state rendering | `UserPrepareWrite` (page) |
 
 ## Reusable Components Used
@@ -88,7 +97,7 @@ The entire workflow state (view, questions, answers, review marks, timing) is pe
 | `PageContainer`, `PageTransition` | AntigravityUI | Non-exam page layout |
 | `Stack`, `Grid`, `Card` | AntigravityUI | Layout across all views |
 | `ExamCard`, `MetricBlock`, `SelectionContainer` | AntigravityUI | Paper selection cards |
-| `ExamGroupBar` | User shared | APPSC group tabs |
+| `Tabs` | AntigravityUI | Inline APPSC group tabs (in SelectionView) |
 | `IconButton`, `Button`, `StatCard` | AntigravityUI | Actions and stats |
 | `ProgressBar` | AntigravityUI | Exam progress |
 | `LoadingSkeleton`, `ErrorState`, `EmptyState` | SharedComponents | Loading/error/empty |

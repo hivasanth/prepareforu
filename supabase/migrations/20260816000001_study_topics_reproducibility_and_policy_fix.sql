@@ -54,17 +54,30 @@ DROP POLICY IF EXISTS "rls_study_topics_sub_admin_all" ON public.study_topics;
 -- Admin + sub-admin full access. Sub-admin scope is intentionally a service-
 -- layer concern (documented business model) — identical on every content table.
 DROP POLICY IF EXISTS "Admins full access" ON public.study_topics;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'Admins full access' AND polrelid = 'public.study_topics'::regclass
+  ) THEN
 CREATE POLICY "Admins full access"
   ON public.study_topics
   FOR ALL
   TO authenticated
   USING (public.is_admin() OR public.is_sub_admin())
   WITH CHECK (public.is_admin() OR public.is_sub_admin());
+  END IF;
+END
+$$;
 
 -- Users see ONLY published topics that belong to an exam they are allowed to
 -- sit (exam-scoped, canonical helper). Drop+recreate keeps this idempotent and
 -- guarantees the old unscoped variant can never linger under another name.
 DROP POLICY IF EXISTS "Users read published topics" ON public.study_topics;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'Users read published topics' AND polrelid = 'public.study_topics'::regclass
+  ) THEN
 CREATE POLICY "Users read published topics"
   ON public.study_topics
   FOR SELECT
@@ -77,6 +90,9 @@ CREATE POLICY "Users read published topics"
       OR public.is_sub_admin()
     )
   );
+  END IF;
+END
+$$;
 
 -- ─── 4. Harden grants: anon may SELECT only (never DML) ─────────────────────
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER

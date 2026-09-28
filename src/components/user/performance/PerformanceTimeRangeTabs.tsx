@@ -10,6 +10,7 @@ interface PerformanceTimeRangeTabsProps {
 export const PerformanceTimeRangeTabs = memo(function PerformanceTimeRangeTabs({ selectedTimeRange, onChange }: PerformanceTimeRangeTabsProps) {
   return (
     <SegmentedFilter
+      ariaLabel="Performance time range"
       options={[
         { id: '7d', label: '7 Days' },
         { id: '30d', label: '30 Days' },

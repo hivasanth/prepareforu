@@ -41,7 +41,7 @@ export function ParsedPreview({ sections, lang }: ParsedPreviewProps) {
                 <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                   {label || 'Section ' + (si + 1)}
                 </span>
-                <Badge variant="default" className="!text-[8px] !py-0 !px-1.5">
+                <Badge variant="default" className="text-[8px] py-0 px-1.5">
                   {sec.items.length} cards
                 </Badge>
               </div>

@@ -3,7 +3,37 @@ import type { LucideIcon } from 'lucide-react'
 import { PremiumSelect } from './PremiumSelect'
 import { AdminIconWrap } from './AdminIconWrap'
 import { AdminText } from './AdminText'
-import { PREMIUM_SURFACE, PREMIUM_SURFACE_HOVER, PREMIUM_LIGHT_OVERRIDES, MANAGEMENT_SURFACE, MANAGEMENT_SURFACE_HOVER } from './AntigravityCard'
+import { PREMIUM_SURFACE, PREMIUM_SURFACE_HOVER, PREMIUM_LIGHT_OVERRIDES, MANAGEMENT_SURFACE } from './AntigravityCard'
+import { CARD_HOVER } from './AntigravityMotion'
+
+/* ─── SelectionContainer ─────────────────────────────────────────────────────
+ * Design role:
+ *   Premium selection/nav/filter surface container.
+ *   The ONE container for multi-tab selection strips and configuration panels.
+ *
+ * Variants:
+ *   premium (default) — Forest/gold gradient surface + gold border + premium
+ *     shadow. The primary selection surface for exam/paper/subject navigation.
+ *   management — Neutral admin surface (no gold). Opt-in for admin contexts.
+ *
+ * Use for:
+ *   - Exam type/paper/subject selection tabs
+ *   - SegmentedFilter track wrapper
+ *   - Configuration mode selectors
+ *   - Multi-level tab navigation containers
+ *
+ * Do not use for:
+ *   - Regular content cards (use Card variant="default")
+ *   - List item containers (use Card or direct layout)
+ *   - Form input wrappers (use Input)
+ *   - Error containers (use ErrorContainer)
+ *   - Skeleton placeholders (use Skeleton)
+ *
+ * Theme: Light + Dark (premium = gold gradient light / dark forest;
+ *         management = neutral in both)
+ * Visual language: forest chrome + 3D elevation (premium)
+ * Consumers: 13 files / 15 JSX sites (all use default premium variant)
+ * ────────────────────────────────────────────────────────────────────────── */
 
 const PX_TO_SPACE: Record<number, string> = {
   0: 'var(--space-0)',
@@ -41,20 +71,43 @@ export const PageContainer: React.FC<{
   )
 }
 
-export const SelectionContainer: React.FC<{ children: React.ReactNode; className?: string; variant?: 'premium' | 'management' }> = ({
+/* Semantic inset scale for SelectionContainer. 'sm' (12px) is the historical
+   canonical default; 'md' (16px) matches the FloatingListItem row inset so
+   list headers and rows can share one content-box geometry. */
+const SELECTION_CONTAINER_PADDING = {
+  none: 'p-0',
+  sm: 'p-3',
+  md: 'p-4',
+  lg: 'p-5',
+} as const
+
+export const SelectionContainer: React.FC<{
+  children: React.ReactNode
+  className?: string
+  variant?: 'premium' | 'management'
+  /** Semantic inset. Default 'sm' preserves the canonical render. */
+  padding?: keyof typeof SELECTION_CONTAINER_PADDING
+  /** Premium depth tilt (`-translate-y-0.5`). On by default to preserve the
+   *  canonical premium surface. Compact control rows that must share a flex
+   *  centerline with neighboring controls (e.g. SegmentedFilter beside a
+   *  language toggle) opt out so their layout box and rendered box coincide. */
+  tilt?: boolean
+}> = ({
   children,
   className = '',
   variant = 'premium',
+  padding = 'sm',
+  tilt = true,
 }) => {
   /* Phase 3.9 (D-144) — additive Management variant. Default ('premium') render is
      byte-identical (gold selection surface + premium border + premium shadow).
      Management renders the neutral family (no gold); Navigation-family consumers
      are untouched. Gold remains the active-state accent for the premium path. */
   const surface = variant === 'management'
-    ? 'bg-[var(--management-surface)] border-[1.8px] border-[var(--management-border-strong)] shadow-[var(--management-shadow)]'
-    : 'shadow-card-premium selection-surface border-[1.8px] border-card-premium-border'
+    ? MANAGEMENT_SURFACE
+    : 'shadow-card-premium selection-surface border-(length:--border-premium-width) border-card-premium-border'
   return (
-    <div className={`rounded-2xl ${surface} -translate-y-0.5 p-3 ${className}`}>
+    <div className={`rounded-2xl ${surface} ${tilt ? '-translate-y-0.5' : ''} ${SELECTION_CONTAINER_PADDING[padding]} ${className}`}>
       {children}
     </div>
   )
@@ -211,8 +264,8 @@ export const CollectionToolbar: React.FC<{ children: React.ReactNode; className?
      byte-identical (premium surface + gold light override). Management renders
      the neutral Management Surface Family with NO PREMIUM_LIGHT_OVERRIDES. */
   const surface = variant === 'management'
-    ? `${MANAGEMENT_SURFACE} ${MANAGEMENT_SURFACE_HOVER}`
-    : `${PREMIUM_SURFACE} transition-[box-shadow,border-color] duration-200 ${PREMIUM_SURFACE_HOVER} ${PREMIUM_LIGHT_OVERRIDES}`
+    ? `${MANAGEMENT_SURFACE} ${CARD_HOVER}`
+    : `${PREMIUM_SURFACE} ${PREMIUM_SURFACE_HOVER} ${PREMIUM_LIGHT_OVERRIDES}`
   return (
     <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-3 md:p-4 rounded-2xl ${surface} ${className}`}>
       {children}

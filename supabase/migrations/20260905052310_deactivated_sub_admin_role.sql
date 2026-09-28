@@ -1,0 +1,23 @@
+-- =============================================================================
+-- MIGRATION: deactivated_sub_admin role (ADMIN USERS ROLE-SEPARATION)
+-- Date: 2026-09-05
+--
+-- Adds a fourth value to the canonical user_role enum (one role system —
+-- no new column, no parallel role table).
+--
+-- Root cause this fixes (verified live 2026-09-05): the "remove educator"
+-- flow (admin_remove_sub_admin / admin_revoke_sub_admin_role) reverted
+-- users.role to 'user', so every removed ("deactivated") sub-admin immediately
+-- became a role='user' row and appeared on the Admin → Users (students) page.
+--
+-- A removed educator now keeps a distinct, non-user role value so the Users
+-- page can structurally exclude them forever, and no role guard allow-lists
+-- the role (no platform access).
+--
+-- NOTE: ALTER TYPE ... ADD VALUE cannot be *used* in the same transaction that
+-- adds it. This file is therefore applied as its own migration; the writers
+-- and readers live in 20260905052311_admin_users_role_separation_rpcs.sql
+-- (a separate transaction).
+-- =============================================================================
+
+ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'deactivated_sub_admin';

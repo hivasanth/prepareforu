@@ -5,44 +5,46 @@ import { ExamDetailSection } from '../../components/sub-admin/exams/ExamDetailSe
 
 export default function SubAdminExams() {
   const {
-    exams, examsLoading, examsError,
-    selectedExamId, selectedExam, evalData, dataLoading, dataError,
+    examsLoading, examsError,
+    selectedExamId, selectedExam, activeSection, evalData, dataLoading, dataError,
     searchTerm, setSearchTerm,
-    monthFilter, setMonthFilter,
-    monthOptions, filteredExams,
-    fetchExams, handleExamChange,
+    yearFilter, setYearFilter, yearOptions,
+    monthFilter, setMonthFilter, monthOptions, filteredExams,
+    activeFilter, handleFilterChange, filterCounts, activeFilterResults,
+    fetchExams, fetchEvalData, handleExamChange, handleSectionChange, handleBack,
     summaryStats, scoreDistribution,
-    topPerformers, bottomPerformers,
   } = useExamData()
 
-  const handleBack = () => {
-    handleExamChange('')
-  }
-
   return (
-    <PageContainer>
-      <Stack gap="lg" className="overflow-x-hidden">
+    <PageContainer className="min-h-[calc(100vh-16px)]">
+      <Stack gap="lg">
         {selectedExam ? (
           <ExamDetailSection
             selectedExam={selectedExam}
+            activeSection={activeSection}
             evalData={evalData}
             dataLoading={dataLoading}
             dataError={dataError}
             summaryStats={summaryStats}
             scoreDistribution={scoreDistribution}
-            topPerformers={topPerformers}
-            bottomPerformers={bottomPerformers}
             onBack={handleBack}
-            onRetry={() => selectedExamId && handleExamChange(selectedExamId)}
+            onSectionChange={handleSectionChange}
+            onRetry={() => selectedExamId && fetchEvalData(selectedExamId)}
           />
         ) : (
           <ExamListSection
-            exams={exams}
             examsLoading={examsLoading}
             examsError={examsError}
             filteredExams={filteredExams}
+            activeFilter={activeFilter}
+            onFilterChange={handleFilterChange}
+            filterCounts={filterCounts}
+            activeFilterResults={activeFilterResults}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
+            yearFilter={yearFilter}
+            onYearChange={setYearFilter}
+            yearOptions={yearOptions}
             monthFilter={monthFilter}
             onMonthChange={setMonthFilter}
             monthOptions={monthOptions}

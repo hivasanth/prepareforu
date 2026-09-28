@@ -31,7 +31,7 @@ export default function AccountDisabledPage() {
             </div>
           </div>
 
-          <Card variant="auth-light" className="text-center space-y-6 animate-in">
+          <Card variant="auth-light" className="text-center space-y-6 animate-in" role="alert" aria-live="assertive">
             <div className="w-20 h-20 bg-hover-bg rounded-full flex items-center justify-center mx-auto">
               <div className="w-12 h-12 bg-danger/10 text-danger rounded-2xl flex items-center justify-center">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

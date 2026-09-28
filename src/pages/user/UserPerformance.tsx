@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { Target, TrendingUp, Clock, Search } from 'lucide-react'
 import { EmptyState } from '../../components/common/SharedComponents'
 import {
   PageContainer,
@@ -30,6 +31,8 @@ export default function UserPerformance() {
     filteredAttempts,
     metrics,
     subjectStats,
+    subjectStatsLoading,
+    subjectStatsError,
     trendData,
     distribution,
     selectedExamId,
@@ -40,9 +43,27 @@ export default function UserPerformance() {
     setSelectedTimeRange,
     examOptions,
     paperOptions,
+    needsSelection,
+    filterEmptyReason,
   } = useUserPerformance()
 
-  if (loading) return <PerformanceSkeleton />
+  if (needsSelection) {
+    return (
+      <PageContainer>
+        <div className="py-8">
+          <EmptyState
+            icon={<Target size={48} aria-hidden />}
+            title="Select an exam to view your performance"
+            subtitle="Choose your exam selection to unlock performance analytics."
+            actionLabel="Choose Exam"
+            onAction={() => navigate('/signup')}
+          />
+        </div>
+      </PageContainer>
+    )
+  }
+
+  if (loading) return <PerformanceSkeleton showAppscTabs={isAppsc} />
 
   if (errorState === 'error' && pageError) {
     return (
@@ -63,7 +84,7 @@ export default function UserPerformance() {
       <PageContainer>
         <div className="py-8">
           <EmptyState
-            icon="📈"
+            icon={<TrendingUp size={48} aria-hidden />}
             title="No exam activity yet"
             subtitle="Complete exams in the Exams tab to see your performance analytics here."
             actionLabel="Start Today's Exam"
@@ -90,7 +111,6 @@ export default function UserPerformance() {
               customPapers={paperOptions.map(p => ({ label: p.name, id: p.id }))}
               showSubjects={false}
               hideAll
-              bare
             />
           </SectionReveal>
         )}
@@ -101,13 +121,19 @@ export default function UserPerformance() {
         />
 
         {filteredAttempts.length === 0 ? (
-          <EmptyState
-            icon="🔍"
-            title="No data found"
-            subtitle="Try adjusting your filters to see results, or start a new exam to build your performance profile."
-            actionLabel="Start Today's Exam"
-            onAction={() => navigate('/exams')}
-          />
+          filterEmptyReason === 'time' ? (
+            <EmptyState
+              icon={<Clock size={48} aria-hidden />}
+              title="No performance data for this time range"
+              subtitle="Try a different time range, or complete exams in this selection to see analytics."
+            />
+          ) : (
+            <EmptyState
+              icon={<Search size={48} aria-hidden />}
+              title="No performance data for the selected exam"
+              subtitle="Complete exams in this selection to see your analytics here."
+            />
+          )
         ) : (
           <div className="space-y-8">
             <PerformanceMetricsGrid metrics={metrics} />
@@ -116,6 +142,8 @@ export default function UserPerformance() {
               hasEnoughTrendData={hasEnoughTrendData}
               distribution={distribution}
               subjectStats={subjectStats}
+              subjectStatsLoading={subjectStatsLoading}
+              subjectStatsError={subjectStatsError}
             />
           </div>
         )}

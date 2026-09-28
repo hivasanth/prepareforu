@@ -1,10 +1,8 @@
-import * as attemptRepo from '../lib/repositories/attempt.repository';
+import { recordPracticeSessionRpc } from '../lib/repositories/attempt.repository';
 import * as examRepo from '../lib/repositories/exam.repository';
 import * as questionRepo from '../lib/repositories/question.repository';
-import { getAllowedExamIds } from '../utils/examUtils';
 import { queryCache } from '../utils/queryCache';
-import { logDebug, logWarn } from '../utils/logger';
-import type { Question, ExamConfig, ExamPaper, ExamSubject } from '../types/exam.types';
+import type { ExamConfig, ExamPaper, ExamSubject, Question } from '../types/exam.types';
 
 export interface PaperDistribution {
   subjects: ExamSubject[];
@@ -17,7 +15,7 @@ export interface PaperDistribution {
  */
 export async function fetchExams(allowedIds: string[], force = false): Promise<ExamConfig[]> {
   const cacheKey = `exams_config_${allowedIds.join('_')}`;
-  
+
   return queryCache.fetchWithDedup(cacheKey, async () => {
     const data = await examRepo.fetchExamConfigsByIds(allowedIds);
     return (data || []).sort((a: ExamConfig, b: ExamConfig) => (a.name || '').localeCompare(b.name || ''));
@@ -30,7 +28,7 @@ export async function fetchExams(allowedIds: string[], force = false): Promise<E
  */
 export async function fetchPapers(examId: string, allowedIds: string[], force = false): Promise<ExamPaper[]> {
   const cacheKey = `papers_config_${examId}_${allowedIds.join('_')}`;
-  
+
   return queryCache.fetchWithDedup(cacheKey, async () => {
     const data = await examRepo.fetchPapersByExamId(examId);
     return data || [];
@@ -43,7 +41,7 @@ export async function fetchPapers(examId: string, allowedIds: string[], force = 
  */
 export async function fetchPaperDistribution(paperId: string, force = false): Promise<PaperDistribution> {
   const cacheKey = `paper_dist_${paperId}`;
-  
+
   return queryCache.fetchWithDedup(cacheKey, async () => {
     const data = await examRepo.fetchSubjectsByPaperId(paperId);
     if (!data || data.length === 0) throw new Error('No distribution found for this paper.');
@@ -56,97 +54,58 @@ export async function fetchPaperDistribution(paperId: string, force = false): Pr
 }
 
 /**
- * Fetches questions based on the paper distribution.
- * Ensures randomized selection and sufficient counts.
+ * Prepare & Write locked flow — preparation phase.
+ *
+ * Calls prepare_exam_questions(p_paper_id): the server selects the question set,
+ * persists it (owner-scoped, RPC-only writes), and returns ONLY student-safe
+ * fields — correct_option / explanation_* are never projected (F-01/F-07).
+ * Questions are visible for study; answers are revealed only AFTER the real
+ * exam is submitted (via the standard review path).
  */
-export async function fetchPrepareQuestions(
-  paperId: string, 
-  subjects: ExamSubject[],
-  userId?: string
-): Promise<Question[]> {
-  let attemptedQuestionIds: string[] = [];
-  if (userId) {
-    const userAttempts = await attemptRepo.fetchAttemptsByUserId(userId);
-    
-    if (userAttempts && userAttempts.length > 0) {
-      const attemptIds = userAttempts.map(a => a.id);
-      const answeredQuestions = await attemptRepo.findAnsweredQuestionIds(attemptIds);
-      
-      if (answeredQuestions) {
-        const rawIds = answeredQuestions.map(q => q.question_id).filter(Boolean);
-        attemptedQuestionIds = [...new Set(rawIds)];
-
-        logDebug('prepareWrite.exclusionMetrics', {
-          rawCount: rawIds.length,
-          uniqueCount: attemptedQuestionIds.length,
-          duplicatesRemoved: rawIds.length - attemptedQuestionIds.length,
-          attemptCount: userAttempts.length,
-        });
-      }
-    }
-  }
-
-  const allQuestions: Question[] = [];
-
-  for (const subject of subjects) {
-    const poolLimit = Math.max(subject.question_count * 3, 100);
-    const examIds = getAllowedExamIds(subject.exam_id);
-    
-    // 1. Fetch unattempted questions from a larger pool
-    let subjectQuestionsPool: Question[];
-
-    if (attemptedQuestionIds.length > 0) {
-      subjectQuestionsPool = ((await questionRepo.fetchQuestionsByPaperAndSubjectExcluding(
-        '*', paperId, subject.subject_name, examIds, attemptedQuestionIds, poolLimit
-      )) ?? []) as Question[];
-    } else {
-      subjectQuestionsPool = ((await questionRepo.fetchQuestionsByPaperAndSubject(
-        '*', paperId, subject.subject_name, examIds, poolLimit
-      )) ?? []) as Question[];
-    }
-    
-    // Shuffle the pool and take the required count
-    let selectedSubjectQuestions = subjectQuestionsPool
-      .sort(() => Math.random() - 0.5)
-      .slice(0, subject.question_count);
-
-    // 2. If not enough questions, fallback to attempted questions pool
-    if (selectedSubjectQuestions.length < subject.question_count && attemptedQuestionIds.length > 0) {
-      const remainingNeeded = subject.question_count - selectedSubjectQuestions.length;
-      
-      const attemptedPoolData = (await questionRepo.fetchQuestionsByPaperAndSubjectIncluding(
-        '*', paperId, subject.subject_name, examIds, attemptedQuestionIds, poolLimit
-      )) as Question[];
-
-      if (attemptedPoolData) {
-        const shuffledAttempted = attemptedPoolData
-          .sort(() => Math.random() - 0.5);
-        selectedSubjectQuestions.push(...shuffledAttempted.slice(0, remainingNeeded));
-      }
-    }
-
-    // Check if we have enough questions for this subject
-    if (selectedSubjectQuestions.length < subject.question_count) {
-      const msg = `Insufficient questions for subject: ${subject.subject_name}. Required: ${subject.question_count}, Found: ${selectedSubjectQuestions.length}`;
-      logWarn('prepareWriteService.buildPaper.warn', { message: msg });
-      throw new Error(msg);
-    }
-
-    // Map visual to diagram if needed (consistency with other modules)
-    const mappedQuestions = selectedSubjectQuestions.map(q => ({
-      ...q,
-      diagram: null
-    }));
-
-    allQuestions.push(...mappedQuestions);
-  }
-
-  // Final shuffle to mix subjects using Fisher-Yates
-  for (let i = allQuestions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [allQuestions[i], allQuestions[j]] = [allQuestions[j], allQuestions[i]];
-  }
-  return allQuestions;
+export async function prepareExamQuestions(paperId: string) {
+  return questionRepo.prepareExamQuestionsRpc(paperId);
 }
 
+/**
+ * Prepare & Write locked flow — launch the real exam.
+ *
+ * Calls start_prepared_exam(p_preparation_id): consumes the locked snapshot
+ * into a real attempt (source='prepare_write') using the EXACT same stored
+ * question IDs. The client cannot inject its own question set.
+ */
+export async function startPreparedExam(preparationId: string) {
+  return questionRepo.startPreparedExamRpc(preparationId);
+}
 
+/**
+ * L-01 fix: persists a completed practice session to the server as an audit
+ * trail. Practice is otherwise entirely client-side; computing correctness
+ * here is safe because practice questions reveal the correct option by design.
+ */
+export async function recordPracticeSession(input: {
+  examId?: string | null
+  paperId?: string | null
+  questions: Question[]
+  answers: Record<string, 'A' | 'B' | 'C' | 'D' | null>
+  durationSeconds?: number | null
+}): Promise<string> {
+  const questionCount = input.questions.length
+  let answeredCount = 0
+  let correctCount = 0
+
+  for (const q of input.questions) {
+    const selected = input.answers[q.id]
+    if (!selected) continue
+    answeredCount += 1
+    if (selected === q.correct_option) correctCount += 1
+  }
+
+  return recordPracticeSessionRpc({
+    examId: input.examId,
+    paperId: input.paperId,
+    questionCount,
+    answeredCount,
+    correctCount,
+    durationSeconds: input.durationSeconds,
+  })
+}

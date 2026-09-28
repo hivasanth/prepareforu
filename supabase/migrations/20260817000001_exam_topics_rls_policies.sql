@@ -22,50 +22,98 @@
 
 -- ─── Admin: INSERT ──────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS exam_topics_admin_insert ON public.exam_topics;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_topics_admin_insert' AND polrelid = 'public.exam_topics'::regclass
+  ) THEN
 CREATE POLICY exam_topics_admin_insert
   ON public.exam_topics
   FOR INSERT
   TO authenticated
   WITH CHECK (is_admin());
+  END IF;
+END
+$$;
 
 -- ─── Admin: UPDATE ──────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS exam_topics_admin_update ON public.exam_topics;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_topics_admin_update' AND polrelid = 'public.exam_topics'::regclass
+  ) THEN
 CREATE POLICY exam_topics_admin_update
   ON public.exam_topics
   FOR UPDATE
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
+  END IF;
+END
+$$;
 
 -- ─── Admin: DELETE ──────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS exam_topics_admin_delete ON public.exam_topics;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_topics_admin_delete' AND polrelid = 'public.exam_topics'::regclass
+  ) THEN
 CREATE POLICY exam_topics_admin_delete
   ON public.exam_topics
   FOR DELETE
   TO authenticated
   USING (is_admin());
+  END IF;
+END
+$$;
 
 -- ─── Sub-Admin: INSERT ──────────────────────────────────────────────────────
 DROP POLICY IF EXISTS exam_topics_sub_admin_insert ON public.exam_topics;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_topics_sub_admin_insert' AND polrelid = 'public.exam_topics'::regclass
+  ) THEN
 CREATE POLICY exam_topics_sub_admin_insert
   ON public.exam_topics
   FOR INSERT
   TO authenticated
   WITH CHECK (is_sub_admin());
+  END IF;
+END
+$$;
 
 -- ─── Sub-Admin: UPDATE ──────────────────────────────────────────────────────
 DROP POLICY IF EXISTS exam_topics_sub_admin_update ON public.exam_topics;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_topics_sub_admin_update' AND polrelid = 'public.exam_topics'::regclass
+  ) THEN
 CREATE POLICY exam_topics_sub_admin_update
   ON public.exam_topics
   FOR UPDATE
   TO authenticated
   USING (is_sub_admin())
   WITH CHECK (is_sub_admin());
+  END IF;
+END
+$$;
 
 -- ─── Sub-Admin: DELETE ──────────────────────────────────────────────────────
 DROP POLICY IF EXISTS exam_topics_sub_admin_delete ON public.exam_topics;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_topics_sub_admin_delete' AND polrelid = 'public.exam_topics'::regclass
+  ) THEN
 CREATE POLICY exam_topics_sub_admin_delete
   ON public.exam_topics
   FOR DELETE
   TO authenticated
   USING (is_sub_admin());
+  END IF;
+END
+$$;

@@ -4,10 +4,12 @@ import {
   Grid,
   SectionReveal,
   Alert,
+  ErrorContainer,
+  RetryButton,
 } from '../../components/common/AntigravityUI'
-import { AlertCircle } from 'lucide-react'
-import { ToastContainer } from '../../hooks/useToast'
+import { AlertCircle, CheckCircle2, Info } from 'lucide-react'
 import { useSettings } from '../../components/sub-admin/settings/useSettings'
+import { SubAdminSettingsSkeleton } from '../../components/sub-admin/settings/SubAdminSettingsSkeleton'
 import { IdentitySection } from '../../components/sub-admin/settings/IdentitySection'
 import { RecruitmentSection } from '../../components/sub-admin/settings/RecruitmentSection'
 import { NotificationSection } from '../../components/sub-admin/settings/NotificationSection'
@@ -17,14 +19,57 @@ import { SessionSection } from '../../components/sub-admin/settings/SessionSecti
 export default function SubAdminSettings() {
   const ctx = useSettings()
 
-  return (
-    <>
+  // B2: page-level load failure → canonical error surface with a loading-guarded
+  // retry. The real grid is NEVER rendered with defaults while data is missing.
+  if (ctx.error && !ctx.profile) {
+    return (
       <PageContainer>
-        <Stack gap="lg">
-          {ctx.error && (
+        <ErrorContainer category={ctx.error.category} severity={ctx.error.severity}>
+          <p className="text-lg font-bold text-text-primary">{ctx.error.title}</p>
+          <p className="text-base text-text-secondary">{ctx.error.message}</p>
+          <RetryButton onRetry={ctx.fetchData} loading={ctx.loading} />
+        </ErrorContainer>
+      </PageContainer>
+    )
+  }
+
+  // B2: no default flash — render the skeleton (single role="status" owner)
+  // until the profile load resolves.
+  if (ctx.loading || ctx.profile === null) {
+    return (
+      <PageContainer>
+        <SubAdminSettingsSkeleton />
+      </PageContainer>
+    )
+  }
+
+  return (
+    <PageContainer>
+      <Stack gap="lg">
+        {ctx.successMessage && (
+          <SectionReveal>
+            <Alert variant="success" icon={CheckCircle2} title="Action complete" className="w-full" onDismiss={ctx.clearSuccessMessage}>
+              {ctx.successMessage}
+            </Alert>
+          </SectionReveal>
+        )}
+        {ctx.actionError && (
             <SectionReveal>
               <Alert variant="error" icon={AlertCircle} title="Action failed" className="w-full">
-                {ctx.error}
+                {ctx.actionError}
+              </Alert>
+            </SectionReveal>
+          )}
+          {ctx.notice && (
+            <SectionReveal>
+              <Alert
+                variant="warning"
+                icon={Info}
+                title="Partial export"
+                className="w-full"
+                onDismiss={ctx.clearNotice}
+              >
+                {ctx.notice}
               </Alert>
             </SectionReveal>
           )}
@@ -82,9 +127,6 @@ export default function SubAdminSettings() {
             </Grid>
           </SectionReveal>
         </Stack>
-      </PageContainer>
-
-      <ToastContainer toasts={ctx.toasts} />
-    </>
+    </PageContainer>
   )
 }

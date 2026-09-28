@@ -13,13 +13,12 @@ SubAdminExams (page — composition only, 59 lines)
   │     ├── teacherExamService (data access)
   │     └── scoreUtils (stats computation)
   ├── ExamListSection (exam browser with AdminFilterBar)
-  │     └── Grid → Card ×N (exam cards)
+  │     └── Grid → ExamCard ×N (canonical card — also the dashboard Recent Deployments container)
   └── ExamDetailSection (detail view orchestration, 191 lines)
         ├── ExamSummaryCards (overview stat cards)
         ├── ExamScoreDistribution (bar chart)
-        ├── ExamQuestionAnalysis (expandable question grid)
+        ├── ExamQuestionAnalysis (question-wise grid)
         ├── ExamPerformers (top/bottom 5)
-        └── ExamStudentTable (expandable results table)
 
 SubAdminDashboard (page)
   └── ExamDetailModal (cross-feature modal, 302 lines)
@@ -36,7 +35,6 @@ Page → useExamData hook → ExamListSection | ExamDetailSection
                                           ├── ExamScoreDistribution
                                           ├── ExamQuestionAnalysis
                                           ├── ExamPerformers
-                                          └── ExamStudentTable
 
 useExamData (hook)
   → fetchSubAdminIdByUserId + fetchTeacherExamsWithFullFields (parallel)
@@ -62,9 +60,8 @@ SubAdminExams (page)
   └── ExamDetailSection (orchestration)
         ├── ExamSummaryCards (overview stat cards)
         ├── ExamScoreDistribution (bar chart)
-        ├── ExamQuestionAnalysis (expandable question grid)
+        ├── ExamQuestionAnalysis (question-wise grid)
         ├── ExamPerformers (top/bottom 5)
-        └── ExamStudentTable (expandable results table)
 
 SubAdminDashboard (page)
   └── ExamDetailModal (standalone modal)
@@ -121,9 +118,6 @@ No responsive calculations belong inside pages. Each component calls `useExamRes
 | Modal questions/leaderboard fetch | `useExamDetail` |
 | Loading / error / empty | `ExamDetailSection` (parent) |
 | Modal loading / error / empty | `ExamDetailModal` (via `useExamDetail`) |
-| Question expand/collapse | `ExamQuestionAnalysis` |
-| Table expand/collapse | `ExamStudentTable` |
-| Table copy leaderboard | `ExamStudentTable` |
 | Header copy summary | `ExamDetailSection` |
 | Modal tab switching | `ExamDetailModal` |
 | Modal copy leaderboard | `ExamDetailModal` |
@@ -146,21 +140,21 @@ All responsive values are computed in `useExamResponsive`:
 | `useExamDetail.ts` | Data fetching + state hook (ExamDetailModal) |
 | `types.ts` | TypeScript interfaces |
 | `ExamListSection.tsx` | Exam browser with filter |
+| `ExamCard.tsx` | Canonical exam container — also rendered by the dashboard Recent Deployments (`dashboard/RecentExamItem`) |
 | `ExamDetailSection.tsx` | Detail view orchestration |
 | `ExamDetailModal.tsx` | Standalone modal (used by SubAdminDashboard) |
 | `ExamSummaryCards.tsx` | Overview stat cards |
 | `ExamScoreDistribution.tsx` | Bar chart |
 | `ExamQuestionAnalysis.tsx` | Question-wise analysis |
-| `ExamPerformers.tsx` | Top/bottom performers |
-| `ExamStudentTable.tsx` | Student results table |
+| `ExamPerformers.tsx` | Top/bottom performers (leaderboard view) |
 | `ExamSubComponents.tsx` | Shared UI helpers |
 
 ## Reusable Components Used
 
 | Component | Source | Usage |
 |-----------|--------|-------|
-| `Button` | AntigravityUI | Copy Summary, Export CSV, Retry, Expand/Collapse toggles |
-| `Card` | AntigravityUI | Exam cards (premium-neutral), summary cards (default), question cards |
+| `Button` | AntigravityUI | Copy Summary, Export CSV, Retry |
+| `Card` | AntigravityUI | ExamCard container (premium-neutral), summary cards (default), question cards |
 | `Badge` | AntigravityUI | Exam status badges |
 | `Grid` | AntigravityUI | Exam list grid (cols=3) |
 | `Stack` | AntigravityUI | Vertical/horizontal spacing across all components |
@@ -185,7 +179,8 @@ All responsive values are computed in `useExamResponsive`:
 
 - All cards use canonical `Card` variants (`premium-neutral`, `default`)
 - All buttons use canonical `Button` (no custom buttons except feature-specific badges)
-- All badges use semantic variant matching (`success` for published, `warning` for draft)
+- All badges use semantic variant matching (`success` for published, `warning` for draft);
+  the `ExamCard` status/Live badges use the `curved` (rounded-full) opt-in, aligned top-right
 - All empty states use canonical `EmptyState` with Lucide icons
 - All loading uses canonical `LoadingSkeleton` / `GridSkeleton` / `StatSkeleton`
 - All errors use canonical `ErrorContainer` + `RetryButton`

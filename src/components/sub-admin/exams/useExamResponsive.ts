@@ -19,7 +19,6 @@ export function useExamResponsive() {
     },
     typography: {
       titleFont: px({ xs: 16, sm: 18, md: 20, lg: 22, xl: 22 }),
-      subFont: px({ xs: 12, sm: 13, md: 14, lg: 15, xl: 15 }),
       qFont: px({ xs: 12, sm: 14, md: 15, lg: 16, xl: 16 }),
       qStat: px({ xs: 11, sm: 13, md: 14, lg: 15, xl: 15 }),
       perfFont: px({ xs: 11, sm: 13, md: 14, lg: 15, xl: 15 }),

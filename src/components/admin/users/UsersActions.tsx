@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Search } from 'lucide-react'
-import { Input, CollectionFilter, CollectionToolbar } from '../../common/AntigravityUI'
+import { Input, CollectionToolbar, PremiumSelect } from '../../common/AntigravityUI'
 
 interface UsersActionsProps {
   searchQuery: string
@@ -28,17 +28,15 @@ export const UsersActions = memo(function UsersActions({
           />
         </div>
 
-        <CollectionFilter
-          variant="management"
-          label="Status"
-          ariaLabel="Filter by status"
+        <PremiumSelect
           value={statusFilter}
           onChange={onStatusFilterChange}
           options={[
-            { id: 'all', label: 'All' },
-            { id: 'active', label: 'Active Only' },
-            { id: 'inactive', label: 'Banned Only' },
+            { id: 'all', name: 'All' },
+            { id: 'active', name: 'Active Only' },
+            { id: 'inactive', name: 'Banned Only' },
           ]}
+          placeholder="Status"
           className="w-full sm:w-fit"
         />
       </div>

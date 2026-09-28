@@ -544,9 +544,10 @@ measurable evidence.*
   `getCachedMetadata` initialisers and always show loading on mount.
 - If APPSC-specific filter tabs are made available to all users, remove
   the `isAppsc` conditional and always render `UserSelectionTabs`.
-- If `fetchPerformanceAnswers` is extended for history (currently used
-  only by the Performance page), add a subject-accuracy breakdown to
-  each attempt card or detail view.
+- If a subject-accuracy breakdown is added to exam history (currently
+  aggregated only on the Performance page via the
+  `get_user_performance_answer_stats` RPC), reuse that RPC with the
+  attempt's exam/paper filters rather than fetching raw answers.
 
 ---
 

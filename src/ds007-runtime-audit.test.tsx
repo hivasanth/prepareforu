@@ -4,6 +4,13 @@ import { ThemeProvider } from './context/ThemeContext'
 import { AdminModal } from './components/common/AdminModal'
 import { ConfirmModal } from './components/common/SharedComponents'
 
+// jsdom has no layout geometry, so tabbable/focus-trap reports zero tabbable
+// nodes — the trap invariant is unreachable under test. Mock to a pass-through
+// (same pattern the rest of the suite uses) so modal semantics stay the focus.
+vi.mock('focus-trap-react', () => ({
+  FocusTrap: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+}))
+
 afterEach(cleanup)
 
 function renderModal(ui: React.ReactNode, light = false) {
@@ -52,7 +59,7 @@ describe('DS-007 Foundation Modal — AdminModal shell ownership', () => {
     )
     const box = body.querySelector('.ancient-overlay')
     expect(box).toBeTruthy()
-    expect(box).toHaveClass('bg-card-bg', 'shadow-2xl', 'sm:rounded-[2.5rem]', 'overflow-hidden')
+    expect(box).toHaveClass('bg-card-bg', 'shadow-card-shadow', 'sm:rounded-[2.5rem]', 'overflow-hidden')
   })
 
   it('renders children inside scrollable body', () => {
@@ -109,7 +116,7 @@ describe('DS-007 Foundation Modal — AdminModal shell ownership', () => {
     const dialog = body.querySelector('[role="dialog"]')
     const box = body.querySelector('.ancient-overlay')
     expect(dialog).toHaveClass('fixed', 'inset-0', 'z-50')
-    expect(box).toHaveClass('bg-card-bg', 'shadow-2xl')
+    expect(box).toHaveClass('bg-card-bg', 'shadow-card-shadow')
   })
 })
 

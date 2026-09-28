@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layers, BookOpen, Send, X } from 'lucide-react';
-import { Alert, Button, IconButton, IconBadge } from '../../components/common/AntigravityUI';
+import { Alert, Button, IconButton } from '../../components/common/AntigravityUI';
 import { Spinner } from '../../components/common/Spinner';
 import { ExamPageError } from '../../components/exam/ExamPageError';
+import { MODAL_TRANSITION } from '../../components/common/AntigravityMotion';
 
 import { useActiveExam } from '../../components/exam/useActiveExam';
 import { ExamTimer } from '../../components/ExamTimer';
@@ -14,7 +15,6 @@ import {
   QuestionNavigator,
   MobileActionBar,
   StatusBoard,
-  MobileQuestionStrip,
   SubmitExamModal,
 } from '../../components/exam';
 
@@ -30,6 +30,7 @@ export default function ActiveExamPage() {
     visitedQuestions, markedForReview,
     examStats,
     isSubmitting, isAutoSubmitting, isSubmitModalOpen, setIsSubmitModalOpen,
+    showStatusBoard, setShowStatusBoard,
     finalSubmit, onTimeUp,
     showFullscreenPrompt, fullscreenViolations, requestFullscreen,
     showSubjectName,
@@ -102,12 +103,19 @@ export default function ActiveExamPage() {
             durationMinutes={paper?.duration_minutes || 0}
             startedAt={attempt.started_at}
             onTimeUp={onTimeUp}
-            initialTabSwitches={attempt.tab_switch_count}
             onSecurityNotice={(message) => showExamBanner(message, 'warning')}
           />
         }
         leftActions={
-          <IconBadge icon={Layers} size="lg" className="hidden sm:flex" />
+          <IconButton
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowStatusBoard(prev => !prev)}
+            aria-label="Toggle status board"
+            className="hidden sm:flex"
+          >
+            <Layers size={18} />
+          </IconButton>
         }
         rightActions={
           <Button variant="primary" size="sm" onClick={() => setIsSubmitModalOpen(true)}>
@@ -135,6 +143,13 @@ export default function ActiveExamPage() {
             <X size={16} />
           </IconButton>
         </div>
+      )}
+
+      {showStatusBoard && (
+        <div
+          className="fixed inset-0 z-30 bg-app-bg/60 backdrop-blur-sm md:hidden"
+          onClick={() => setShowStatusBoard(false)}
+        />
       )}
 
       <main className="flex-1 flex overflow-hidden relative max-w-[1360px] mx-auto w-full">
@@ -178,17 +193,10 @@ export default function ActiveExamPage() {
           fullscreenViolations={fullscreenViolations}
           onJumpTo={goToQuestion}
           stats={examStats}
+          isVisible={showStatusBoard}
+          onToggleVisibility={() => setShowStatusBoard(prev => !prev)}
         />
       </main>
-
-      <MobileQuestionStrip
-        questions={questions}
-        currentIdx={currentIdx}
-        selectedAnswers={selectedAnswers}
-        markedForReview={markedForReview}
-        visitedQuestions={visitedQuestions}
-        onJumpTo={goToQuestion}
-      />
 
       <MobileActionBar
         isFirstQuestion={isFirstQuestion}
@@ -199,6 +207,7 @@ export default function ActiveExamPage() {
         onNext={handleNext}
         onClear={clearAnswer}
         onSubmit={() => setIsSubmitModalOpen(true)}
+        onSkip={handleSkip}
       />
 
       <SubmitExamModal
@@ -217,7 +226,9 @@ export default function ActiveExamPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 z-[200] bg-app-bg/80 backdrop-blur-2xl flex flex-col items-center justify-center"
+            exit={{ opacity: 0 }}
+            transition={MODAL_TRANSITION}
+            className="fixed inset-0 z-toast bg-app-bg/80 backdrop-blur-2xl flex flex-col items-center justify-center"
           >
             <Spinner size="lg" />
             <h3 className="text-2xl font-black text-text-primary uppercase tracking-[0.2em] mt-8">Submitting Your Answers</h3>

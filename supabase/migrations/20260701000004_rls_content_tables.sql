@@ -31,9 +31,17 @@ ON public.exam_papers FOR ALL TO authenticated
 USING (current_sub_admin_id() != '00000000-0000-0000-0000-000000000000')
 WITH CHECK (current_sub_admin_id() != '00000000-0000-0000-0000-000000000000');
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_exam_papers_user_select' AND polrelid = 'public.exam_papers'::regclass
+  ) THEN
 CREATE POLICY "rls_exam_papers_user_select"
 ON public.exam_papers FOR SELECT TO authenticated
 USING (true);
+  END IF;
+END
+$$;
 
 -- ─── TABLE: exam_subjects ───────────────────────────────────────────────────
 ALTER TABLE public.exam_subjects ENABLE ROW LEVEL SECURITY;
@@ -47,9 +55,17 @@ ON public.exam_subjects FOR ALL TO authenticated
 USING (current_sub_admin_id() != '00000000-0000-0000-0000-000000000000')
 WITH CHECK (current_sub_admin_id() != '00000000-0000-0000-0000-000000000000');
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_exam_subjects_user_select' AND polrelid = 'public.exam_subjects'::regclass
+  ) THEN
 CREATE POLICY "rls_exam_subjects_user_select"
 ON public.exam_subjects FOR SELECT TO authenticated
 USING (true);
+  END IF;
+END
+$$;
 
 -- ─── TABLE: questions ───────────────────────────────────────────────────────
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
@@ -63,9 +79,17 @@ ON public.questions FOR ALL TO authenticated
 USING (current_sub_admin_id() != '00000000-0000-0000-0000-000000000000')
 WITH CHECK (current_sub_admin_id() != '00000000-0000-0000-0000-000000000000');
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_questions_user_select' AND polrelid = 'public.questions'::regclass
+  ) THEN
 CREATE POLICY "rls_questions_user_select"
 ON public.questions FOR SELECT TO authenticated
 USING (true);
+  END IF;
+END
+$$;
 
 -- ─── TABLE: study_topics ───────────────────────────────────────────────────
 ALTER TABLE public.study_topics ENABLE ROW LEVEL SECURITY;
@@ -87,13 +111,32 @@ USING (is_published = true);
 -- ─── TABLE: leaderboard ─────────────────────────────────────────────────────
 ALTER TABLE public.leaderboard ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "rls_leaderboard_admin_all"
-ON public.leaderboard FOR ALL TO authenticated
-USING (is_admin()) WITH CHECK (is_admin());
+-- Canonical policy set (matches live). Any authenticated user may read all
+-- leaderboard rows (the leaderboard table is the intended global-read source);
+-- writes are restricted to admins.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'leaderboard_select_all' AND polrelid = 'public.leaderboard'::regclass
+  ) THEN
+CREATE POLICY "leaderboard_select_all"
+ON public.leaderboard FOR SELECT TO public
+USING (auth.uid() IS NOT NULL);
+  END IF;
+END
+$$;
 
-CREATE POLICY "rls_leaderboard_user_select"
-ON public.leaderboard FOR SELECT TO authenticated
-USING (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'leaderboard_write_system' AND polrelid = 'public.leaderboard'::regclass
+  ) THEN
+CREATE POLICY "leaderboard_write_system"
+ON public.leaderboard FOR ALL TO public
+USING (is_admin()) WITH CHECK (is_admin());
+  END IF;
+END
+$$;
 
 -- ─── TABLE: exam_versions ───────────────────────────────────────────────────
 ALTER TABLE public.exam_versions ENABLE ROW LEVEL SECURITY;

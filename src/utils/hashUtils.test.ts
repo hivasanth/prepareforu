@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { generateQuestionHash } from './hashUtils'
+import { describe, it, expect, afterEach } from 'vitest'
+import { sha256 } from 'js-sha256'
+import { generateQuestionHash, sha256Hex } from './hashUtils'
 
 const base = {
   question_text_en: 'What is the capital of France?',
@@ -82,5 +83,81 @@ describe('generateQuestionHash', () => {
     const h1 = await generateQuestionHash({ ...base, paper_id: undefined, subject_name: undefined })
     const h2 = await generateQuestionHash({ ...base, paper_id: null, subject_name: null })
     expect(h1).toBe(h2)
+  })
+
+  it('same question in different topics produces different hash (M-06)', async () => {
+    const h1 = await generateQuestionHash({ ...base, topic_en: 'Rivers of India' })
+    const h2 = await generateQuestionHash({ ...base, topic_en: 'Geography' })
+    expect(h1).not.toBe(h2)
+  })
+
+  it('same topic is deterministic (M-06)', async () => {
+    const h1 = await generateQuestionHash({ ...base, topic_en: 'Rivers of India' })
+    const h2 = await generateQuestionHash({ ...base, topic_en: 'Rivers of India' })
+    expect(h1).toBe(h2)
+  })
+})
+
+// ─── sha256Hex — Web Crypto preferred, js-sha256 fallback on non-secure origins ─
+// LAN-ORIGIN FIX: hashing must be byte-identical on plain-HTTP LAN addresses
+// where crypto.subtle is absent. These tests pin that BOTH paths produce the
+// exact same lowercase hex digest as the vetted reference implementation.
+
+const realCrypto = globalThis.crypto
+
+const DIGEST_INPUTS = [
+  '',
+  'hello',
+  'What is the capital of France?',
+  'తెలుగు పరీక్ష model scripting పరీక్ష',
+  '🚀 emoji 🌟 unicode',
+  'a'.repeat(100_000),
+  '!@#$%^&*()_+|~<>?,./:;"\'\\{}[]=-  spaces  👨\u200d💻',
+]
+
+function forceNoWebCrypto<T>(fn: () => Promise<T>): Promise<T> {
+  Object.defineProperty(globalThis, 'crypto', {
+    configurable: true,
+    value: { subtle: undefined } as unknown as typeof realCrypto,
+  })
+  return fn().finally(() => {
+    Object.defineProperty(globalThis, 'crypto', { configurable: true, value: realCrypto })
+  })
+}
+
+afterEach(() => {
+  Object.defineProperty(globalThis, 'crypto', { configurable: true, value: realCrypto })
+})
+
+describe('sha256Hex — Web Crypto and js-sha256 fallback are interchangeable', () => {
+  it.each(DIGEST_INPUTS)('primary path matches the js-sha256 reference for %j', async (input) => {
+    expect(await sha256Hex(input)).toBe(sha256(input))
+  })
+
+  it.each(DIGEST_INPUTS)('forced fallback (no crypto.subtle) matches the reference for %j', async (input) => {
+    await expect(forceNoWebCrypto(() => sha256Hex(input))).resolves.toBe(sha256(input))
+  })
+
+  it.each(DIGEST_INPUTS)('fallback and primary digests are identical for %j', async (input) => {
+    const fallbackDigest = await forceNoWebCrypto(() => sha256Hex(input))
+    const primaryDigest = await sha256Hex(input)
+    expect(fallbackDigest).toBe(primaryDigest)
+  })
+
+  it('falls back when the Web Crypto digest call itself rejects', async () => {
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: {
+        subtle: {
+          digest: async () => { throw new DOMException('not supported', 'OperationError') },
+        },
+      },
+    })
+    await expect(sha256Hex('reject-then-fallback')).resolves.toBe(sha256('reject-then-fallback'))
+  })
+
+  it('resolves a 64-char lowercase hex digest on the fallback path', async () => {
+    await expect(forceNoWebCrypto(() => sha256Hex(base.question_text_en)))
+      .resolves.toMatch(/^[a-f0-9]{64}$/)
   })
 })

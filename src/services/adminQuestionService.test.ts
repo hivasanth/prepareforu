@@ -9,7 +9,7 @@ vi.mock('../lib/repositories/question.repository', () => ({
   updateQuestion: vi.fn(),
   deleteQuestion: vi.fn(async () => {}),
   bulkDeleteQuestions: vi.fn(async () => {}),
-  listQuestions: vi.fn(async () => ({ data: [], count: 0 })),
+  adminListQuestionsRpc: vi.fn(async () => ({ data: [], count: 0 })),
   countQuestionsByFilter: vi.fn(async () => 0),
   findVelocityReferencedQuestionIds: vi.fn(async () => []),
   deactivateQuestion: vi.fn(async () => {}),
@@ -18,6 +18,7 @@ vi.mock('../lib/repositories/question.repository', () => ({
 vi.mock('../lib/repositories/exam.repository', () => ({
   upsertTopic: vi.fn(),
   fetchTopicById: vi.fn(),
+  fetchTopicsBySubject: vi.fn(),
 }))
 
 vi.mock('../utils/retryUtils', () => ({
@@ -82,7 +83,7 @@ const CANONICAL_TOPIC: {
   topic_en: string
   topic_te: string | null
 } = {
-  id: 'topic-uuid-1',
+  id: 'e8c2f1a4-6b3d-4e5f-9a8b-1d2c3e4f5a6b',
   exam_id: 'APPSC_GROUP_1',
   paper_id: 'paper-1',
   subject_name: 'History',
@@ -384,6 +385,176 @@ describe('adminQuestionService', () => {
       expect(result.error?.message).toBe('Could not verify the selected topic. Please try again.')
       expect(result.error?.message).not.toContain('JWT')
       expect(questionRepo.upsertQuestionNoIgnore).not.toHaveBeenCalled()
+    })
+  })
+
+  // ─── TOPIC FILTER: listQuestions live-topic resolution ─────────────────────
+
+  describe('listQuestions topic filter', () => {
+    const listParams = (overrides: Partial<Parameters<typeof adminQuestionService.listQuestions>[0]> = {}): Parameters<typeof adminQuestionService.listQuestions>[0] => ({
+      selectedExam: 'APPSC_GROUP_1',
+      selectedPaper: 'paper-1',
+      selectedSubject: 'History',
+      selectedTopic: '',
+      difficultyFilter: 'all',
+      visualFilter: 'all',
+      searchQuery: '',
+      offset: 0,
+      pageSize: 30,
+      ...overrides,
+    })
+
+    beforeEach(() => {
+      vi.mocked(questionRepo.adminListQuestionsRpc).mockResolvedValue({ data: [], count: 0 })
+      vi.mocked(examRepo.fetchTopicsBySubject).mockReset()
+    })
+
+    it('no topic selected -> RPC receives a null p_topic_en (no topic filter)', async () => {
+      const result = await adminQuestionService.listQuestions(listParams(), { user: adminUser })
+
+      expect(result.success).toBe(true)
+      expect(questionRepo.adminListQuestionsRpc).toHaveBeenCalledWith(expect.objectContaining({ selectedTopic: null }))
+    })
+
+    it('resolves a canonical UUID topic id to its live topic_en and scopes the RPC', async () => {
+      mockCanonicalTopic()
+
+      await adminQuestionService.listQuestions(listParams({ selectedTopic: CANONICAL_TOPIC.id }), { user: adminUser })
+
+      expect(examRepo.fetchTopicById).toHaveBeenCalledWith(CANONICAL_TOPIC.id)
+      expect(questionRepo.adminListQuestionsRpc).toHaveBeenCalledWith(
+        expect.objectContaining({ selectedTopic: 'Modern History' }),
+      )
+    })
+
+    it('rejects a topic whose paper segment differs from the selection', async () => {
+      mockCanonicalTopic()
+
+      const result = await adminQuestionService.listQuestions(
+        listParams({ selectedTopic: CANONICAL_TOPIC.id, selectedPaper: 'paper-EVIL' }),
+        { user: adminUser },
+      )
+
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toContain('does not belong to this exam, paper and subject')
+      expect(questionRepo.adminListQuestionsRpc).not.toHaveBeenCalled()
+    })
+
+    it('rejects a topic resolver miss (not present in live exam_topics)', async () => {
+      vi.mocked(examRepo.fetchTopicById).mockResolvedValue(null as any)
+
+      const result = await adminQuestionService.listQuestions(
+        listParams({ selectedTopic: 'deadbeef-dead-beef-4bad-deadbeefdead' }),
+        { user: adminUser },
+      )
+
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toContain('could not be found')
+      expect(questionRepo.adminListQuestionsRpc).not.toHaveBeenCalled()
+    })
+
+    it('friendly failure when the topic authority lookup errors (no SQL leakage)', async () => {
+      vi.mocked(examRepo.fetchTopicById).mockRejectedValue(new Error('PGRST301 JWT expired at row "secret_col"'))
+
+      const result = await adminQuestionService.listQuestions(
+        listParams({ selectedTopic: CANONICAL_TOPIC.id }),
+        { user: adminUser },
+      )
+
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toBe('Could not verify the selected topic. Please try again.')
+      expect(result.error?.message).not.toContain('JWT')
+      expect(questionRepo.adminListQuestionsRpc).not.toHaveBeenCalled()
+    })
+
+    it('passes through a legacy id-less topic name that IS verified in the segment topics', async () => {
+      vi.mocked(examRepo.fetchTopicsBySubject).mockResolvedValue([
+        { id: 't-legacy', topic_en: 'Legacy Topic', topic_te: null, display_order: 1 } as any,
+      ])
+
+      const result = await adminQuestionService.listQuestions(
+        listParams({ selectedTopic: 'Legacy Topic' }),
+        { user: adminUser },
+      )
+
+      expect(result.success).toBe(true)
+      expect(examRepo.fetchTopicsBySubject).toHaveBeenCalledWith(
+        ['APPSC_GROUP_1'], 'History', 'paper-1',
+      )
+      expect(questionRepo.adminListQuestionsRpc).toHaveBeenCalledWith(
+        expect.objectContaining({ selectedTopic: 'Legacy Topic' }),
+      )
+    })
+
+    it('rejects a legacy topic name that is NOT in the segment topics', async () => {
+      vi.mocked(examRepo.fetchTopicsBySubject).mockResolvedValue([
+        { id: 't1', topic_en: 'Real Topic', topic_te: null, display_order: 1 } as any,
+      ])
+
+      const result = await adminQuestionService.listQuestions(
+        listParams({ selectedTopic: 'Fabricated Name' }),
+        { user: adminUser },
+      )
+
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toContain('could not be found')
+      expect(questionRepo.adminListQuestionsRpc).not.toHaveBeenCalled()
+    })
+
+    it('rejects a legacy topic name when no concrete subject can validate it', async () => {
+      const result = await adminQuestionService.listQuestions(
+        listParams({ selectedSubject: 'all', selectedTopic: 'Suspicious Name' }),
+        { user: adminUser },
+      )
+
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toContain('does not belong to this exam, paper and subject')
+      expect(questionRepo.adminListQuestionsRpc).not.toHaveBeenCalled()
+    })
+  })
+
+  // ─── VISUAL FILTER: service → repository visualOnly mapping ───────────────
+
+  describe('listQuestions visual filter mapping', () => {
+    const listParams = (overrides: Partial<Parameters<typeof adminQuestionService.listQuestions>[0]> = {}): Parameters<typeof adminQuestionService.listQuestions>[0] => ({
+      selectedExam: 'APPSC_GROUP_1',
+      selectedPaper: 'paper-1',
+      selectedSubject: 'History',
+      selectedTopic: '',
+      difficultyFilter: 'all',
+      visualFilter: 'all',
+      searchQuery: '',
+      offset: 0,
+      pageSize: 30,
+      ...overrides,
+    })
+
+    beforeEach(() => {
+      vi.mocked(questionRepo.adminListQuestionsRpc).mockResolvedValue({ data: [], count: 0 })
+    })
+
+    it('visualFilter "all" -> repository receives visualOnly:false', async () => {
+      await adminQuestionService.listQuestions(listParams(), { user: adminUser })
+      expect(questionRepo.adminListQuestionsRpc).toHaveBeenCalledWith(expect.objectContaining({ visualOnly: false }))
+    })
+
+    it('visualFilter "visuals" -> repository receives visualOnly:true', async () => {
+      await adminQuestionService.listQuestions(
+        listParams({ visualFilter: 'visuals' }),
+        { user: adminUser },
+      )
+      expect(questionRepo.adminListQuestionsRpc).toHaveBeenCalledWith(expect.objectContaining({ visualOnly: true }))
+    })
+
+    it('visualFilter "visuals" AND a difficulty passed through (hook enforces exclusivity upstream)', async () => {
+      await adminQuestionService.listQuestions(
+        listParams({ difficultyFilter: 'hard', visualFilter: 'visuals' }),
+        { user: adminUser },
+      )
+      expect(questionRepo.adminListQuestionsRpc).toHaveBeenCalledWith(expect.objectContaining({
+        visualOnly: true,
+        difficultyFilter: 'hard',
+      }))
     })
   })
 })

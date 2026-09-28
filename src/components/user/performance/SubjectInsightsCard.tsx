@@ -2,49 +2,96 @@ import { memo } from 'react'
 import { Zap, AlertTriangle, Brain } from 'lucide-react'
 import { Card, IconBadge, useTheme } from '../../common/AntigravityUI'
 import { H3, Body, Label } from '../../common/AntigravityTypography'
+import { Skeleton } from '../../common/Skeleton'
 import { SubjectInsightItem } from './SubjectInsightItem'
 import type { SubjectStat } from '../../../services/performanceService'
 
 interface SubjectInsightsCardProps {
   subjectStats: SubjectStat[]
+  loading?: boolean
+  error?: string | null
 }
 
-export const SubjectInsightsCard = memo(function SubjectInsightsCard({ subjectStats }: SubjectInsightsCardProps) {
+/* P-4 — compact loading row mirroring SubjectInsightItem geometry (label + % +
+   progress bar). Decorative bars: the section wrapper owns the ONE live region. */
+function InsightRowSkeleton() {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <Skeleton type="text" height={11} width="60%" decorative />
+        <Skeleton type="text" height={11} width={32} decorative />
+      </div>
+      <Skeleton type="text" height={6} width="100%" borderRadius={999} decorative />
+    </div>
+  )
+}
+
+export const SubjectInsightsCard = memo(function SubjectInsightsCard({ subjectStats, loading = false, error = null }: SubjectInsightsCardProps) {
   const { isDark } = useTheme()
+
+  const body = loading ? (
+    <div role="status" aria-live="polite" aria-label="Loading subject insights" className="space-y-6 flex-1 overflow-y-auto no-scrollbar pr-1">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Skeleton type="text" height={12} width={16} decorative />
+          <Skeleton type="text" height={14} width={110} decorative />
+        </div>
+        {[0, 1, 2].map(i => <InsightRowSkeleton key={i} />)}
+      </div>
+      <div className="h-px bg-border-subtle opacity-10" />
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Skeleton type="text" height={12} width={16} decorative />
+          <Skeleton type="text" height={14} width={100} decorative />
+        </div>
+        {[0, 1, 2].map(i => <InsightRowSkeleton key={i} />)}
+      </div>
+    </div>
+  ) : error ? (
+    <div role="status" className="flex-1">
+      <div className="rounded-xl border border-danger/20 bg-danger/5 p-4">
+        <Body className="text-[11px] text-danger m-0">
+          Could not load subject insights. {error}
+        </Body>
+      </div>
+    </div>
+  ) : (
+    <div className="space-y-6 flex-1 overflow-y-auto no-scrollbar pr-1">
+      <div className="space-y-3">
+        <Label className="text-success flex items-center gap-2">
+          <Zap size={14} /> Strong Subjects
+        </Label>
+        {subjectStats.filter(s => s.status === 'Strong').length > 0 ? (
+          subjectStats.filter(s => s.status === 'Strong').slice(0, 3).map(s => (
+            <SubjectInsightItem key={s.subject} label={s.subject} value={s.accuracy} color="success" />
+          ))
+        ) : (
+          <Body className="text-[11px] text-text-muted italic m-0">Focus on subjects to reach 70%+.</Body>
+        )}
+      </div>
+
+      <div className="h-px bg-border-subtle opacity-10" />
+
+      <div className="space-y-3">
+        <Label className="text-danger flex items-center gap-2">
+          <AlertTriangle size={14} /> Needs Focus
+        </Label>
+        {subjectStats.filter(s => s.status === 'Weak').length > 0 ? (
+          subjectStats.filter(s => s.status === 'Weak').slice(0, 3).map(s => (
+            <SubjectInsightItem key={s.subject} label={s.subject} value={s.accuracy} color="danger" />
+          ))
+        ) : (
+          <Body className="text-[11px] text-text-muted italic m-0">No critical focus areas.</Body>
+        )}
+      </div>
+    </div>
+  )
 
   return (
     <Card variant="premium-neutral" padding={24} className="flex flex-col">
       <H3 className={`uppercase tracking-tight mb-6 ${!isDark ? 'font-cinzel' : ''}`}>Subject Insights</H3>
 
-      <div className="space-y-6 flex-1 overflow-y-auto no-scrollbar pr-1">
-        <div className="space-y-3">
-          <Label className="text-success flex items-center gap-2">
-            <Zap size={14} /> Strong Subjects
-          </Label>
-          {subjectStats.filter(s => s.status === 'Strong').length > 0 ? (
-            subjectStats.filter(s => s.status === 'Strong').slice(0, 3).map(s => (
-              <SubjectInsightItem key={s.subject} label={s.subject} value={s.accuracy} color="success" />
-            ))
-          ) : (
-            <Body className="text-[11px] text-text-muted italic m-0">Focus on subjects to reach 70%+.</Body>
-          )}
-        </div>
-
-        <div className="h-px bg-border-subtle opacity-10" />
-
-        <div className="space-y-3">
-          <Label className="text-danger flex items-center gap-2">
-            <AlertTriangle size={14} /> Needs Focus
-          </Label>
-          {subjectStats.filter(s => s.status === 'Weak').length > 0 ? (
-            subjectStats.filter(s => s.status === 'Weak').slice(0, 3).map(s => (
-              <SubjectInsightItem key={s.subject} label={s.subject} value={s.accuracy} color="danger" />
-            ))
-          ) : (
-            <Body className="text-[11px] text-text-muted italic m-0">No critical focus areas.</Body>
-          )}
-        </div>
-      </div>
+      {body}
 
         <div className={`mt-6 p-4 rounded-xl flex items-center gap-3 ${!isDark ? 'ancient-icon-badge !bg-primary/10' : 'bg-primary/5 border border-primary/10'}`}>
         <IconBadge icon={Brain} size="xl" status="primary" />

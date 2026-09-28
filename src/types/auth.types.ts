@@ -1,4 +1,6 @@
-export type UserRole = 'user' | 'admin' | 'sub_admin'
+import type { ErrorCode } from './error.types'
+
+export type UserRole = 'user' | 'admin' | 'sub_admin' | 'deactivated_sub_admin'
 
 export type ExamSelection = string
 
@@ -8,19 +10,12 @@ export interface UserProfile {
   full_name:         string
   role:              UserRole
   exam_selection:    ExamSelection | null
-  coupon_code:       string | null
-  coupon_code_used:  boolean
   sub_admin_id:      string | null
   educator_id:       string | null
-  streak:            number
-  longest_streak:    number
-  total_exams:       number
-  overall_accuracy:  number
   is_active:         boolean
   email_verified:    boolean
-  provider:          string | null
+  coupon_code_used:  boolean
   created_at:        string
-  updated_at:        string
 }
 
 export type ServiceErrorSource = 'auth' | 'db' | 'network' | 'unknown'
@@ -43,6 +38,7 @@ export type ServiceErrorCode =
   | 'WEAK_PASSWORD'
   | 'LOCK_ERROR'
   | 'ACCOUNT_LOCKED'
+  | 'ACCOUNT_DISABLED'
   | 'MISSING_DATA'
   | 'INVALID_COUPON'
   | 'CAPTCHA_FAILED'
@@ -53,7 +49,7 @@ export type ServiceErrorCode =
 
 export interface AuthError {
   source:  ServiceErrorSource
-  code:    ServiceErrorCode
+  code:    ServiceErrorCode | ErrorCode
   field?:  'email' | 'password' | 'confirmPassword' | 'fullName' | 'general'
   message: string
 }

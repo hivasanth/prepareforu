@@ -19,7 +19,7 @@ const warn = console.warn.bind(console)
 const err = console.error.bind(console)
 
 /** Global minimum level */
-let globalLevel: LogLevel = import.meta.env.DEV ? 'info' : 'warn'
+const globalLevel: LogLevel = import.meta.env.DEV ? 'info' : 'warn'
 
 /** Per-module overrides */
 const moduleLevels = new Map<string, LogLevel>()
@@ -57,6 +57,18 @@ export function sanitizeError(error: any) {
     hint: error?.hint,
     is_server_error: isServerError(error)
   };
+}
+
+/**
+ * Returns a safe, user-facing error message. Never forwards raw Supabase/DB
+ * error payloads (`message`, `details`, `hint`, `code`) to the UI. The raw
+ * details remain available to the caller for `logError(...)` diagnostics.
+ */
+export function toUserFacingErrorMessage(error: unknown, fallback = 'Something went wrong. Please try again.') {
+  if (isServerError(error)) {
+    return 'Something went wrong on our end. Please try again in a moment.'
+  }
+  return fallback
 }
 
 export function logDebug(event: string, payload: Record<string, any> = {}, module?: string) {

@@ -54,7 +54,7 @@ describe('DS-006 Alert — structure & a11y', () => {
   })
   it('owns radius/padding/typography/icon-placement', () => {
     const el = renderAlert(<Alert variant="info" icon={Info}>x</Alert>)
-    expect(el).toHaveClass('rounded-[14px]', 'border', 'px-4', 'py-3', 'text-[13px]', 'flex', 'items-start', 'gap-2.5')
+    expect(el).toHaveClass('rounded-button-md', 'border', 'px-4', 'py-3', 'text-[13px]', 'flex', 'items-start', 'gap-2.5')
   })
   it('renders without title or icon (minimal)', () => {
     const el = renderAlert(<Alert>x</Alert>)

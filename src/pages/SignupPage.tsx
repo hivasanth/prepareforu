@@ -10,7 +10,7 @@ import { signupSchema } from '../validations/authSchemas';
 import type { SignupFormData } from '../validations/authSchemas';
 import { getPasswordStrengthScore } from '../validations/securitySchemas';
 import { fetchActiveExams } from '../services/examService';
-import { updateExamSelection } from '../services/userService';
+import { updateExamSelection, getMyEntitlements } from '../services/userService';
 import { useStableFetch } from '../hooks/useStableFetch';
 import { useCouponValidation } from '../hooks/useCouponValidation';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +22,7 @@ import {
   Input,
   Button,
   IconButton,
-  Select,
+  PremiumSelect,
   H3,
   Display,
   Body,
@@ -33,7 +33,7 @@ import {
   Spinner,
 } from '../components/common/AntigravityUI';
 import { LogoSVG } from '../components/Logo';
-import { ConfirmModal } from '../components/common/SharedComponents';
+import { ConfirmModal, FieldError } from '../components/common/SharedComponents';
 import { SuccessModal } from '../components/common/SuccessModal';
 import { t } from '../utils/i18n';
 
@@ -45,7 +45,7 @@ export default function SignupPage() {
 
   const [signupError, setSignupError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
-  const [accountCreated, setAccountCreated] = useState<{ title: string; message: string; target: 'dashboard' | 'verify-email' } | null>(null);
+  const [accountCreated, setAccountCreated] = useState<{ title: string; message: string; target: 'dashboard' | 'verify-email'; email?: string } | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -54,6 +54,12 @@ export default function SignupPage() {
   const [confirmExamData, setConfirmExamData] = useState<SignupFormData | null>(null);
   const [localSelected, setLocalSelected] = useState('');
   const [saving, setSaving] = useState(false);
+  // P0-02: the post-signup selection card may only offer exams the server has
+  // granted this account. `dynamicExams` is the full published catalogue and is
+  // still correct for the *pre*-auth signup form, where the value is only the
+  // preference recorded in signup metadata and confers nothing.
+  const [entitledExams, setEntitledExams] = useState<{ id: string; name: string }[] | null>(null);
+  const [entitledError, setEntitledError] = useState<string | null>(null);
 
   useEffect(() => {
     const id = nextId();
@@ -87,6 +93,32 @@ export default function SignupPage() {
     })();
   }, []);
 
+  // Load the server's answer to "what may this account open?". Left null until
+  // it resolves so the card can distinguish "still loading" from "no grants",
+  // which are very different messages for a brand-new account.
+  useEffect(() => {
+    if (!isSelectionOnly) return;
+    const id = nextId();
+    (async () => {
+      try {
+        const res = await getMyEntitlements({ user });
+        if (isStale(id)) return;
+        if (!res.success) {
+          setEntitledError(res.error?.message ?? 'Could not load your exams.');
+          setEntitledExams([]);
+          return;
+        }
+        setEntitledExams(
+          (res.data ?? []).map(e => ({ id: e.exam_id, name: e.exam_name })),
+        );
+      } catch {
+        if (isStale(id)) return;
+        setEntitledError('Could not load your exams.');
+        setEntitledExams([]);
+      }
+    })();
+  }, [isSelectionOnly, user]);
+
   const {
     register,
     handleSubmit,
@@ -113,11 +145,10 @@ export default function SignupPage() {
       setSelectionError(null);
       setSaving(true);
       try {
-        const res = await updateExamSelection({ user }, user.id, localSelected as any);
+        const res = await updateExamSelection({ user }, user.id, localSelected);
         if (isStale(id)) return;
         if (!res.success) {
-          const msg = (typeof res.error === 'object' && (res.error as any)?.message) ? (res.error as any).message : (res.error || 'Failed to save.');
-          setSelectionError(msg as string);
+          setSelectionError(res.error?.message ?? 'Failed to save.');
           return;
         }
         await refreshUser();
@@ -145,15 +176,31 @@ export default function SignupPage() {
                   </Alert>
                 </div>
               )}
-              <Select
-                label={t("Exam Selection")}
-                value={localSelected}
-                onChange={(val) => setLocalSelected(val)}
-                options={dynamicExams}
-                placeholder={t("-- SELECT AN EXAM --")}
-                disabled={saving || selectionLoading}
-              />
-            <Button fullWidth onClick={handleSaveSelection} loading={saving || selectionLoading} disabled={!localSelected}>
+              {entitledError && (
+                <div aria-live="polite">
+                  <Alert variant="error" icon={AlertCircle} title={t("Action failed")} className="w-full">
+                    {entitledError}
+                  </Alert>
+                </div>
+              )}
+              {entitledExams !== null && entitledExams.length === 0 && !entitledError && (
+                <div aria-live="polite">
+                  <Alert variant="info" title={t("No exams assigned yet")} className="w-full">
+                    {t("Your account does not have access to any exam yet. Please contact your administrator to get access, then come back and choose your exam.")}
+                  </Alert>
+                </div>
+              )}
+              {entitledExams !== null && entitledExams.length > 0 && (
+                <PremiumSelect
+                  label={t("Exam Selection")}
+                  value={localSelected}
+                  onChange={(val) => setLocalSelected(val)}
+                  options={entitledExams}
+                  placeholder={t("-- SELECT AN EXAM --")}
+                  disabled={saving || selectionLoading}
+                />
+              )}
+            <Button fullWidth onClick={handleSaveSelection} loading={saving || selectionLoading} disabled={!localSelected || entitledExams === null || entitledExams.length === 0}>
               {t("Continue to Dashboard")}
             </Button>
           </Stack>
@@ -221,9 +268,10 @@ export default function SignupPage() {
           title: t("Account Created!"),
           message: t("Your account has been created. Check your email to confirm."),
           target: 'verify-email',
+          email: data.email,
         });
       }
-    } catch (err: any) {
+    } catch {
       if (isStale(id)) return;
       setCaptchaToken(null);
       setSignupError(t("Something went wrong. Please try again."));
@@ -233,8 +281,15 @@ export default function SignupPage() {
   const handleAccountCreatedClose = () => {
     if (!accountCreated) return;
     const target = accountCreated.target;
+    const email = accountCreated.email;
     setAccountCreated(null);
-    navigate(target === 'dashboard' ? '/dashboard' : '/verify-email', { replace: true });
+    if (target === 'dashboard') {
+      navigate('/dashboard', { replace: true });
+    } else {
+      // Carry the signup email through router state so /verify-email can display
+      // and target the verification email even without an authenticated session.
+      navigate('/verify-email', { replace: true, state: { email } });
+    }
   };
 
 
@@ -336,9 +391,7 @@ export default function SignupPage() {
                     {...register("fullName", { onChange: () => setSignupError(null) })}
                   />
                   {errors.fullName && (
-                    <span id="fullName-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                      {errors.fullName.message}
-                    </span>
+                    <FieldError id="fullName-error">{errors.fullName.message}</FieldError>
                   )}
                 </Stack>
 
@@ -355,9 +408,7 @@ export default function SignupPage() {
                     {...register("email", { onChange: () => setSignupError(null) })}
                   />
                   {errors.email && (
-                    <span id="email-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                      {errors.email.message}
-                    </span>
+                    <FieldError id="email-error">{errors.email.message}</FieldError>
                   )}
                 </Stack>
 
@@ -387,9 +438,7 @@ export default function SignupPage() {
                     </IconButton>
                   </div>
                   {errors.password && (
-                    <span id="password-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                      {errors.password.message}
-                    </span>
+                    <FieldError id="password-error">{errors.password.message}</FieldError>
                   )}
 
                   {/* Password Strength Meter */}
@@ -399,7 +448,7 @@ export default function SignupPage() {
                         {[1, 2, 3, 4].map(segment => (
                           <div 
                             key={segment} 
-                            className="h-full rounded-full transition-colors duration-300"
+                            className="h-full rounded-full transition-colors duration-slow"
                             style={{ 
                               backgroundColor: strengthScore >= segment 
                                 ? strengthColors[strengthScore] 
@@ -441,9 +490,7 @@ export default function SignupPage() {
                     </IconButton>
                   </div>
                   {errors.confirmPassword && (
-                    <span id="confirmPassword-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                      {errors.confirmPassword.message}
-                    </span>
+                    <FieldError id="confirmPassword-error">{errors.confirmPassword.message}</FieldError>
                   )}
                 </Stack>
 
@@ -461,9 +508,7 @@ export default function SignupPage() {
                     {...register("couponCode", { onChange: () => setSignupError(null) })}
                   />
                   {errors.couponCode && (
-                    <span id="couponCode-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                      {errors.couponCode.message}
-                    </span>
+                    <FieldError id="couponCode-error">{errors.couponCode.message}</FieldError>
                   )}
                   
                   <div aria-live="polite" id="coupon-status">
@@ -483,11 +528,8 @@ export default function SignupPage() {
                 </Stack>
 
                 {/* Exam Selection */}
-                <Select
+                <PremiumSelect
                   label={t("Exam Selection")}
-                  id="examSelection"
-                  aria-invalid={errors.examSelection ? true : undefined}
-                  aria-describedby={errors.examSelection ? "examSelection-error" : undefined}
                   value={watch('examSelection') || ''}
                   onChange={(val) => { setValue('examSelection', val, { shouldValidate: true }); setSignupError(null); }}
                   options={dynamicExams}
@@ -495,9 +537,7 @@ export default function SignupPage() {
                   disabled={isSubmitting}
                 />
                 {errors.examSelection && (
-                  <span id="examSelection-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                    {errors.examSelection.message}
-                  </span>
+                  <FieldError id="examSelection-error">{errors.examSelection.message}</FieldError>
                 )}
 
                 {/* SECURITY NOTE: captchaToken is verified server-side via Supabase auth */}

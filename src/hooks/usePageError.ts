@@ -1,143 +1,26 @@
-import { useState, useCallback, useRef } from 'react'
-import { useStableFetch } from './useStableFetch'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type {
   PageError,
   PageErrorState,
   ErrorInput,
   CaptureOptions,
-  ErrorCategory,
-  ErrorCode,
   UsePageErrorReturn,
+  RetryFn,
 } from '../types/error.types'
-
-// ─── Centralized Category Mapping ──────────────────────────────────────────
-// Single canonical mapping. No page should ever duplicate detection logic.
-// Maps error message patterns → ErrorCategory.
-
-function detectCategory(message: string): ErrorCategory {
-  if (!navigator.onLine) return 'offline'
-  const lower = message.toLowerCase()
-  if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('fetch'))
-    return 'network'
-  if (lower.includes('timeout') || lower.includes('timed out'))
-    return 'timeout'
-  if (lower.includes('401') || lower.includes('unauthorized') || lower.includes('session'))
-    return 'authentication'
-  if (lower.includes('403') || lower.includes('forbidden'))
-    return 'authorization'
-  if (lower.includes('429') || lower.includes('rate limit'))
-    return 'rateLimit'
-  if (lower.includes('503') || lower.includes('maintenance'))
-    return 'maintenance'
-  if (lower.includes('500') || lower.includes('502') || lower.includes('server'))
-    return 'server'
-  return 'unknown'
-}
-
-// ─── Centralized Code Mapping ──────────────────────────────────────────────
-// Category + message → ErrorCode. Single source of truth.
-
-function resolveCode(category: ErrorCategory, message: string): ErrorCode {
-  const lower = message.toLowerCase()
-  switch (category) {
-    case 'network':
-      if (!navigator.onLine) return 'NETWORK_OFFLINE'
-      if (lower.includes('timeout') || lower.includes('timed out')) return 'NETWORK_TIMEOUT'
-      return 'NETWORK_FETCH_FAILED'
-    case 'offline':
-      return 'NETWORK_OFFLINE'
-    case 'timeout':
-      return 'NETWORK_TIMEOUT'
-    case 'authentication':
-      return 'AUTH_SESSION_EXPIRED'
-    case 'authorization':
-      return 'AUTH_FORBIDDEN'
-    case 'server':
-      if (lower.includes('503') || lower.includes('maintenance')) return 'SERVER_MAINTENANCE'
-      return 'SERVER_ERROR'
-    case 'rateLimit':
-      return 'RATE_LIMIT_EXCEEDED'
-    case 'maintenance':
-      return 'SERVER_MAINTENANCE'
-    case 'validation':
-      return 'VALIDATION_ERROR'
-    default:
-      return 'UNKNOWN'
-  }
-}
-
-// ─── Pure Normalization ────────────────────────────────────────────────────
-// No hooks, no side effects. Extractable and testable.
-
-function normalizeError(input: ErrorInput, options?: CaptureOptions): PageError {
-  const rawMessage = extractMessage(input)
-  const category = options?.category ?? detectCategory(rawMessage)
-  const code = options?.code ?? resolveCode(category, rawMessage)
-
-  return {
-    category,
-    code,
-    severity: options?.severity ?? 'medium',
-    title: buildTitle(category),
-    message: options?.fallbackMessage ?? buildFriendlyMessage(category),
-    retryable: options?.retryable ?? true,
-    timestamp: Date.now(),
-    debugMessage: rawMessage || undefined,
-  }
-}
-
-function extractMessage(input: ErrorInput): string {
-  if (input instanceof Error) return input.message
-  if (typeof input === 'string') return input
-  if (input && typeof input === 'object' && 'message' in input) {
-    return String((input as { message: unknown }).message)
-  }
-  return ''
-}
-
-// ─── Centralized Copy ──────────────────────────────────────────────────────
-
-function buildTitle(category: ErrorCategory): string {
-  const titles: Record<ErrorCategory, string> = {
-    network: 'Connection Lost',
-    offline: 'You Are Offline',
-    timeout: 'Request Timed Out',
-    authentication: 'Session Expired',
-    authorization: 'Access Denied',
-    server: 'Server Error',
-    validation: 'Invalid Data',
-    rateLimit: 'Too Many Requests',
-    maintenance: 'Under Maintenance',
-    business: 'Something Went Wrong',
-    unknown: 'Unexpected Error',
-  }
-  return titles[category]
-}
-
-function buildFriendlyMessage(category: ErrorCategory): string {
-  const messages: Record<ErrorCategory, string> = {
-    network: 'Please check your internet connection and try again.',
-    offline: 'You appear to be offline. Please reconnect and try again.',
-    timeout: 'The request took too long. Please try again.',
-    authentication: 'Your session has expired. Please sign in again.',
-    authorization: "You don't have permission to access this.",
-    server: 'Our servers are having trouble. Please try again shortly.',
-    validation: 'The data received was unexpected. Please try again.',
-    rateLimit: 'Too many requests. Please wait a moment and try again.',
-    maintenance: 'We are currently undergoing maintenance. Please check back soon.',
-    business: 'Something went wrong. Please try again.',
-    unknown: 'An unexpected error occurred. Please try again.',
-  }
-  return messages[category]
-}
+import { normalizeError } from '../utils/errorClassification'
 
 // ─── Hook ──────────────────────────────────────────────────────────────────
 
 export function usePageError(): UsePageErrorReturn {
   const [state, setState] = useState<PageErrorState>('idle')
   const [error, setError] = useState<PageError | null>(null)
-  const retryFnRef = useRef<(() => void | Promise<void>) | null>(null)
-  const { mountedRef } = useStableFetch()
+  const retryFnRef = useRef<RetryFn | null>(null)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
 
   const capture = useCallback((input: ErrorInput, options?: CaptureOptions) => {
     const normalized = normalizeError(input, options)
@@ -152,13 +35,21 @@ export function usePageError(): UsePageErrorReturn {
     if (!retryFnRef.current) return
     if (mountedRef.current) {
       setState('retrying')
-      setError(null)
+      // Keep the current error in place while retrying so a failure can't
+      // leave the page with error=null + loading=false (empty/content flash).
     }
     try {
-      await retryFnRef.current()
-      if (mountedRef.current) {
+      const result = await retryFnRef.current()
+      if (!mountedRef.current) return
+      // The retryFn contract: resolve `true` on success, `false` on failure
+      // (after capturing). Only a truthful `true` clears the error — a resolved
+      // `false` re-asserts the error state (the retryFn's own capture, or the
+      // retained error, stays visible). Throws fall back to the catch below.
+      if (result !== false) {
         setState('success')
         setError(null)
+      } else {
+        setState('error')
       }
     } catch (err) {
       if (mountedRef.current) {
@@ -215,6 +106,15 @@ export function usePageError(): UsePageErrorReturn {
       capture(input ?? 'Authorization error', { ...options, category: 'authorization', code: options?.code ?? 'AUTH_FORBIDDEN' }),
     [capture],
   )
+  // Generic capture: lets a page classify via the classifier (network/server/
+  // auth are auto-detected) or override the category explicitly for typed
+  // domain states (e.g. `category: 'business'`). Additive — retry contract
+  // and the specialized helpers above are unchanged.
+  const captureError = useCallback(
+    (input?: ErrorInput, options?: CaptureOptions) =>
+      capture(input ?? 'Unexpected error', options),
+    [capture],
+  )
 
   return {
     state,
@@ -228,5 +128,6 @@ export function usePageError(): UsePageErrorReturn {
     captureValidationError,
     captureAuthenticationError,
     captureAuthorizationError,
+    captureError,
   }
 }

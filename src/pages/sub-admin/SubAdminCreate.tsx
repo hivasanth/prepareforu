@@ -7,8 +7,10 @@ import { CreateStepReview } from '../../components/sub-admin/create/CreateStepRe
 import { CreateStepSetup } from '../../components/sub-admin/create/CreateStepSetup'
 import { CreateStepPublish } from '../../components/sub-admin/create/CreateStepPublish'
 import { SuccessView } from '../../components/sub-admin/create/SuccessView'
-import { PageContainer, Stack, Card, Tabs, SectionReveal, Alert, ToastContainer } from '../../components/common/AntigravityUI'
-import { AlertCircle } from 'lucide-react'
+import { PageContainer, Stack, Card, SegmentedFilter, SectionReveal, Alert } from '../../components/common/AntigravityUI'
+
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
+
 
 export default function SubAdminCreate() {
   const {
@@ -18,12 +20,17 @@ export default function SubAdminCreate() {
     targetCount, setTargetCount,
     customCount, setCustomCount,
     promptPhase, setPromptPhase,
-    copied, activeAICopy,
+    copied, copyError, activeAICopy,
     isPublished,
     questions, setQuestions,
+    parseReport, setParseReport,
     examConfig, setExamConfig,
-    getTypo, breakpoint,
-    toasts,
+    endTimeManuallyOverridden,
+    handleStartTimeChange,
+    handleEndTimeChange,
+    handleResetEndToDefault,
+    breakpoint,
+    successMessage, clearSuccessMessage,
     getSimpleInstruction,
     handleStepChange,
     handleCopyPrompt,
@@ -31,6 +38,8 @@ export default function SubAdminCreate() {
     resetWizard,
     handlePublish,
   } = useCreateExam()
+
+  const requestCount = targetCount === 0 ? parseInt(customCount) || 10 : targetCount
 
   if (isPublished) {
     return (
@@ -42,122 +51,129 @@ export default function SubAdminCreate() {
 
   return (
     <PageContainer>
-      <Stack gap="lg" className="overflow-x-hidden">
-        <Stack gap="xl">
-          <SectionReveal>
-            <Stack gap="md" className="pb-4 border-b border-border-subtle/30">
-              <div className="w-full">
-                <Tabs
-                  ariaLabel="Create exam steps"
-                  options={STEPS.map(s => ({ id: s.n.toString(), label: `${s.n}. ${s.label}` }))}
-                  activeId={step.toString()}
-                  onChange={(id) => handleStepChange(parseInt(id))}
-                />
-              </div>
-              <div className="flex-1">
-                <p className="!text-sm sm:!text-base font-bold tracking-wide text-text-primary opacity-90 transition-all duration-300">
-                  {getSimpleInstruction()}
-                </p>
-              </div>
-            </Stack>
-          </SectionReveal>
+      <Stack gap="xl">
+        <SectionReveal>
+          <Stack gap="md" className="pb-4 border-b border-border-subtle/30">
+            <div className="w-full max-lg:overflow-x-auto scrollbar-hide lg:overflow-x-visible">
+              <SegmentedFilter
+                ariaLabel="Create exam steps"
+                options={STEPS.map(s => ({ id: s.n.toString(), label: `${s.n}. ${s.label}` }))}
+                value={step.toString()}
+                onChange={(id) => handleStepChange(parseInt(id))}
+              />
+            </div>
+            <div className="flex-1">
+              <p className="!text-sm sm:!text-base font-bold tracking-wide text-text-primary opacity-90 transition-opacity duration-slow">
+                {getSimpleInstruction()}
+              </p>
+            </div>
+          </Stack>
+        </SectionReveal>
 
-          {error && (
-            <SectionReveal>
-              <Alert variant="error" icon={AlertCircle} title="Action failed" className="w-full">
-                {error}
-              </Alert>
+        {successMessage && (
+          <SectionReveal>
+            <Alert variant="success" icon={CheckCircle2} title="AI assistant opened" className="w-full" onDismiss={clearSuccessMessage}>
+              {successMessage}
+            </Alert>
+          </SectionReveal>
+        )}
+
+        {error && (
+          <SectionReveal>
+            <Alert variant="error" icon={AlertCircle} title="Action failed" className="w-full">
+              {error}
+            </Alert>
+          </SectionReveal>
+        )}
+
+        <AnimatePresence mode="wait">
+          {step === 1 && (
+            <SectionReveal key="s1">
+              <Stack gap="xl">
+                <CreateStepPrompt
+                  targetCount={targetCount}
+                  setTargetCount={setTargetCount}
+                  customCount={customCount}
+                  setCustomCount={setCustomCount}
+                  promptPhase={promptPhase}
+                  copied={copied}
+                  copyError={copyError}
+                  activeAICopy={activeAICopy}
+                  onCopyPrompt={handleCopyPrompt}
+                  onLaunchAI={launchAI}
+                  onPromptPhaseChange={setPromptPhase}
+                />
+              </Stack>
             </SectionReveal>
           )}
 
-          <AnimatePresence mode="wait">
-            {step === 1 && (
-              <SectionReveal key="s1">
-                <Stack gap="xl">
-                  <Card padding={24}>
-                    <CreateStepPrompt
-                      targetCount={targetCount}
-                      setTargetCount={setTargetCount}
-                      customCount={customCount}
-                      setCustomCount={setCustomCount}
-                      promptPhase={promptPhase}
-                      copied={copied}
-                      activeAICopy={activeAICopy}
-                      onCopyPrompt={handleCopyPrompt}
-                      onLaunchAI={() => launchAI('chatgpt')}
-                      onPromptPhaseChange={setPromptPhase}
-                      getTypo={getTypo}
-                    />
-                  </Card>
-                </Stack>
-              </SectionReveal>
-            )}
+          {step === 2 && (
+            <SectionReveal key="s2">
+              <Stack gap="xl">
+                <CreateStepJsonPaste
+                  questions={questions}
+                  setQuestions={setQuestions}
+                  requestCount={requestCount}
+                  parseReport={parseReport}
+                  setParseReport={setParseReport}
+                  onConfirm={() => setStep(3)}
+                  breakpoint={breakpoint}
+                />
+              </Stack>
+            </SectionReveal>
+          )}
 
-            {step === 2 && (
-              <SectionReveal key="s2">
-                <Stack gap="xl">
-                  <Card padding={24}>
-                    <CreateStepJsonPaste
-                      questions={questions}
-                      setQuestions={setQuestions}
-                      onConfirm={() => setStep(3)}
-                      breakpoint={breakpoint}
-                    />
-                  </Card>
-                </Stack>
-              </SectionReveal>
-            )}
+          {step === 3 && (
+            <SectionReveal key="s3">
+              <Stack gap="lg" className="pb-24">
+                <CreateStepReview
+                  questions={questions}
+                  setQuestions={setQuestions}
+                  parseReport={parseReport}
+                  onConfirm={() => setStep(4)}
+                  onBack={() => setStep(2)}
+                  breakpoint={breakpoint}
+                />
+              </Stack>
+            </SectionReveal>
+          )}
 
-            {step === 3 && (
-              <SectionReveal key="s3">
-                <Stack gap="lg" className="pb-24">
-                  <CreateStepReview
+          {step === 4 && (
+            <SectionReveal key="s4">
+              <Stack gap="xl">
+                <CreateStepSetup
+                  examConfig={examConfig}
+                  setExamConfig={setExamConfig}
+                  endTimeManuallyOverridden={endTimeManuallyOverridden}
+                  onStartTimeChange={handleStartTimeChange}
+                  onEndTimeChange={handleEndTimeChange}
+                  onResetEndToDefault={handleResetEndToDefault}
+                  onConfirm={() => setStep(5)}
+                  onBack={() => setStep(3)}
+                  breakpoint={breakpoint}
+                />
+              </Stack>
+            </SectionReveal>
+          )}
+
+          {step === 5 && (
+            <SectionReveal key="s5">
+              <Stack gap="xl">
+                <Card padding={24}>
+                  <CreateStepPublish
+                    examConfig={examConfig}
                     questions={questions}
-                    setQuestions={setQuestions}
-                    onConfirm={() => setStep(4)}
-                    onBack={() => setStep(2)}
-                    breakpoint={breakpoint}
+                    onPublish={handlePublish}
+                    onBack={() => setStep(4)}
+                    isPublishing={isPublishing}
+                    publishError={publishError}
                   />
-                </Stack>
-              </SectionReveal>
-            )}
-
-            {step === 4 && (
-              <SectionReveal key="s4">
-                <Stack gap="xl">
-                  <Card padding={24}>
-                    <CreateStepSetup
-                      examConfig={examConfig}
-                      setExamConfig={setExamConfig}
-                      onConfirm={() => setStep(5)}
-                      onBack={() => setStep(3)}
-                      breakpoint={breakpoint}
-                    />
-                  </Card>
-                </Stack>
-              </SectionReveal>
-            )}
-
-            {step === 5 && (
-              <SectionReveal key="s5">
-                <Stack gap="xl">
-                  <Card padding={24}>
-                    <CreateStepPublish
-                      examConfig={examConfig}
-                      questions={questions}
-                      onPublish={handlePublish}
-                      onBack={() => setStep(4)}
-                      isPublishing={isPublishing}
-                      publishError={publishError}
-                    />
-                  </Card>
-                </Stack>
-              </SectionReveal>
-            )}
-          </AnimatePresence>
-        </Stack>
+                </Card>
+              </Stack>
+            </SectionReveal>
+          )}
+        </AnimatePresence>
       </Stack>
-      <ToastContainer toasts={toasts} />
     </PageContainer>
   )
-}
+}

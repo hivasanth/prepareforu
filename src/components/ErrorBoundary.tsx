@@ -2,6 +2,7 @@ import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { reportError } from '../utils/logger';
 import { ErrorActionButtons } from './common/ErrorActionButtons';
+import { GOLD_LIGHT_MATERIAL } from './common/AntigravityCard';
 
 interface Props {
   children?: ReactNode;
@@ -28,8 +29,8 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-app-bg text-text-primary p-6 transition-colors duration-300">
-          <div className="max-w-md w-full bg-card-bg rounded-2xl shadow-2xl overflow-hidden border border-border-subtle relative">
+        <div className="min-h-screen flex items-center justify-center bg-app-bg text-text-primary p-6 transition-interaction duration-slow ease-standard" role="alert" aria-live="assertive">
+          <div className={`max-w-md w-full bg-card-bg rounded-2xl shadow-2xl overflow-hidden border border-border-subtle relative ${GOLD_LIGHT_MATERIAL}`}>
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-secondary to-primary"></div>
             <div className="p-8 text-center space-y-6">
               <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary">

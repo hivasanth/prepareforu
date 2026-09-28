@@ -36,6 +36,11 @@
 -- ─── A. RLS isolation ────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Users read published topics" ON public.study_topics;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'Users read published topics' AND polrelid = 'public.study_topics'::regclass
+  ) THEN
 CREATE POLICY "Users read published topics"
   ON public.study_topics
   FOR SELECT
@@ -48,6 +53,9 @@ CREATE POLICY "Users read published topics"
       OR public.is_sub_admin()
     )
   );
+  END IF;
+END
+$$;
 
 -- ─── B. anon DML grants ──────────────────────────────────────────────────────
 REVOKE

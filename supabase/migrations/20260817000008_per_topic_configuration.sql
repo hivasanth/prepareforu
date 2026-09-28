@@ -8,32 +8,66 @@
 ALTER TABLE public.exam_topics
   ADD COLUMN IF NOT EXISTS required_questions integer NOT NULL DEFAULT 1;
 
-ALTER TABLE public.exam_topics
-  ADD CONSTRAINT exam_topics_required_questions_check
-  CHECK (required_questions >= 1);
+-- Guards: these constraint names already exist on LIVE (out-of-band), so the
+-- ADD CONSTRAINT must be a no-op there. Fresh replays create them here.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'exam_topics_required_questions_check'
+  ) THEN
+    ALTER TABLE public.exam_topics
+      ADD CONSTRAINT exam_topics_required_questions_check
+      CHECK (required_questions >= 1);
+  END IF;
+END
+$$;
 
 -- 2. Add per-topic Subject Test mode columns
 -- Each represents the required questions for that topic in the given mode.
 ALTER TABLE public.exam_topics
   ADD COLUMN IF NOT EXISTS test_20_required integer NOT NULL DEFAULT 1;
 
-ALTER TABLE public.exam_topics
-  ADD CONSTRAINT exam_topics_test_20_required_check
-  CHECK (test_20_required >= 1);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'exam_topics_test_20_required_check'
+  ) THEN
+    ALTER TABLE public.exam_topics
+      ADD CONSTRAINT exam_topics_test_20_required_check
+      CHECK (test_20_required >= 1);
+  END IF;
+END
+$$;
 
 ALTER TABLE public.exam_topics
   ADD COLUMN IF NOT EXISTS test_30_required integer NOT NULL DEFAULT 1;
 
-ALTER TABLE public.exam_topics
-  ADD CONSTRAINT exam_topics_test_30_required_check
-  CHECK (test_30_required >= 1);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'exam_topics_test_30_required_check'
+  ) THEN
+    ALTER TABLE public.exam_topics
+      ADD CONSTRAINT exam_topics_test_30_required_check
+      CHECK (test_30_required >= 1);
+  END IF;
+END
+$$;
 
 ALTER TABLE public.exam_topics
   ADD COLUMN IF NOT EXISTS test_50_required integer NOT NULL DEFAULT 1;
 
-ALTER TABLE public.exam_topics
-  ADD CONSTRAINT exam_topics_test_50_required_check
-  CHECK (test_50_required >= 1);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'exam_topics_test_50_required_check'
+  ) THEN
+    ALTER TABLE public.exam_topics
+      ADD CONSTRAINT exam_topics_test_50_required_check
+      CHECK (test_50_required >= 1);
+  END IF;
+END
+$$;
 
 -- 3. Backfill from old subject-level thresholds
 -- Distribute evenly: required_questions = CEIL(subject.question_count / topic_count)

@@ -1,6 +1,6 @@
 import { supabase } from '../supabase'
 
-export async function countQuery(table: string, filter: Record<string, unknown>): Promise<number | null> {
+export async function countQuery(table: string, filter: Record<string, unknown>): Promise<number> {
   let q = supabase.from(table).select('id', { count: 'exact', head: true })
   for (const [k, v] of Object.entries(filter)) {
     if (Array.isArray(v)) {
@@ -9,6 +9,7 @@ export async function countQuery(table: string, filter: Record<string, unknown>)
       q = q.eq(k, v as string)
     }
   }
-  const { count } = await q
-  return count
+  const { count, error } = await q
+  if (error) throw error
+  return count ?? 0
 }

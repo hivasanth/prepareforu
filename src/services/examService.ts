@@ -17,7 +17,10 @@ import { queryCache } from '../utils/queryCache';
 import { clearPerformanceCache } from './performanceService';
 import { assertValidEnFields } from '../utils/languageUtils';
 import { selectedOptionSchema } from '../validations/questionSchema';
+import { getAllowedExamIds } from '../utils/examUtils';
+import { shuffleArray } from '../utils/shuffle';
 import { logDebug, logError, logWarn } from '../utils/logger'
+import { errorFields } from '../utils/errorClassification'
 
 /**
  * EXAM SERVICE
@@ -56,30 +59,36 @@ export const fetchPaperWithSubjects = async (paperId: string) => {
   // NOTE: No cache here — always fetch live paper config so that any admin
   // changes to total_marks, duration_minutes, or negative_mark_value are
   // immediately reflected when a user starts or resumes an exam.
-  try {
-    const paper = await examRepo.findPaperById(paperId);
-    const subjects = await examRepo.fetchSubjectsByPaperId(paperId);
-    return { paper: paper as ExamPaper, subjects: (subjects || []) as ExamSubject[] };
-  } catch (error: any) {
-    throw error;
+  const paper = await examRepo.findPaperById(paperId);
+  if (!paper) {
+    // RLS (content isolation) returns no row when the caller's selection
+    // does not grant access to this paper. Surface a clean authorization
+    // error instead of a downstream null dereference.
+    throw new Error('You are not authorized to access this exam.');
   }
+  const subjects = await examRepo.fetchSubjectsByPaperId(paperId);
+  return { paper: paper as ExamPaper, subjects: (subjects || []) as ExamSubject[] };
 };
 
 export const fetchQuestionsForPaper = async (
-  paperId: string, 
+  paperId: string,
   subjects: ExamSubject[],
+  examId: string,
   userId?: string
 ): Promise<Question[]> => {
   // Phase 6 Contract: ONLY _en and _te fields exist in the DB.
   // Legacy fields (question_text, option_a/b/c/d, explanation) have been removed.
   // DO NOT add them back.
-  const SELECT_FIELDS = [
-    'id', 'exam_id', 'paper_id', 'subject_name',
-    'correct_option', 'difficulty', 'negative_marks',
-    'visual',
-    'question_text_en', 'option_a_en', 'option_b_en', 'option_c_en', 'option_d_en', 'explanation_en',
-    'question_text_te', 'option_a_te', 'option_b_te', 'option_c_te', 'option_d_te', 'explanation_te',
-  ].join(', ');
+  // Secure delivery (audit §29): correct_option + explanations are NOT sent to
+  // the browser before submission. Scoring is authoritative server-side in
+  // set_question_answer / submit_attempt. Review re-reads full definitions
+  // after submission via fetchQuestionsForReview.
+  const SELECT_FIELDS = questionRepo.EXAM_QUESTION_SECURE_FIELDS;
+  // CT-1: never pass an empty examIds array (an `.in('exam_id', [])` predicate
+  // returns zero rows). Resolve the concrete allowed exam ids for this paper's
+  // exam from the canonical selection mapping, mirroring the prepare-write flow
+  // (`getAllowedExamIds(subject.exam_id)`).
+  const allowedExamIds = getAllowedExamIds(examId);
 
   try {
     let attemptedQuestionIds: string[] = [];
@@ -104,25 +113,29 @@ export const fetchQuestionsForPaper = async (
       }
     }
 
-    let finalQuestions: Question[] = [];
+    const finalQuestions: Question[] = [];
 
     for (const subject of subjects) {
-      // 1. Fetch unattempted questions from a larger pool
-      const poolLimit = Math.max(subject.question_count * 3, 100);
+      // M-01 fix: sample the FULL unattempted bank (not just a 3x slice) so
+      // fresh-question selection is maximized for repeat test-takers. The pool
+      // cap is a safety bound (not a naive 3x multiple) — 1000 is comfortably
+      // above any single-subject bank in practice. Only when the unattempted
+      // bank is exhausted do we fall back to previously-attempted questions,
+      // and only for the exact shortfall.
+      const poolLimit = 1000;
       let subjectQuestionsPool: Record<string, unknown>[] = [];
 
       if (attemptedQuestionIds.length > 0) {
         subjectQuestionsPool = (await questionRepo.fetchQuestionsByPaperAndSubjectExcluding(
-          SELECT_FIELDS, paperId, subject.subject_name, [], attemptedQuestionIds, poolLimit
+          SELECT_FIELDS, paperId, subject.subject_name, allowedExamIds, attemptedQuestionIds, poolLimit
         )) ?? [];
       } else {
         subjectQuestionsPool = (await questionRepo.fetchQuestionsByPaperAndSubject(
-          SELECT_FIELDS, paperId, subject.subject_name, [], poolLimit
+          SELECT_FIELDS, paperId, subject.subject_name, allowedExamIds, poolLimit
         )) ?? [];
       }
       
-      let selectedSubjectQuestions = subjectQuestionsPool
-        .sort(() => Math.random() - 0.5)
+      const selectedSubjectQuestions = shuffleArray(subjectQuestionsPool)
         .slice(0, subject.question_count);
 
       // 2. If not enough questions, fallback to attempted questions pool
@@ -130,12 +143,11 @@ export const fetchQuestionsForPaper = async (
         const remainingNeeded = subject.question_count - selectedSubjectQuestions.length;
         
         const attemptedPoolData = await questionRepo.fetchQuestionsByPaperAndSubjectIncluding(
-          SELECT_FIELDS, paperId, subject.subject_name, [], attemptedQuestionIds, poolLimit
+          SELECT_FIELDS, paperId, subject.subject_name, allowedExamIds, attemptedQuestionIds, poolLimit
         );
 
         if (attemptedPoolData) {
-          const shuffledAttempted = (attemptedPoolData as unknown as Question[])
-            .sort(() => Math.random() - 0.5);
+          const shuffledAttempted = shuffleArray(attemptedPoolData as unknown as Question[]);
           selectedSubjectQuestions.push(...shuffledAttempted.slice(0, remainingNeeded) as unknown as Record<string, unknown>[]);
         }
       }
@@ -150,16 +162,20 @@ export const fetchQuestionsForPaper = async (
     // Guard: verify all fetched questions have valid _en content
     assertValidEnFields(finalQuestions, 'fetchQuestionsForPaper');
 
-    // Map visual to diagram for UI components
-    const mappedQuestions = finalQuestions.map((q: any) => ({
+    // Canonical contract: the fetched Question carries its own `visual` field.
+    // No legacy diagram is fabricated from visual data (the type cast is gone) —
+    // `diagram` stays at its DB value (null for questions, which have no legacy
+    // diagram column). Renderers dispatch on `visual` -> QuestionVisualizer.
+    const mappedQuestions = finalQuestions.map((q: Question): Question => ({
       ...q,
-      diagram: q.visual || null
+      diagram: null
     }));
 
     // Shuffle final set
-    return mappedQuestions.sort(() => Math.random() - 0.5);
-  } catch (error: any) {
-    logError('examService.fetchQuestionsForPaper.error', { message: error.message });
+    return shuffleArray(mappedQuestions);
+  } catch (error) {
+    const { message } = errorFields(error);
+    logError('examService.fetchQuestionsForPaper.error', { message });
     throw error;
   }
 };
@@ -167,8 +183,9 @@ export const fetchQuestionsForPaper = async (
 export const findAttemptById = async (attemptId: string, userId: string): Promise<Attempt | null> => {
   try {
     return await attemptRepo.findAttemptById(attemptId, userId)
-  } catch (error: any) {
-    logError('examService.findAttemptById.error', { message: error.message })
+  } catch (error) {
+    const { message } = errorFields(error)
+    logError('examService.findAttemptById.error', { message })
     return null
   }
 }
@@ -182,8 +199,9 @@ export const findInProgressAttempt = async (params: {
 }): Promise<Attempt | null> => {
   try {
     return await attemptRepo.findInProgressAttempt(params)
-  } catch (error: any) {
-    logError('examService.findInProgressAttempt.error', { message: error.message })
+  } catch (error) {
+    const { message } = errorFields(error)
+    logError('examService.findInProgressAttempt.error', { message })
     return null
   }
 }
@@ -194,79 +212,96 @@ export const createAttempt = async (params: {
   paperId?: string;
   teacherExamId?: string;
   source: AttemptSource;
-  totalMarks: number;
-  questionsSnapshot: Question[];
-  forceNew?: boolean;
+  /**
+   * P0-01: selection CONTEXT only. The server resolves which questions belong to
+   * the attempt from these values and writes the snapshot itself; the client
+   * never supplies question content. questionCount is the requested sample size
+   * for subject/topic tests and is clamped server-side.
+   */
+  subjectName?: string;
+  topicName?: string;
+  questionCount?: number;
 }): Promise<{ attemptId: string; isResumed: boolean; attemptData?: Attempt }> => {
-  // 0. Security Gate (Fail-Open for Exams)
+  // 0. Security Gate (Exams). A non-2xx response from the security gateway is an
+  // explicit rejection (rate limit / gateway denial). Hard-fail so a throttled or
+  // flagged caller cannot start an attempt — mirror the check-not-enforce gap the
+  // exams audit (SEC-2) called out. Pure transport-level invoke failures (gateway
+  // unreachable) remain fail-open: the attempt is still guarded server-side by
+  // RLS + the check_availability RPCs, so Availability must not regress on a
+  // transient gateway outage.
   try {
-    await supabase.functions.invoke('security-gateway', {
+    const gatewayResult = await supabase.functions.invoke('security-gateway', {
       method: 'POST',
       body: { pathname: '/exams/start' }
     })
+    if (gatewayResult?.error) {
+      throw new Error('Exam authorization failed. You are rate limited or blocked from starting exams. Please try again in a moment.')
+    }
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Exam authorization failed')) {
+      throw err
+    }
     logWarn('examService.securityGateway.bypassed', { message: err instanceof Error ? err.message : String(err) });
   }
 
   try {
-    let existing: Attempt | null = null;
-
-    // 1. Check for existing in_progress attempt (unless forcing new)
-    if (!params.forceNew) {
-      existing = await attemptRepo.findInProgressAttempt({
+    // 1. For teacher exams: enforce server-side time-window validation when
+    //    creating a NEW attempt (no in_progress attempt exists). This prevents a
+    //    manipulated client from starting an exam outside [start_time, end_time].
+    //    The RPC uses PostgreSQL now() — not client time.
+    if (params.source === 'teacher_exam' && params.teacherExamId) {
+      const existing: Attempt | null = await attemptRepo.findInProgressAttempt({
         userId: params.userId,
-        paperId: params.paperId,
         teacherExamId: params.teacherExamId,
-        examId: params.examId,
         source: params.source,
       });
+      if (!existing) {
+        const { data: isTimeValid, error: timeErr } = await supabase.rpc('is_teacher_exam_active', {
+          p_exam_id: params.teacherExamId,
+        });
+        if (timeErr) throw new Error('Failed to verify exam availability.');
+        if (!isTimeValid) {
+          throw new Error('This exam is not currently available. Please check your schedule and try again.');
+        }
+      }
     }
 
-    // 2. Create or Update attempt
-    try {
-      const data = await attemptRepo.upsertAttempt({
-        id: params.forceNew ? undefined : existing?.id,
-        user_id: params.userId,
-        exam_id: params.examId,
-        paper_id: params.paperId,
-        teacher_exam_id: params.teacherExamId,
-        source: params.source,
-        total_marks: params.totalMarks,
-        questions_snapshot: existing?.questions_snapshot?.length ? existing.questions_snapshot : (params.questionsSnapshot?.length ? params.questionsSnapshot : []),
-        status: 'in_progress',
-        started_at: (params.forceNew ? undefined : existing?.started_at) || new Date().toISOString()
-      });
-      return { attemptId: data.id, isResumed: !!existing && !params.forceNew, attemptData: data as Attempt };
-    } catch (error: any) {
-      // FIX: Unique constraint violation on "one_active_attempt".
-      // Happens when React StrictMode double-invokes the effect, or when the
-      // lookup above returns null (race) but a row already exists in the DB.
-      // Recovery: fetch the existing in_progress row and treat it as resumed.
-      if (error.code === '23505' && error.message?.includes('one_active_attempt')) {
-        logWarn('examService.createAttempt.constraintRecovery', {});
-        const recovered = await attemptRepo.findInProgressAttempt({
-          userId: params.userId,
-          paperId: params.paperId,
-          teacherExamId: params.teacherExamId,
-          examId: params.examId,
-          source: params.source,
-        });
-        if (!recovered) throw new Error('Failed to recover existing attempt after constraint violation.');
-        return { attemptId: recovered.id, isResumed: true, attemptData: recovered as Attempt };
-      }
-      throw error;
-    }
-  } catch (error: any) {
-    logError('examService.createAttempt.error', { message: error.message });
+    // 2. Server-authoritative creation. One-active-attempt idempotency, ownership,
+    //    exam-access enforcement, the interim total_marks and — since P0-01 — the
+    //    attempt's question snapshot are ALL resolved by the create_attempt
+    //    SECURITY DEFINER RPC. The client never supplies question content.
+    const { data: rpcResult, error: rpcErr } = await supabase.rpc('create_attempt', {
+      p_exam_id: params.examId ?? null,
+      p_paper_id: params.paperId ?? null,
+      p_teacher_exam_id: params.teacherExamId ?? null,
+      p_source: params.source,
+      p_subject_name: params.subjectName ?? null,
+      p_topic_en: params.topicName ?? null,
+      p_question_count: params.questionCount ?? null,
+    });
+    if (rpcErr) throw rpcErr;
+    const attemptId: string = (rpcResult as { attempt_id: string }).attempt_id;
+    const isResumed: boolean = (rpcResult as { is_resumed: boolean }).is_resumed;
+
+    // 3. Return the full attempt row (drives resume/review/timer). The row now
+    //    carries the server-authored questions_snapshot, which is the set the
+    //    attempt will actually be scored and reviewed against.
+    const attemptData = await attemptRepo.findAttemptById(attemptId, params.userId);
+    return { attemptId, isResumed, attemptData: attemptData ?? undefined };
+  } catch (error) {
+    const { message } = errorFields(error);
+    logError('examService.createAttempt.error', { message });
     throw error;
   }
 };
 
 export const syncAnswersCache = async (attemptId: string, answers: Record<string, string | null>): Promise<void> => {
   try {
-    await attemptRepo.updateAttempt(attemptId, { answers_json: answers } as any);
-  } catch (error: any) {
-    logError('examService.syncAnswersCache.error', { message: error.message });
+    await attemptRepo.updateAnswersCacheRpc(attemptId, answers);
+  } catch (error) {
+    const { message } = errorFields(error);
+    logError('examService.syncAnswersCache.error', { message });
+    if (import.meta.env.DEV) throw error;
   }
 };
 
@@ -284,21 +319,23 @@ export const submitAttempt = async (attemptId: string, userId?: string): Promise
     }
     
     return data as SubmitResult;
-  } catch (error: any) {
-    logError('examService.submitAttempt.error', { message: error.message });
+  } catch (error) {
+    const { message } = errorFields(error);
+    logError('examService.submitAttempt.error', { message });
     throw error;
   } finally {
     clearTimeout(timeoutId);
   }
 };
 
-export const updateTabSwitchCount = async (attemptId: string, currentCount: number): Promise<number> => {
+export const updateTabSwitchCount = async (attemptId: string): Promise<number> => {
   try {
-    const newCount = currentCount + 1;
-    await attemptRepo.updateAttempt(attemptId, { tab_switch_count: newCount } as any);
-    return newCount;
-  } catch (error: any) {
-    logError('examService.updateTabSwitchCount.error', { message: error.message });
+    // M-03 fix: the increment is server-side and atomic (bump_tab_switch_count),
+    // so the authoritative count can never be spoofed or reset by the client.
+    return await attemptRepo.bumpTabSwitchCountRpc(attemptId);
+  } catch (error) {
+    const { message } = errorFields(error);
+    logError('examService.updateTabSwitchCount.error', { message });
     throw error;
   }
 };
@@ -310,10 +347,12 @@ export const fetchAttemptResult = async (attemptId: string, userId: string): Pro
   try {
     const attempt = await attemptRepo.findAttemptById(attemptId, userId);
     if (!attempt) throw new Error('Attempt not found');
-    const answers = await attemptRepo.findAnswersByAttemptId(attemptId);
+    // F-01: correctness columns are completion-gated behind the RPC.
+    const answers = await attemptRepo.fetchAttemptReviewAnswersRpc(attemptId);
     return { attempt: attempt as Attempt, answers: answers as AttemptAnswer[] };
-  } catch (error: any) {
-    logError('examService.fetchAttemptResult.error', { message: error.message });
+  } catch (error) {
+    const { message } = errorFields(error);
+    logError('examService.fetchAttemptResult.error', { message });
     throw error;
   }
 };
@@ -325,8 +364,9 @@ export const fetchAttemptResult = async (attemptId: string, userId: string): Pro
 export const fetchAttemptAnswers = async (attemptId: string): Promise<AttemptAnswer[]> => {
   try {
     return (await attemptRepo.findAnswersByAttemptId(attemptId)) ?? [];
-  } catch (error: any) {
-    logError('examService.fetchAttemptAnswers.error', { message: error.message });
+  } catch (error) {
+    const { message } = errorFields(error);
+    logError('examService.fetchAttemptAnswers.error', { message });
     throw error;
   }
 };
@@ -341,54 +381,82 @@ export const fetchAttemptAnswers = async (attemptId: string): Promise<AttemptAns
  *   addQuestionTime     – only time_spent_secs (accumulates)
  *
  * These are called via Postgres RPC (supabase.rpc) which maps directly to
- * the INSERT ... ON CONFLICT functions defined in the migration.
+ * the INSERT ... ON CONFLICT functions defined in the migration. Since F-01
+ * the mutation RPCs no longer accept a client-supplied correct_option.
  */
 
 export const touchQuestionVisit = async (
   attemptId: string,
   questionId: string,
-  correctOption: string,
 ): Promise<void> => {
-  await attemptRepo.touchQuestionVisitRpc(attemptId, questionId, correctOption);
+  await attemptRepo.touchQuestionVisitRpc(attemptId, questionId);
 };
 
 export const setQuestionAnswer = async (
   attemptId: string,
   questionId: string,
   selectedOption: string | null,
-  correctOption: string,
-  marksPerQuestion: number,
-  negativeMarkValue: number,
 ): Promise<void> => {
   if (selectedOption !== null && !selectedOptionSchema.safeParse(selectedOption).success) {
     throw new Error('Invalid answer option. Answer options are limited to A-D.');
   }
-  await attemptRepo.setQuestionAnswerRpc(attemptId, questionId, selectedOption, correctOption, marksPerQuestion, negativeMarkValue);
+  await attemptRepo.setQuestionAnswerRpc(attemptId, questionId, selectedOption);
 };
 
 export const setQuestionReview = async (
   attemptId: string,
   questionId: string,
-  correctOption: string,
   marked: boolean,
 ): Promise<void> => {
-  await attemptRepo.setQuestionReviewRpc(attemptId, questionId, correctOption, marked);
+  await attemptRepo.setQuestionReviewRpc(attemptId, questionId, marked);
 };
 
 export const addQuestionTime = async (
   attemptId: string,
   questionId: string,
-  correctOption: string,
   seconds: number,
 ): Promise<void> => {
-  await attemptRepo.addQuestionTimeRpc(attemptId, questionId, correctOption, seconds);
+  await attemptRepo.addQuestionTimeRpc(attemptId, questionId, seconds);
+};
+
+/**
+ * Content-attempt post-exam review: full question definitions (incl.
+ * correct_option + explanations) restored through the ownership+completion
+ * gated get_content_review_questions RPC. The questions answer columns are
+ * revoked from REST (F-07).
+ */
+export const fetchContentReviewQuestions = async (attemptId: string): Promise<Partial<Question>[]> => {
+  try {
+    const data = await questionRepo.fetchContentReviewQuestionsRpc(attemptId);
+    return (data ?? []) as Partial<Question>[];
+  } catch (error: unknown) {
+    logError('examService.fetchContentReviewQuestions.error', { message: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
+};
+
+/**
+ * H-1: full question definitions for teacher-exam post-exam review.
+ * Teacher questions do not live in the content `questions` table, and the
+ * in-session snapshot no longer carries answers, so the review restores them
+ * through the ownership+completion gated get_teacher_exam_review_questions RPC.
+ */
+export const fetchTeacherExamReviewQuestions = async (attemptId: string): Promise<Partial<Question>[]> => {
+  try {
+    const data = await teacherExamRepo.fetchTeacherExamReviewQuestionsRpc(attemptId);
+    return (data ?? []) as Partial<Question>[];
+  } catch (error: unknown) {
+    logError('examService.fetchTeacherExamReviewQuestions.error', { message: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
 };
 
 export const markReviewAccessed = async (attemptId: string): Promise<void> => {
   try {
-    await attemptRepo.updateAttempt(attemptId, { review_accessed: true } as any);
-  } catch (error: any) {
-    logError('examService.markReviewAccessed.error', { message: error.message });
+    await attemptRepo.markReviewAccessedRpc(attemptId);
+  } catch (error) {
+    const { message } = errorFields(error);
+    logError('examService.markReviewAccessed.error', { message });
     throw error;
   }
 };
@@ -405,8 +473,9 @@ export const fetchTeacherExamQuestions = async (examId: string): Promise<Questio
       difficulty: 'medium',
       negative_marks: 0
     })) as unknown as Question[];
-  } catch (error: any) {
-    logError('examService.fetchTeacherExamQuestions.error', { message: error.message });
+  } catch (error) {
+    const { message } = errorFields(error);
+    logError('examService.fetchTeacherExamQuestions.error', { message });
     throw error;
   }
 };
@@ -414,51 +483,44 @@ export const fetchTeacherExamQuestions = async (examId: string): Promise<Questio
 export const batchCheckAvailability = async (paperIds: string[]): Promise<Record<string, { valid: boolean; message?: string }>> => {
   if (!paperIds.length) return {};
   
-  try {
-    // 1. Get subjects config for all papers
-    const subjects = await examRepo.fetchSubjectsWithQuestionCount(paperIds);
+  // 1. Get subjects config for all papers
+  const subjects = await examRepo.fetchSubjectsWithQuestionCount(paperIds);
 
-    // 2. Get counts for all papers in a single query from the question_counts view (to avoid 1000 limit)
-    const countsData = await examRepo.fetchQuestionCountsByPapers(paperIds);
+  // 2. Get counts for all papers in a single query from the question_counts view (to avoid 1000 limit)
+  const countsData = await examRepo.fetchQuestionCountsByPapers(paperIds);
 
-    // 3. Map counts from database view
-    const counts: Record<string, number> = {};
-    countsData?.forEach(c => {
-      const key = `${c.paper_id}|${c.subject_name}`;
-      counts[key] = (c.count as number) || 0;
-    });
+  // 3. Map counts from database view
+  const counts: Record<string, number> = {};
+  countsData?.forEach(c => {
+    const key = `${c.paper_id}|${c.subject_name}`;
+    counts[key] = (c.count as number) || 0;
+  });
 
-    // 4. Validate each paper
-    const results: Record<string, { valid: boolean; message?: string }> = {};
+  // 4. Validate each paper
+  const results: Record<string, { valid: boolean; message?: string }> = {};
+  
+  paperIds.forEach(id => {
+    const paperSubjects = subjects?.filter(s => s.paper_id === id) || [];
     
-    paperIds.forEach(id => {
-      const paperSubjects = subjects?.filter(s => s.paper_id === id) || [];
-      
-      if (paperSubjects.length === 0) {
-        results[id] = { valid: false, message: "Configuration error" };
-        return;
+    if (paperSubjects.length === 0) {
+      results[id] = { valid: false, message: "Configuration error" };
+      return;
+    }
+
+    let isValid = true;
+    for (const sub of paperSubjects) {
+      const actual = counts[`${id}|${sub.subject_name}`] || 0;
+      if (actual < (sub.question_count as number)) {
+        isValid = false;
+        break;
       }
+    }
 
-      let isValid = true;
-      for (const sub of paperSubjects) {
-        const actual = counts[`${id}|${sub.subject_name}`] || 0;
-        if (actual < (sub.question_count as number)) {
-          isValid = false;
-          break;
-        }
-      }
+    results[id] = isValid 
+      ? { valid: true } 
+      : { valid: false, message: "Not Enough Questions" };
+  });
 
-      results[id] = isValid 
-        ? { valid: true } 
-        : { valid: false, message: "Not Enough Questions" };
-    });
-
-    return results;
-  } catch (error) {
-    logError('examService.batchCheckAvailability.error', { message: error instanceof Error ? error.message : String(error) });
-    const fallback: Record<string, { valid: boolean; message?: string }> = {};
-    paperIds.forEach(id => fallback[id] = { valid: false, message: "Unable to verify availability." });
-    return fallback;
-  }
+  return results;
 };
 

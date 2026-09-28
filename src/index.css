@@ -85,6 +85,12 @@ html::-webkit-scrollbar {
   --radius-2xl: 24px;
   --radius-3xl: 20px;
 
+  /* Button Radii — maps --button-radius-* from themes.css to rounded-button-* utilities */
+  --radius-button-xs: var(--button-radius-xs);
+  --radius-button-sm: var(--button-radius-sm);
+  --radius-button-md: var(--button-radius-md);
+  --radius-button-xl: var(--button-radius-xl);
+
   /* Shadow Tailwind Mappings */
   --shadow-xs: var(--shadow-xs);
   --shadow-sm: var(--shadow-sm);
@@ -106,6 +112,9 @@ html::-webkit-scrollbar {
   --color-card-border: var(--card-border);
   --shadow-card-shadow: var(--card-shadow);
   --shadow-card-hover-shadow: var(--card-hover-shadow);
+
+  /* ─── Glow shadow tokens (FIX-13) ──────────────────────────────────────── */
+  --shadow-glow-danger: var(--glow-danger);
 
   /* Premium (dark forest) card material — Semantic Material tokens.
      Exposed so Card variant="premium" consumes tokens, not primitives. */
@@ -134,6 +143,10 @@ html::-webkit-scrollbar {
   --color-button-text-ghost: var(--button-text-ghost);
   --color-button-text-ghost-hover: var(--button-text-ghost-hover);
   --color-button-border-ghost: var(--button-border-ghost);
+  --color-button-surface-action: var(--button-surface-action);
+  --color-button-surface-action-hover: var(--button-surface-action-hover);
+  --color-button-text-action: var(--button-text-action);
+  --color-button-border-action: var(--button-border-action);
 
   --color-input-bg: var(--input-bg);
   --color-input-text: var(--input-text);
@@ -904,13 +917,12 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 }
 
 /* ── MATERIAL FAMILY D — OVERLAY MATERIAL (light only) ──
-   Floating surface · soft premium shadow · soft edge ·
-   warm premium surface · gentle border · clean separation.
-   No carved, no forest chrome, no heavy bevel, no hard contact shadow. */
+   Floating surface · premium 3D shadow · soft edge ·
+   warm premium surface · gentle border · clean separation. */
 .light .ancient-overlay {
   background-color: var(--surface-floating);
   border: 1px solid var(--border-subtle);
-  box-shadow: var(--elevation-4);
+  box-shadow: var(--shadow-premium-card);
   transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
 }
 .light .ancient-tooltip {
@@ -1138,15 +1150,4 @@ h6 { font-size: var(--text-h6); line-height: var(--lh-h6); font-weight: var(--fw
 @keyframes sheen {
   0% { background-position: 200% 200%; }
   100% { background-position: -200% -200%; }
-}
-
-/* ─── Toast slide-in (P1 A-4 — formerly an inline <style> tag in useToast;
-   consolidated globally so no component injects keyframes). ─── */
-@keyframes slideIn {
-  from { transform: translateX(100%) scale(0.9); opacity: 0; }
-  to { transform: translateX(0) scale(1); opacity: 1; }
-}
-
-.toast-slide-in {
-  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

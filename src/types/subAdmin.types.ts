@@ -6,4 +6,6 @@ export interface SubAdminRow {
   total_referrals: number | null
   status: string | null
   created_at: string
+  updated_at: string
+  commission_percentage: number | null
 }

@@ -1,7 +1,9 @@
+import type { KeyboardEvent } from 'react'
 import { ArrowLeft, Timer, Target, ChevronRight } from 'lucide-react'
 import { Card, IconButton, Stack, Button, H2 } from '../common/AntigravityUI'
 import { Body, Label } from '../common/AntigravityTypography'
 import { Spinner } from '../common/Spinner'
+import { FOCUS_RING } from '../common/AntigravityMotion'
 
 interface TestConfigViewProps {
   title: string
@@ -24,6 +26,41 @@ export function TestConfigView({
   onLaunch,
   onBack
 }: TestConfigViewProps) {
+  const availableOptions = options.filter(cnt => cnt <= totalQuestions);
+
+  // Radiogroup keyboard pattern: arrow keys / Home / End move selection
+  // between the available options (WAI-ARIA radio semantics).
+  const handleRadioKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (availableOptions.length === 0) return;
+    const currentIndex = availableOptions.indexOf(questionCount);
+    let nextIndex = currentIndex;
+    switch (e.key) {
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        e.preventDefault();
+        nextIndex = currentIndex <= 0 ? availableOptions.length - 1 : currentIndex - 1;
+        break;
+      case 'ArrowRight':
+      case 'ArrowDown':
+        e.preventDefault();
+        nextIndex = currentIndex >= availableOptions.length - 1 ? 0 : currentIndex + 1;
+        break;
+      case 'Home':
+        e.preventDefault();
+        nextIndex = 0;
+        break;
+      case 'End':
+        e.preventDefault();
+        nextIndex = availableOptions.length - 1;
+        break;
+      default:
+        return;
+    }
+    const next = availableOptions[Math.max(0, nextIndex)];
+    setQuestionCount(next);
+    document.getElementById(`question-count-${next}`)?.focus();
+  };
+
   return (
     <div className="max-w-[800px] mx-auto animate-in">
       <Card variant="premium-dark-neutral" className="p-8 lg:p-12 space-y-8">
@@ -40,18 +77,28 @@ export function TestConfigView({
         <Stack gap={32}>
           <Stack gap={16}>
             <Label className="text-[14px] font-bold text-text-secondary uppercase tracking-widest m-0">Select Question Count</Label>
-            <div className="grid grid-cols-3 gap-4" role="radiogroup" aria-label="Select question count">
+            <div
+              className="grid grid-cols-3 gap-4"
+              role="radiogroup"
+              aria-label="Select question count"
+              onKeyDown={handleRadioKeyDown}
+            >
               {options.map(cnt => {
                 const isAvailable = cnt <= totalQuestions;
+                const isSelected = questionCount === cnt;
                 return (
                   <button
                     key={cnt}
-                    disabled={!isAvailable}
-                    aria-pressed={questionCount === cnt}
+                    type="button"
+                    id={`question-count-${cnt}`}
+                    role="radio"
+                    aria-checked={isSelected}
                     aria-label={`${cnt} questions`}
+                    tabIndex={isAvailable && isSelected ? 0 : -1}
+                    disabled={!isAvailable}
                     onClick={() => setQuestionCount(cnt)}
                     className={`
-                      py-6 rounded-2xl border-2 transition-[color,box-shadow,border-color,opacity] duration-200 ease-out text-center flex flex-col items-center justify-center gap-2
+                      py-6 rounded-2xl border-2 transition-interaction duration-fast ease-standard text-center flex flex-col items-center justify-center gap-2 ${FOCUS_RING}
                       ${!isAvailable ? 'opacity-40 bg-hover-bg/20 border-border-subtle cursor-not-allowed' : 
                         questionCount === cnt ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' : 'border-border-subtle bg-card-bg lg:hover:border-primary/30'}
                     `}
@@ -91,7 +138,7 @@ export function TestConfigView({
             onClick={onLaunch} className="mt-4"
           >
             {isLaunching ? (
-              <Label className="inline-flex items-center gap-2 m-0"><Spinner size="sm" className="border-current border-t-transparent" /> Launching...</Label>
+              <Label className="inline-flex items-center gap-2 m-0"><Spinner size="sm" variant="current" /> Launching...</Label>
             ) : (
               <Label className="inline-flex items-center gap-2 m-0">Start Session <ChevronRight size={18} /></Label>
             )}

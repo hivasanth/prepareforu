@@ -81,7 +81,6 @@ export function convertAnswersRecord(
     attempt_id: '',
     question_id: q.id,
     selected_option: answers[q.id] !== undefined ? answers[q.id] as "A" | "B" | "C" | "D" | null : null,
-    correct_option: q.correct_option,
     is_correct: answers[q.id] !== undefined && answers[q.id] !== null ? answers[q.id] === q.correct_option : null,
     marks_awarded: 0,
     time_spent_secs: 0,
@@ -116,7 +115,7 @@ export function computeExamStatistics(
       if (answer.visited) visited++;
       if (answer.marked_for_review) marked++;
       if (answer.selected_option === null) {
-        if (answer.visited && !answer.marked_for_review) skipped++;
+        if (answer.visited) skipped++;
       } else if (answer.is_correct === true) {
         correct++;
         answered++;
@@ -125,7 +124,7 @@ export function computeExamStatistics(
         answered++;
       }
     }
-    score = answerDetails.reduce((sum, a) => sum + a.marks_awarded, 0);
+    score = answerDetails.reduce((sum, a) => sum + (a.marks_awarded ?? 0), 0);
   } else {
     for (const q of questions) {
       const isAnswered = selectedAnswers[q.id] !== undefined && selectedAnswers[q.id] !== null;
@@ -149,4 +148,43 @@ export function computeExamStatistics(
     accuracy: answerDetails ? (total > 0 ? Math.round((correct / total) * 100) : 0) : 0,
     timeTaken: durationSeconds ?? 0,
   };
+}
+
+/**
+ * Canonical helper for /prepare-write Result + Review views. Both views must
+ * show identical statistics for the same session, so they share this helper
+ * instead of constructing `computeExamStatistics` arguments inline.
+ *
+ * Semantics:
+ *   - visitedSet = any question whose answer key is present in `answers`.
+ *   - When `answerDetails` (AttemptAnswer[]) is available, server-side correctness
+ *     and marks are used (preferred). Otherwise the function falls back to
+ *     client-side comparison against `q.correct_option`.
+ *   - When `answerDetails` is supplied, the `markedForReview` argument is
+ *     ignored (marked count is derived from each AttemptAnswer's flag).
+ *   - accuracy = correct / total * 100 (rounded).
+ *
+ * @param questions  - the practice session's question list
+ * @param answers    - the user's selected answers (key = question_id)
+ * @param answerDetails - AttemptAnswer[] if available; otherwise undefined
+ * @param durationSeconds - elapsed seconds (optional)
+ */
+export function computePracticeSessionStats(
+  questions: Question[],
+  answers: Record<string, string | null>,
+  answerDetails: AttemptAnswer[] | undefined,
+  durationSeconds?: number,
+): ExamStatistics {
+  const visitedSet = new Set(
+    questions.filter(q => answers[q.id] !== undefined).map(q => q.id)
+  );
+  // markedForReview is ignored when answerDetails is provided.
+  return computeExamStatistics(
+    questions,
+    answers,
+    new Set<string>(),
+    visitedSet,
+    answerDetails,
+    durationSeconds,
+  );
 }

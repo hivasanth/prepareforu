@@ -91,6 +91,10 @@ export interface PillProps {
   ariaPressed?: boolean
   /** Navigation pill — aria-current="page". */
   ariaCurrent?: boolean
+  /** Fully curved (pill) radius — overrides the size's certified radius with
+   *  the reusable `rounded-full` pill language. Default `false` keeps the
+   *  certified size radius (md = rounded-button-md). */
+  curved?: boolean
   title?: string
   className?: string
   children: ReactNode
@@ -98,13 +102,22 @@ export interface PillProps {
 
 /* One radius language, one padding system, one type scale. The XS/MD recipes
    reproduce the pre-5.4D certified Badge renders exactly (DS-005): md was
-   h-7 px-3 rounded-[14px] text-[10px], sm was h-5 px-2.5 rounded-full
-   text-[9px]. Consumers never define radius/padding/type. */
-const PILL_SIZES: Record<PillSize, string> = {
-  xs: 'h-5 px-2 rounded-full text-[9px] tracking-wider',
-  sm: 'h-5 px-2.5 rounded-full text-[9px] tracking-wider',
-  md: 'h-7 px-3 rounded-button-md text-[10px] tracking-wider',
-  lg: 'h-8 px-4 rounded-full text-[11px] tracking-wider',
+   h-7 px-3 rounded-button-md text-[10px], sm was h-5 px-2.5 rounded-full
+   text-[9px]. Consumers never define radius/padding/type — the optional
+   `curved` prop is the ONE sanctioned way to switch a pill to the fully
+   curved `rounded-full` language. */
+const PILL_SIZE_LAYOUT: Record<PillSize, string> = {
+  xs: 'h-5 px-2 text-[9px] tracking-wider',
+  sm: 'h-5 px-2.5 text-[9px] tracking-wider',
+  md: 'h-7 px-3 text-[10px] tracking-wider',
+  lg: 'h-8 px-4 text-[11px] tracking-wider',
+}
+
+const PILL_SIZE_RADIUS: Record<PillSize, string> = {
+  xs: 'rounded-full',
+  sm: 'rounded-full',
+  md: 'rounded-button-md',
+  lg: 'rounded-full',
 }
 
 /* Semantic color material. Flat by default (elevation is opt-in only).
@@ -118,9 +131,9 @@ const PILL_SIZES: Record<PillSize, string> = {
 const PILL_VARIANTS: Record<PillVariant, string> = {
   default: 'bg-hover-bg text-text-secondary border-border-subtle light:bg-white',
   neutral: 'bg-hover-bg text-text-secondary border-border-subtle light:bg-white',
-  success: 'bg-success/15 text-success border-success/30 light:bg-white light:text-success light:border-success',
-  warning: 'bg-warning/15 text-warning border-warning/30 light:bg-white light:text-warning light:border-warning',
-  danger: 'bg-danger/15 text-danger border-danger/30 light:bg-white light:text-danger light:border-danger',
+  success: 'bg-success/15 text-success border-success/30 light:bg-[var(--badge-light-bg)] light:text-success light:border-success',
+  warning: 'bg-warning/15 text-warning border-warning/30 light:bg-[var(--badge-light-bg)] light:text-warning light:border-warning',
+  danger: 'bg-danger/15 text-danger border-danger/30 light:bg-[var(--badge-light-bg)] light:text-danger light:border-danger',
   info: 'bg-info/15 text-info border-info/30 light:bg-white light:text-info light:border-info',
   primary: 'bg-primary/15 text-primary border-primary/30 light:bg-white',
   secondary: 'bg-secondary/15 text-secondary border-secondary/30 light:bg-white',
@@ -173,6 +186,7 @@ export function Pill({
   ariaLabel,
   ariaPressed,
   ariaCurrent,
+  curved = false,
   title,
   className = '',
   children,
@@ -185,6 +199,7 @@ export function Pill({
   const material = PILL_STATES[resolvedState] ?? (isToggle ? PILL_STATES.inactive : PILL_VARIANTS[variant])
   const Tag: 'div' | 'button' = as
   const interactive = isButton ? (isToggle || resolvedState === 'selected' ? TOGGLE_CLASSES : INTERACTIVE_CLASSES) : ''
+  const radiusCls = curved ? 'rounded-full' : PILL_SIZE_RADIUS[size]
 
   return (
     <Tag
@@ -198,7 +213,8 @@ export function Pill({
       aria-busy={isButton && resolvedState === 'loading' ? true : undefined}
       title={title}
       className={[
-        PILL_SIZES[size],
+        PILL_SIZE_LAYOUT[size],
+        radiusCls,
         `font-bold uppercase border ${inline ? 'inline-flex' : 'flex'} items-center gap-1.5 w-fit`,
         material,
         pulse ? 'animate-pulse' : '',

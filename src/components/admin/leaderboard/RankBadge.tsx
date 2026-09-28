@@ -4,19 +4,19 @@ export function RankBadge({ rank }: { rank: number }) {
   const getRankStyles = () => {
     switch (rank) {
       case 1:
-        return 'bg-warning/10 text-warning border-warning/20 shadow-warning/30'
+        return 'light:text-warning light:border-warning/20 text-primary border-primary/20'
       case 2:
-        return 'bg-hover-bg/30 text-text-muted border-border-subtle/40'
+        return 'text-text-muted border-border-subtle/40'
       case 3:
-        return 'bg-warning/10 text-[var(--gold-300)] border-warning/20'
+        return 'light:text-[var(--gold-300)] light:border-warning/20 text-text-secondary border-border-subtle/40'
       default:
-        return 'bg-secondary/5 text-text-secondary border-secondary/10 font-bold'
+        return 'text-text-secondary border-secondary/10 font-bold'
     }
   }
 
   return (
-    <div role="img" aria-label={`Rank ${rank}`} className={`flex items-center justify-center gap-1 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border text-[9px] sm:text-[11px] lg:text-xs font-bold tracking-tighter sm:tracking-normal ${getRankStyles()}`}>
-      {(rank >= 1 && rank <= 3) && <Medal size={10} className="sm:size-3 lg:size-3.5" />}
+    <div role="img" aria-label={`Rank ${rank}`} className={`flex items-center justify-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full border text-xs sm:text-sm font-bold tracking-tight light:bg-[image:var(--gradient-header)] light:text-[var(--ancient-gold-bright)] light:shadow-premium-icon bg-hover-bg ${getRankStyles()}`}>
+      {(rank >= 1 && rank <= 3) && <Medal size={12} className="sm:size-3.5 lg:size-4" />}
       <span>{rank}</span>
     </div>
   )

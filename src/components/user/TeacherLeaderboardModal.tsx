@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 
 import { Trophy, Medal } from 'lucide-react';
 import { fetchTeacherExamLeaderboard } from '../../services/teacherExamService';
-import { LoadingSkeleton, ErrorState, EmptyState } from '../common/SharedComponents';
-import { Button, Badge, DataGrid } from '../common/AntigravityUI';
+import { LoadingSkeleton, EmptyState } from '../common/SharedComponents';
+import { Button, Badge, DataGrid, H2, ErrorContainer, RetryButton } from '../common/AntigravityUI';
 import { Body } from '../common/AntigravityTypography';
 import { IconBadge } from '../common/IconBadge';
 import { AdminModal } from '../common/AdminModal';
@@ -77,7 +77,11 @@ export function TeacherLeaderboardModal({ exam, user, onClose }: TeacherLeaderbo
             {[1, 2, 3, 4, 5].map(i => <LoadingSkeleton key={i} height={50} borderRadius={12} />)}
           </div>
         ) : error ? (
-          <ErrorState message={error} onRetry={() => loadLeaderboard(true)} />
+          <ErrorContainer category="unknown" variant="inline">
+            <H2>Could not load leaderboard</H2>
+            <Body>{error}</Body>
+            <RetryButton onRetry={() => loadLeaderboard(true)} />
+          </ErrorContainer>
         ) : data.length === 0 ? (
           <EmptyState
             icon="🏆"

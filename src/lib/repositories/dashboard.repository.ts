@@ -2,6 +2,7 @@ import { supabase } from '../supabase'
 
 export async function fetchDashboardStatsRpc(userId: string): Promise<{
   daily_streak: number
+  highest_streak: number
   exams_taken: number
   accuracy: number
   global_rank: string
@@ -10,6 +11,7 @@ export async function fetchDashboardStatsRpc(userId: string): Promise<{
   if (error) throw error
   return data as {
     daily_streak: number
+    highest_streak: number
     exams_taken: number
     accuracy: number
     global_rank: string

@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAsyncOperation } from '../../../hooks/useAsyncOperation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, PlusCircle, Trash2, AlertCircle } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { AlertCircle, Plus, PlusCircle, Trash2 } from 'lucide-react'
 import { adminService } from '../../../services/adminService'
 import { generateRequestId } from '../../../utils/logger'
-import { Button, IconButton, Input, Switch, Label, Stack, Grid, Card, Badge, RadioGroup, H2, Alert } from '../../common/AntigravityUI'
-import { useToast, ToastContainer } from '../../../hooks/useToast'
+import { Button, IconButton, Input, Switch, Label, Stack, Grid, Card, Badge, RadioGroup, Alert } from '../../common/AntigravityUI'
+import { AdminModal } from '../../common/AdminModal'
+import { FieldError } from '../../common/SharedComponents'
 import { examCreationSchema } from '../../../validations/securitySchemas'
 import type { UserProfile } from '../../../types/auth.types'
 
@@ -14,6 +15,8 @@ interface AddExamModalProps {
   onClose: () => void
   user: UserProfile | null | undefined
   onExamCreated: (examId: string) => void
+  /** Success announcement for the hosting page — the modal itself closes. */
+  onSuccess?: (message: string) => void
 }
 
 type AddExamFieldErrors = Partial<Record<
@@ -22,8 +25,7 @@ type AddExamFieldErrors = Partial<Record<
 >>
 type AddExamSubjectErrors = Record<number, Partial<Record<'subject_name' | 'question_count' | 'marks_per_question', string>>>
 
-export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamModalProps) {
-  const { toasts, showSuccess } = useToast()
+export function AddExamModal({ isOpen, onClose, user, onExamCreated, onSuccess }: AddExamModalProps) {
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<AddExamFieldErrors>({})
   const [subjectErrors, setSubjectErrors] = useState<AddExamSubjectErrors>({})
@@ -52,14 +54,23 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
   const isSumValid = runningQuestionsSum === Number(totalQuestions)
   const runningMarksSum = modalSubjects.reduce((sum, s) => sum + ((Number(s.question_count) || 0) * (Number(s.marks_per_question) || 0)), 0)
 
+  /** Single close path: reset transient validation state, then hand off to
+   *  the parent. Covers every close trigger (cancel, X, Escape, scrim). */
+  const handleClose = () => {
+    setError(null)
+    setFieldErrors({})
+    setSubjectErrors({})
+    setSubjectsError(undefined)
+    submittedRef.current = false
+    onClose()
+  }
+
+  // M-3: Lock body scroll while modal is open
   useEffect(() => {
-    if (!isOpen) {
-      setError(null)
-      setFieldErrors({})
-      setSubjectErrors({})
-      setSubjectsError(undefined)
-      submittedRef.current = false
-    }
+    if (!isOpen) return
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = originalOverflow }
   }, [isOpen])
 
   const addModalSubject = () => {
@@ -75,7 +86,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
     if (submittedRef.current) setSubjectsError(undefined)
   }
 
-  const updateModalSubject = (index: number, key: string, value: any) => {
+  const updateModalSubject = (index: number, key: 'subject_name' | 'question_count' | 'marks_per_question', value: string | number) => {
     setModalSubjects(prev => prev.map((sub, idx) => {
       if (idx === index) return { ...sub, [key]: value }
       return sub
@@ -124,6 +135,9 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
 
   const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault()
+    // BUG-J re-entry guard: button disabling alone cannot stop programmatic
+    // submissions (e.g. form.requestSubmit) while a create is in flight.
+    if (isSubmitting) return
     submittedRef.current = true
 
     const { result, fieldErrors, subjectErrors, subjectsError } = runValidation()
@@ -161,7 +175,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
             subjects: data.subjects,
           }
         )
-        showSuccess(`Exam "${data.examName}" created successfully!`)
+        onSuccess?.(`Exam "${data.examName}" created successfully!`)
         onClose()
         onExamCreated(data.examId)
       })
@@ -188,48 +202,29 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
 
   return (
     <>
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 overflow-y-auto bg-app-bg/60 backdrop-blur-md">
-          <div className="absolute inset-0" onClick={onClose} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClose() }} aria-label="Close modal" />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            transition={{ type: 'spring', duration: 0.4 }}
-            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10 flex flex-col p-6 md:p-8 bg-card-bg border border-border-subtle/80 text-text-primary shadow-2xl rounded-[2.5rem]"
-          >
-            <div className="flex items-center justify-between pb-6 border-b border-border-subtle/30">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                  <Plus className="w-5 h-5" />
-                </div>
-                <div>
-                  <H2 className="uppercase tracking-widest">
-                    Add New Dynamic Exam
-                  </H2>
-                  <p className="text-[10px] uppercase font-medium tracking-wider text-text-secondary">
-                    Deploy a new dynamic standard schema globally
-                  </p>
-                </div>
-              </div>
-              <IconButton
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                aria-label="Close modal"
-              >
-                <X size={18} />
-              </IconButton>
-            </div>
-
-            <form onSubmit={handleCreateExam} noValidate className="mt-6 space-y-6">
+    {/* BUG-3 remediation: certified AdminModal host — role="dialog",
+     * aria-modal, FocusTrap, Escape-to-close and focus restoration are all
+     * owned by the shared modal contract. Only the shell changed; the form,
+     * validation and submit behavior are untouched. */}
+    <AdminModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Add New Dynamic Exam"
+      titleClassName="uppercase tracking-widest"
+      description="Deploy a new dynamic standard schema globally"
+      headerBadge={(
+        <span className="inline-flex p-2 rounded-xl bg-primary/10 text-primary">
+          <Plus className="w-5 h-5" />
+        </span>
+      )}
+    >
+      <form id="add-exam-form" onSubmit={handleCreateExam} noValidate className="space-y-6">
               {error && (
                 <Alert variant="error" icon={AlertCircle} title="Unable to create exam" className="w-full">
                   {error}
                 </Alert>
               )}
-              <Grid cols={2} gap={20}>
+              <Grid cols={2} gap={12}>
                 <Card variant="subtle" className="flex flex-col gap-4 p-5 bg-hover-bg/20">
                   <span className="text-xs font-bold uppercase tracking-widest text-primary">General Metadata</span>
                   <Stack gap="sm">
@@ -244,7 +239,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                       aria-describedby={fieldErrors.examId ? errorId('exam-id') : undefined}
                     />
                     {fieldErrors.examId && (
-                      <span id="exam-id-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.examId}</span>
+                      <FieldError id="exam-id-error">{fieldErrors.examId}</FieldError>
                     )}
                   </Stack>
                   <Stack gap="sm">
@@ -259,7 +254,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                       aria-describedby={fieldErrors.examName ? errorId('exam-name') : undefined}
                     />
                     {fieldErrors.examName && (
-                      <span id="exam-name-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.examName}</span>
+                      <FieldError id="exam-name-error">{fieldErrors.examName}</FieldError>
                     )}
                   </Stack>
                   <Stack gap="sm">
@@ -274,7 +269,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                       aria-describedby={fieldErrors.examSelection ? errorId('exam-selection') : undefined}
                     />
                     {fieldErrors.examSelection && (
-                      <span id="exam-selection-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.examSelection}</span>
+                      <FieldError id="exam-selection-error">{fieldErrors.examSelection}</FieldError>
                     )}
                   </Stack>
                 </Card>
@@ -294,7 +289,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                         aria-describedby={fieldErrors.totalQuestions ? errorId('total-questions') : undefined}
                       />
                       {fieldErrors.totalQuestions && (
-                        <span id="total-questions-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.totalQuestions}</span>
+                        <FieldError id="total-questions-error">{fieldErrors.totalQuestions}</FieldError>
                       )}
                     </Stack>
                     <Stack gap="sm">
@@ -309,7 +304,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                         aria-describedby={fieldErrors.totalMarks ? errorId('total-marks') : undefined}
                       />
                       {fieldErrors.totalMarks && (
-                        <span id="total-marks-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">{fieldErrors.totalMarks}</span>
+                        <FieldError id="total-marks-error">{fieldErrors.totalMarks}</FieldError>
                       )}
                     </Stack>
                   </Grid>
@@ -334,7 +329,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                 </Card>
               </Grid>
 
-              <Grid cols={2} gap={20}>
+              <Grid cols={2} gap={12}>
                 <Card variant="subtle" className="flex flex-col gap-4 p-5 bg-hover-bg/20">
                   <span className="text-xs font-bold uppercase tracking-widest text-primary">Initial Paper Details</span>
                   <Stack gap="sm">
@@ -356,7 +351,7 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                     <Label>Paper Stage</Label>
                     <RadioGroup<'SINGLE' | 'PRELIMS' | 'MAINS'>
                       value={paperStage as 'SINGLE' | 'PRELIMS' | 'MAINS'}
-                      onChange={(stage) => setPaperStage(stage as any)}
+                      onChange={(stage) => setPaperStage(stage)}
                       options={[
                         { value: 'SINGLE', label: 'Single' },
                         { value: 'PRELIMS', label: 'Prelims' },
@@ -394,38 +389,50 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
 
               <Card variant="subtle" className="flex flex-col gap-4 p-5 bg-hover-bg/20">
                 <div className="flex items-center justify-between pb-2 border-b border-border-subtle/20">
-                  <span className="text-xs font-bold uppercase tracking-widest text-primary">Subject Quota Allocation</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-primary">Subject Configuration</span>
                   <Button type="button" onClick={addModalSubject} variant="secondary" size="sm">
                     <PlusCircle size={14} className="mr-1.5" /> Add Subject
                   </Button>
                 </div>
 
-                <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 form-scrollbar">
+                <div className="space-y-4 max-h-[320px] overflow-y-auto pr-2 form-scrollbar">
                   {modalSubjects.map((sub, idx) => (
-                    <div key={sub.subject_name || idx} className="p-4 rounded-xl border flex flex-col md:flex-row items-center gap-4 transition-all bg-hover-bg/10 border-border-subtle/30">
-                      <div className="flex-1 w-full">
-                        <Stack gap="xs">
-                          <Label htmlFor={`subject-name-${idx}`}>Subject Name</Label>
-                          <Input
-                            id={`subject-name-${idx}`}
-                            placeholder="e.g. Engineering Mathematics"
-                            value={sub.subject_name}
-                            onChange={(e) => updateModalSubject(idx, 'subject_name', e.target.value)}
-                            onBlur={() => handleSubjectBlur(idx)}
-                            aria-invalid={!!subjectErrors[idx]?.subject_name}
-                            aria-describedby={subjectErrors[idx]?.subject_name ? `subject-name-${idx}-error` : undefined}
-                          />
-                          {subjectErrors[idx]?.subject_name && (
-                            <span id={`subject-name-${idx}-error`} aria-live="polite" className="text-xs font-bold text-danger mt-1">{subjectErrors[idx]?.subject_name}</span>
-                          )}
-                        </Stack>
+                    <div key={sub.subject_name || idx} className="p-4 rounded-xl border space-y-3 transition-interaction duration-fast ease-standard bg-hover-bg/10 border-border-subtle/30">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 w-full">
+                          <Stack gap="xs">
+                            <Label htmlFor={`subject-name-${idx}`}>Subject Name</Label>
+                            <Input
+                              id={`subject-name-${idx}`}
+                              placeholder="e.g. Engineering Mathematics"
+                              value={sub.subject_name}
+                              onChange={(e) => updateModalSubject(idx, 'subject_name', e.target.value)}
+                              onBlur={() => handleSubjectBlur(idx)}
+                              aria-invalid={!!subjectErrors[idx]?.subject_name}
+                              aria-describedby={subjectErrors[idx]?.subject_name ? `subject-name-${idx}-error` : undefined}
+                            />
+                            {subjectErrors[idx]?.subject_name && (
+                              <span id={`subject-name-${idx}-error`} aria-live="polite" className="text-xs font-bold text-danger mt-1">{subjectErrors[idx]?.subject_name}</span>
+                            )}
+                          </Stack>
+                        </div>
+                        <div className="md:pt-4 flex-shrink-0">
+                          <IconButton type="button" variant="danger" size="sm" onClick={() => removeModalSubject(idx)} aria-label="Remove subject">
+                            <Trash2 size={16} />
+                          </IconButton>
+                        </div>
                       </div>
-                      <div className="w-full md:w-32">
+
+                      <div className="h-px bg-border-subtle/20" />
+
+                      <div className="grid grid-cols-2 gap-3">
                         <Stack gap="xs">
-                          <Label htmlFor={`subject-questions-${idx}`}>Question Count</Label>
+                          <Label htmlFor={`subject-questions-${idx}`}>Questions</Label>
                           <Input
                             id={`subject-questions-${idx}`}
                             type="number"
+                            inputMode="numeric"
+                            min={1}
                             value={sub.question_count}
                             onChange={(e) => updateModalSubject(idx, 'question_count', Number(e.target.value))}
                             onBlur={() => handleSubjectBlur(idx)}
@@ -436,14 +443,14 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                             <span id={`subject-questions-${idx}-error`} aria-live="polite" className="text-xs font-bold text-danger mt-1">{subjectErrors[idx]?.question_count}</span>
                           )}
                         </Stack>
-                      </div>
-                      <div className="w-full md:w-32">
                         <Stack gap="xs">
-                          <Label htmlFor={`subject-marks-${idx}`}>Marks per Q</Label>
+                          <Label htmlFor={`subject-marks-${idx}`}>Marks / Q</Label>
                           <Input
                             id={`subject-marks-${idx}`}
                             type="number"
+                            inputMode="decimal"
                             step="0.1"
+                            min={0.1}
                             value={sub.marks_per_question}
                             onChange={(e) => updateModalSubject(idx, 'marks_per_question', Number(e.target.value))}
                             onBlur={() => handleSubjectBlur(idx)}
@@ -454,11 +461,6 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
                             <span id={`subject-marks-${idx}-error`} aria-live="polite" className="text-xs font-bold text-danger mt-1">{subjectErrors[idx]?.marks_per_question}</span>
                           )}
                         </Stack>
-                      </div>
-                      <div className="md:pt-4 flex-shrink-0">
-                        <IconButton type="button" variant="danger" size="sm" onClick={() => removeModalSubject(idx)} aria-label="Remove subject">
-                          <Trash2 size={16} />
-                        </IconButton>
                       </div>
                     </div>
                   ))}
@@ -484,15 +486,14 @@ export function AddExamModal({ isOpen, onClose, user, onExamCreated }: AddExamMo
               </Card>
 
               <div className="pt-6 border-t flex justify-end gap-3 border-border-subtle/30">
-                <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                {/* BUG-F: Cancel routes through the single close path so the
+                 *  form, validation and error state reset exactly like
+                 *  X / Escape / scrim-close do. */}
+                <Button type="button" variant="secondary" onClick={handleClose}>Cancel</Button>
                 <Button type="submit" variant="primary" disabled={isSubmitting} loading={isSubmitting}>Deploy dynamic exam</Button>
               </div>
             </form>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-    <ToastContainer toasts={toasts} />
+    </AdminModal>
     </>
   )
 }

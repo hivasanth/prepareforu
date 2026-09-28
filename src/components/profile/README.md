@@ -55,7 +55,7 @@ directly for profile data.
 |---------------|-------|--------|
 | User profile fields | `AuthContext.user` (UserProfile) | `users` table via `userRepo.findUserById()` |
 | Derived display values | `useProfile` | `memberSince` from `user.created_at`; `getReadableExam` from `user.exam_selection` |
-| Academic statistics | `AuthContext.user` | `user.streak`, `user.longest_streak`, `user.total_exams`, `user.overall_accuracy` |
+| Academic statistics | `useProfile` stats (canonical `get_user_dashboard_stats`) | `stats.daily_streak`, `stats.highest_streak`, `stats.exams_taken`, `stats.accuracy` |
 
 The profile is **read-only** — all display values flow from `AuthContext.user`
 with no local mutation path.
@@ -165,9 +165,9 @@ fields are never editable on this page:
 | Email | ProfileHeader | `user.email` | No |
 | Join date | ProfileHeader | `user.created_at` → formatted | No |
 | Selected exam | StatisticsSection | `user.exam_selection` → `getReadableExam` | No |
-| Overall accuracy | StatisticsSection | `user.overall_accuracy` | No |
-| Current streak | StatisticsSection | `user.streak` | No |
-| Longest streak | StatisticsSection | `user.longest_streak` | No |
+| Overall accuracy | StatisticsSection | `stats.accuracy` (canonical RPC) | No |
+| Current streak | StatisticsSection | `stats.daily_streak` (canonical RPC) | No |
+| Longest streak | StatisticsSection | `stats.highest_streak` (canonical RPC) | No |
 
 These values are **displayed only**:
 

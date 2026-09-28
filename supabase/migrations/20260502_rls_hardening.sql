@@ -35,38 +35,75 @@ $$;
 -- ─── 2. TABLE: sub_admins ──────────────────────────────────────────────────────
 ALTER TABLE public.sub_admins ENABLE ROW LEVEL SECURITY;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_sub_admins_admin_all' AND polrelid = 'public.sub_admins'::regclass
+  ) THEN
 CREATE POLICY "rls_sub_admins_admin_all"
 ON public.sub_admins
 FOR ALL
 TO authenticated
 USING (auth.uid() IS NOT NULL AND is_admin())
 WITH CHECK (is_admin());
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_sub_admins_self_select' AND polrelid = 'public.sub_admins'::regclass
+  ) THEN
 CREATE POLICY "rls_sub_admins_self_select"
 ON public.sub_admins
 FOR SELECT
 TO authenticated
 USING (auth.uid() IS NOT NULL AND user_id = auth.uid());
+  END IF;
+END
+$$;
 
 -- ─── 3. TABLE: users ───────────────────────────────────────────────────────────
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 -- Admin: Full Access
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_users_admin_all' AND polrelid = 'public.users'::regclass
+  ) THEN
 CREATE POLICY "rls_users_admin_all"
 ON public.users
 FOR ALL
 TO authenticated
 USING (auth.uid() IS NOT NULL AND is_admin())
 WITH CHECK (is_admin());
+  END IF;
+END
+$$;
 
 -- User: Self Manage (SELECT)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_users_self_select' AND polrelid = 'public.users'::regclass
+  ) THEN
 CREATE POLICY "rls_users_self_select"
 ON public.users
 FOR SELECT
 TO authenticated
 USING (auth.uid() IS NOT NULL AND id = auth.uid());
+  END IF;
+END
+$$;
 
 -- User: Self Manage (UPDATE) - Prevents role escalation
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_users_self_update' AND polrelid = 'public.users'::regclass
+  ) THEN
 CREATE POLICY "rls_users_self_update"
 ON public.users
 FOR UPDATE
@@ -77,8 +114,16 @@ WITH CHECK (
   AND role = (SELECT role FROM public.users WHERE id = auth.uid()) -- Prevent role changes
   AND educator_id = (SELECT educator_id FROM public.users WHERE id = auth.uid()) -- Prevent educator changes
 );
+  END IF;
+END
+$$;
 
 -- Sub-Admin: View Students
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_users_sub_admin_select' AND polrelid = 'public.users'::regclass
+  ) THEN
 CREATE POLICY "rls_users_sub_admin_select"
 ON public.users
 FOR SELECT
@@ -91,24 +136,48 @@ USING (
     AND users.educator_id = sa.user_id
   )
 );
+  END IF;
+END
+$$;
 
 -- ─── 4. TABLE: teacher_exams ───────────────────────────────────────────────────
 ALTER TABLE public.teacher_exams ENABLE ROW LEVEL SECURITY;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_teacher_exams_admin_all' AND polrelid = 'public.teacher_exams'::regclass
+  ) THEN
 CREATE POLICY "rls_teacher_exams_admin_all"
 ON public.teacher_exams
 FOR ALL
 TO authenticated
 USING (auth.uid() IS NOT NULL AND is_admin())
 WITH CHECK (is_admin());
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_teacher_exams_sub_admin_manage' AND polrelid = 'public.teacher_exams'::regclass
+  ) THEN
 CREATE POLICY "rls_teacher_exams_sub_admin_manage"
 ON public.teacher_exams
 FOR ALL
 TO authenticated
 USING (auth.uid() IS NOT NULL AND sub_admin_id = current_sub_admin_id())
 WITH CHECK (sub_admin_id = current_sub_admin_id());
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_teacher_exams_student_select' AND polrelid = 'public.teacher_exams'::regclass
+  ) THEN
 CREATE POLICY "rls_teacher_exams_student_select"
 ON public.teacher_exams
 FOR SELECT
@@ -123,17 +192,33 @@ USING (
     AND teacher_exams.sub_admin_id = sa.id
   )
 );
+  END IF;
+END
+$$;
 
 -- ─── 5. TABLE: teacher_exam_questions ──────────────────────────────────────────
 ALTER TABLE public.teacher_exam_questions ENABLE ROW LEVEL SECURITY;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_teacher_exam_questions_admin_all' AND polrelid = 'public.teacher_exam_questions'::regclass
+  ) THEN
 CREATE POLICY "rls_teacher_exam_questions_admin_all"
 ON public.teacher_exam_questions
 FOR ALL
 TO authenticated
 USING (auth.uid() IS NOT NULL AND is_admin())
 WITH CHECK (is_admin());
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_teacher_exam_questions_sub_admin_manage' AND polrelid = 'public.teacher_exam_questions'::regclass
+  ) THEN
 CREATE POLICY "rls_teacher_exam_questions_sub_admin_manage"
 ON public.teacher_exam_questions
 FOR ALL
@@ -153,7 +238,15 @@ WITH CHECK (
     AND te.sub_admin_id = current_sub_admin_id()
   )
 );
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_teacher_exam_questions_student_select' AND polrelid = 'public.teacher_exam_questions'::regclass
+  ) THEN
 CREATE POLICY "rls_teacher_exam_questions_student_select"
 ON public.teacher_exam_questions
 FOR SELECT
@@ -169,23 +262,42 @@ USING (
     AND te.id = teacher_exam_questions.teacher_exam_id
   )
 );
+  END IF;
+END
+$$;
 
 -- ─── 6. TABLE: attempts ────────────────────────────────────────────────────────
 ALTER TABLE public.attempts ENABLE ROW LEVEL SECURITY;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_attempts_admin_all' AND polrelid = 'public.attempts'::regclass
+  ) THEN
 CREATE POLICY "rls_attempts_admin_all"
 ON public.attempts
 FOR ALL
 TO authenticated
 USING (auth.uid() IS NOT NULL AND is_admin())
 WITH CHECK (is_admin());
+  END IF;
+END
+$$;
 
 -- User: Manage own attempts (SELECT & INSERT)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_attempts_user_select' AND polrelid = 'public.attempts'::regclass
+  ) THEN
 CREATE POLICY "rls_attempts_user_select"
 ON public.attempts
 FOR SELECT
 TO authenticated
 USING (auth.uid() IS NOT NULL AND user_id = auth.uid());
+  END IF;
+END
+$$;
 
 CREATE POLICY "rls_attempts_user_insert"
 ON public.attempts
@@ -194,6 +306,11 @@ TO authenticated
 WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
 -- Sub-Admin: View attempts for their exams
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_attempts_sub_admin_select' AND polrelid = 'public.attempts'::regclass
+  ) THEN
 CREATE POLICY "rls_attempts_sub_admin_select"
 ON public.attempts
 FOR SELECT
@@ -206,6 +323,9 @@ USING (
     AND te.sub_admin_id = current_sub_admin_id()
   )
 );
+  END IF;
+END
+$$;
 
 -- ─── 7. PERFORMANCE INDEXES ───────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_teacher_exams_sub_admin ON public.teacher_exams(sub_admin_id);

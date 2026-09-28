@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSupabaseQuery } from './useSupabaseQuery'
 import { fetchActiveExams } from '../services/examService'
 import { adminService } from '../services/adminService'
+import { fetchTopicsBySubject, type TopicItem } from '../services/topicTestService'
 import type { ExamPaper, ExamSubject } from '../types/exam.types'
 import { useAuth } from '../context/AuthContext'
 import { isExamAllowed } from '../utils/examUtils'
@@ -22,9 +23,14 @@ export interface ExamPaperSubjectSelectionInput {
   setSelectedPaper?: (val: string) => void
   selectedSubject?: string
   setSelectedSubject?: (val: string) => void
+  /** Selected topic id (or topic_en for id-less topics) — URL-backed. */
+  selectedTopic?: string
+  setSelectedTopic?: (val: string) => void
   hideAll?: boolean
   showPapers?: boolean
   showSubjects?: boolean
+  /** Opt-in Topic row (Exam -> Paper -> Subject -> Topic). */
+  showTopics?: boolean
   onContextUpdate?: (labels: { exam: string; paper: string }) => void
   /** Flatten APPSC groups into individual tabs (no parent "APPSC" tab) */
   flattenAppsc?: boolean
@@ -51,8 +57,19 @@ export interface ExamPaperSubjectSelectionResult {
   isAppscActive: boolean
   displayPapers: ExamPaper[] | { label: string; id: string }[] | null
   displaySubjects: ExamSubject[] | { label: string; id: string }[] | null
+  /** Live exam_topics topics for the current (exam, paper, subject) segment,
+   *  retained across refetches (flicker prevention). Null when topics off. */
+  displayTopics: TopicItem[] | null
+  /** True while the current segment's topic list is being fetched. */
+  topicsLoading: boolean
+  /** Canonical classified message when the topic load fails for the current
+   *  segment (null otherwise). */
+  topicsError: string | null
+  /** User-triggered re-run of the current topic loader (no auto-retry). */
+  refetchTopics: () => void
   paperRowOpen: boolean
   subjectRowOpen: boolean
+  topicsRowOpen: boolean
 }
 
 /**
@@ -65,9 +82,12 @@ export function useExamPaperSubjectSelection(input: ExamPaperSubjectSelectionInp
     selectedExam, setSelectedExam,
     selectedPaper = 'all', setSelectedPaper = () => {},
     selectedSubject = 'all', setSelectedSubject,
+    selectedTopic = '',
+    setSelectedTopic,
     hideAll = false,
     showPapers = true,
     showSubjects = true,
+    showTopics = false,
     onContextUpdate,
     customExamTabs,
     customPapers,
@@ -178,6 +198,13 @@ export function useExamPaperSubjectSelection(input: ExamPaperSubjectSelectionInp
     return { data: subjects, error: null }
   }, [selectedPaper, showSubjects, customSubjects], 'selection_subjects')
 
+  const { data: dbTopics, loading: topicsLoading, error: dbTopicsError, refetch: refetchDbTopics } = useSupabaseQuery<TopicItem[]>(async () => {
+    if (!showTopics || !setSelectedTopic) return { data: [], error: null }
+    if (selectedExam === 'all' || selectedPaper === 'all' || selectedSubject === 'all') return { data: [], error: null }
+    const topics = await fetchTopicsBySubject(selectedExam, selectedPaper, selectedSubject)
+    return { data: topics, error: null }
+  }, [selectedExam, selectedPaper, selectedSubject, showTopics, setSelectedTopic], 'selection_topics')
+
   const papers = customPapers || dbPapers
   const subjects = customSubjects || dbSubjects
 
@@ -264,6 +291,7 @@ export function useExamPaperSubjectSelection(input: ExamPaperSubjectSelectionInp
   // exam/paper switch — the root cause of the flicker / visual flash.
   const [displayPapers, setDisplayPapers] = useState<ExamPaper[] | { label: string; id: string }[] | null>(null)
   const [displaySubjects, setDisplaySubjects] = useState<ExamSubject[] | { label: string; id: string }[] | null>(null)
+  const [displayTopics, setDisplayTopics] = useState<TopicItem[] | null>(null)
 
   useEffect(() => {
     if (papers) setDisplayPapers(papers)
@@ -272,6 +300,40 @@ export function useExamPaperSubjectSelection(input: ExamPaperSubjectSelectionInp
   useEffect(() => {
     if (subjects) setDisplaySubjects(subjects)
   }, [subjects])
+
+  useEffect(() => {
+    if (dbTopics) setDisplayTopics(dbTopics)
+  }, [dbTopics])
+
+  // Topic selection authority — the LIVE topics list of the current segment
+  // is the only legitimiser of a topic selection. There is no 'all topics'
+  // identity: 'all'/'' simply means "no topic chosen yet".
+  //   - a selection that resolves against the live list is preserved as-is
+  //     (an admin's explicit pick, or a VALID deep link, are never clobbered)
+  //   - a topic_en-keyed deep link is normalised to the canonical id once
+  //     the list resolves (URL identity becomes stable/canonical)
+  //   - a MISSING ('') or UNKNOWN value auto-selects the FIRST live topic —
+  //     the initial-load, ancestor-cascade and invalid-deep-link paths all
+  //     converge here (guard on dbTopics identity keeps this one-shot per
+  //     list, so no render/state loop can form)
+  //   - an EMPTY resolved list clears the selection to '' so callers render
+  //     the no-topics state instead of a permanent pending topic
+  useEffect(() => {
+    if (!showTopics || !setSelectedTopic) return
+    if (dbTopics === null || dbTopics === undefined) return
+    if (dbTopics.length === 0) {
+      if (selectedTopic !== '') setSelectedTopic('')
+      return
+    }
+    const liveId = (t: TopicItem) => t.id ?? t.topic_en
+    if (dbTopics.some(t => liveId(t) === selectedTopic)) return
+    const byName = dbTopics.find(t => t.topic_en === selectedTopic)
+    if (byName) {
+      setSelectedTopic(liveId(byName))
+      return
+    }
+    setSelectedTopic(liveId(dbTopics[0]))
+  }, [dbTopics, selectedTopic, setSelectedTopic, showTopics])
 
   // Custom paper data bypasses the query entirely — it can never fail here.
   const papersError = customPapers ? null : dbPapersError
@@ -294,6 +356,17 @@ export function useExamPaperSubjectSelection(input: ExamPaperSubjectSelectionInp
     selectedPaper !== 'all' &&
     (subjectsLoading || (displaySubjects !== null && displaySubjects.length > 0))
 
+  // Topic row is opt-in and only exists below a concrete subject segment. It
+  // stays open while a fetch is in flight OR after a failed load (so the
+  // error + retry surface is reachable) OR whenever live topics have resolved
+  // (including an empty list, so the "no topics" empty state can render).
+  const topicsRowOpen =
+    showTopics &&
+    !!setSelectedTopic &&
+    selectedPaper !== 'all' &&
+    selectedSubject !== 'all' &&
+    (topicsLoading || !!dbTopicsError || displayTopics !== null)
+
   return {
     examTabs,
     examTabsError,
@@ -303,7 +376,12 @@ export function useExamPaperSubjectSelection(input: ExamPaperSubjectSelectionInp
     isAppscActive,
     displayPapers,
     displaySubjects,
+    displayTopics,
+    topicsLoading,
+    topicsError: dbTopicsError,
+    refetchTopics: refetchDbTopics,
     paperRowOpen,
     subjectRowOpen,
+    topicsRowOpen,
   }
 }

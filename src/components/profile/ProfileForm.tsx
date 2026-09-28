@@ -14,6 +14,8 @@ import {
   IconBadge,
   Alert,
 } from '../common/AntigravityUI';
+import { CaptchaField, type CaptchaFieldHandle } from '../common/CaptchaField';
+import { FieldError } from '../common/SharedComponents';
 
 interface ProfileFormProps {
   currentPass: string;
@@ -42,6 +44,9 @@ interface ProfileFormProps {
   hasNumber: boolean;
   hasSpecial: boolean;
   passwordValid: boolean;
+  captchaRef: React.RefObject<CaptchaFieldHandle | null>;
+  captchaToken: string | null;
+  onCaptchaTokenChange: (token: string | null) => void;
   onVerify: () => void;
   onForgotPassword: () => void;
   onPasswordUpdate: (e: React.FormEvent) => void;
@@ -60,6 +65,7 @@ export function ProfileForm({
   onCurrentPassBlur, onNewPassBlur, onConfirmPassBlur,
   passwordMatch, hasMinLength, hasUppercase, hasNumber, hasSpecial,
   passwordValid,
+  captchaRef, captchaToken, onCaptchaTokenChange,
   onVerify, onForgotPassword, onPasswordUpdate, onResetVerification,
 }: ProfileFormProps) {
   return (
@@ -74,7 +80,7 @@ export function ProfileForm({
 
       <form onSubmit={onPasswordUpdate} className="space-y-12">
         {error && (
-          <Alert variant="error" icon={AlertCircle} title="Action failed" className="w-full max-w-3xl">
+          <Alert variant="error" icon={AlertCircle} title="Unable to update password" className="w-full max-w-3xl">
             {error}
           </Alert>
         )}
@@ -82,7 +88,7 @@ export function ProfileForm({
           <Stack gap={40}>
             <Stack gap={16} className="relative">
               <div className="flex justify-between items-end">
-                <Label className="text-[12px] uppercase tracking-widest">Current Password</Label>
+                <Label htmlFor="currentPass" className="text-[12px] uppercase tracking-widest">Current Password</Label>
                 {isVerified && (
                   <Badge variant="success" className="h-7 px-3 rounded-lg font-semibold tracking-widest text-[9px]">
                     <CheckCircle2 size={12} className="mr-1.5" /> AUTHENTICATED
@@ -105,7 +111,8 @@ export function ProfileForm({
                   aria-describedby={fieldErrors.currentPass ? "currentPass-error" : undefined}
                   rightIcon={isVerified ? CheckCircle2 : (showCurrent ? EyeOff : Eye)}
                   onRightIconClick={() => !isVerified && onToggleShowCurrent()}
-                  className={`transition-all font-medium ${isVerified ? 'border-success/30 bg-success/5 text-success' : ''}`}
+                  rightIconAriaLabel={isVerified ? 'Verified' : showCurrent ? 'Hide current password' : 'Show current password'}
+                  className={`transition-interaction duration-fast ease-standard font-medium ${isVerified ? 'border-success/30 bg-success/5 text-success' : ''}`}
                   inputMode="text"
                   autoComplete="current-password"
                 />
@@ -124,31 +131,38 @@ export function ProfileForm({
               </div>
 
               {fieldErrors.currentPass && (
-                <span id="currentPass-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                  {fieldErrors.currentPass}
-                </span>
+                <FieldError id="currentPass-error">{fieldErrors.currentPass}</FieldError>
               )}
 
               {!isVerified && (
-                <div className="flex items-center justify-between mt-2 px-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={onForgotPassword}
-                  >
-                    Recover Password?
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="lg"
-                    loading={loading}
-                    onClick={onVerify}
-                    disabled={!currentPass || loading}
-                  >
-                    Verify Access
-                  </Button>
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-center">
+                    <CaptchaField
+                      ref={captchaRef}
+                      onTokenChange={onCaptchaTokenChange}
+                      onError={() => onCaptchaTokenChange(null)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between px-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={onForgotPassword}
+                    >
+                      Recover Password?
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="lg"
+                      loading={loading}
+                      onClick={onVerify}
+                      disabled={!currentPass || !captchaToken || loading}
+                    >
+                      Verify Access
+                    </Button>
+                  </div>
                 </div>
               )}
             </Stack>
@@ -164,7 +178,7 @@ export function ProfileForm({
                   <Stack gap={40} className="pt-10 border-t border-border-subtle/30">
                     <Grid cols={1} sm={2} gap={24}>
                       <Stack gap={16}>
-                        <Label className="text-[12px] uppercase tracking-widest">New Password</Label>
+                        <Label htmlFor="newPass" className="text-[12px] uppercase tracking-widest">New Password</Label>
                         <Input
                           type={showNew ? 'text' : 'password'}
                           value={newPass}
@@ -176,18 +190,17 @@ export function ProfileForm({
                           aria-describedby={fieldErrors.newPass ? "newPass-error" : undefined}
                           rightIcon={showNew ? EyeOff : Eye}
                           onRightIconClick={onToggleShowNew}
+                          rightIconAriaLabel={showNew ? 'Hide new password' : 'Show new password'}
                           className="font-medium"
                           inputMode="text"
                           autoComplete="new-password"
                         />
                         {fieldErrors.newPass && (
-                          <span id="newPass-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                            {fieldErrors.newPass}
-                          </span>
+                          <FieldError id="newPass-error">{fieldErrors.newPass}</FieldError>
                         )}
                       </Stack>
                       <Stack gap={16}>
-                        <Label className="text-[12px] uppercase tracking-widest">Confirm Password</Label>
+                        <Label htmlFor="confirmPass" className="text-[12px] uppercase tracking-widest">Confirm Password</Label>
                         <Input
                           type={showConfirm ? 'text' : 'password'}
                           value={confirmPass}
@@ -199,14 +212,13 @@ export function ProfileForm({
                           aria-describedby={fieldErrors.confirmPass ? "confirmPass-error" : undefined}
                           rightIcon={showConfirm ? EyeOff : Eye}
                           onRightIconClick={onToggleShowConfirm}
+                          rightIconAriaLabel={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
                           className="font-medium"
                           inputMode="text"
                           autoComplete="new-password"
                         />
                         {fieldErrors.confirmPass && (
-                          <span id="confirmPass-error" aria-live="polite" className="text-xs font-bold text-danger mt-1">
-                            {fieldErrors.confirmPass}
-                          </span>
+                          <FieldError id="confirmPass-error">{fieldErrors.confirmPass}</FieldError>
                         )}
                       </Stack>
                     </Grid>

@@ -4,10 +4,16 @@ import { resolveExamIds, KNOWN_EXAM_IDS } from '../../../lib/examUtils'
 
 export function useAdminOverview() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const selectedExam = searchParams.get('exam') || 'all'
+  const rawExam = searchParams.get('exam') || 'all'
 
-  const isValidExam = KNOWN_EXAM_IDS.includes(selectedExam)
-  const resolvedIds = useMemo(() => isValidExam ? resolveExamIds(selectedExam) : [], [selectedExam, isValidExam])
+  // Single source of truth: an unknown/deep-linked ?exam= value behaves as
+  // 'all' EVERYWHERE — tabs, resolvedIds and query keys. This makes an invalid
+  // URL parameter impossible to produce a hybrid filtered/global state while
+  // the raw URL is preserved temporarily (no history pollution).
+  const isValidExam = KNOWN_EXAM_IDS.includes(rawExam)
+  const selectedExam = isValidExam ? rawExam : 'all'
+
+  const resolvedIds = useMemo(() => resolveExamIds(selectedExam), [selectedExam])
 
   const setSelectedExam = useCallback((exam: string) => {
     setSearchParams(prev => {

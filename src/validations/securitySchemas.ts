@@ -93,6 +93,11 @@ export const examNegativeMarkValueSchema = z.number().min(0, 'Negative mark cann
 export const EXAM_SUBJECTS_SUM_MESSAGE = 'Subject question counts must equal total questions'
 export const EXAM_NEGATIVE_MARK_RANGE_MESSAGE = 'Negative mark value must be between 0 and marks per question'
 
+export const topicRequiredQuestionsSchema = z
+  .number()
+  .int('Must be a whole number')
+  .min(1, 'Must be at least 1')
+
 export const examSubjectSchema = z.object({
   subject_name: z.string().trim().min(1, 'Subject name is required'),
   question_count: z.number().int().min(1, 'Must have at least 1 question'),
@@ -208,7 +213,7 @@ export const examConfigSchema = z
     marks_per_question: z
       .number()
       .positive('Marks per question must be positive')
-      .max(100, 'Marks per question cannot exceed 100'),
+      .max(99.99, 'Marks per question cannot exceed 99.99'),
     negative_mark_value: examNegativeMarkValueSchema,
   })
   .superRefine((data, ctx) => {
@@ -246,7 +251,11 @@ export type ExamConfigInput = z.infer<typeof examConfigSchema>
 
 export const identityUpdateSchema = z
   .object({
-    name: z.string().trim().min(1, 'Name is required'),
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Name is required')
+      .max(80, 'Name must be 80 characters or less'),
     password: z.string().optional(),
   })
   .superRefine((data, ctx) => {

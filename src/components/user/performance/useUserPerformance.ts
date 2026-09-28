@@ -4,38 +4,41 @@ import { useStableFetch } from '../../../hooks/useStableFetch'
 import { usePageError } from '../../../hooks/usePageError'
 import {
   fetchPerformanceAttempts,
-  fetchPerformanceAnswers,
+  fetchPerformanceSubjectStats,
   fetchPerformanceMetadata,
   clearPerformanceCache,
-  PERF_ATTEMPTS_PREFIX,
-  PERF_METADATA_PREFIX,
   getCachedAttempts,
   getCachedMetadata,
   type PerformanceMetadata,
   type SubjectStat,
-  type AttemptAnswerSummary
 } from '../../../services/performanceService'
-import type { AttemptWithRelations } from '../../../types/exam.types'
+import { perfAttemptsKey, perfMetadataKey } from '../../../utils/cacheKeys'
+import type { PerformanceAttemptSummary } from '../../../types/exam.types'
 import { getAllowedExamIds } from '../../../utils/examUtils'
 import type { TrendDataPoint, DistributionSlice, TimeRange } from './types'
 
 export function useUserPerformance() {
   const { user, loading: authLoading } = useAuth()
   const isAppsc = user?.exam_selection === 'APPSC_GROUPS' || user?.exam_selection === 'APPSC'
+  const needsSelection = !authLoading && !!user && !user.exam_selection
 
   const attemptsCacheKey = useMemo(() => {
-    return user?.id ? `${PERF_ATTEMPTS_PREFIX}${user.id}` : ''
+    return user?.id ? perfAttemptsKey(user.id) : ''
   }, [user?.id])
 
   const metaCacheKey = useMemo(() => {
-    return user?.exam_selection ? `${PERF_METADATA_PREFIX}${user.exam_selection}` : ''
+    return user?.exam_selection ? perfMetadataKey(user.exam_selection) : ''
   }, [user?.exam_selection])
 
-  const [allAttempts, setAllAttempts] = useState<AttemptWithRelations[]>(() => {
+  const [allAttempts, setAllAttempts] = useState<PerformanceAttemptSummary[]>(() => {
     if (!attemptsCacheKey || !user) return []
     return getCachedAttempts(user.id) || []
   })
-  const [allAnswers, setAllAnswers] = useState<AttemptAnswerSummary[]>([])
+  const [subjectStats, setSubjectStats] = useState<SubjectStat[]>([])
+  /* P-4 — section-level loading/error for the debounced async subject-stats
+     fetch, so the card never renders stale data while filters are applied. */
+  const [subjectStatsLoading, setSubjectStatsLoading] = useState(false)
+  const [subjectStatsError, setSubjectStatsError] = useState<string | null>(null)
   const [metadata, setMetadata] = useState<PerformanceMetadata>(() => {
     if (!metaCacheKey || !user) return { exams: [], papers: [], subjects: [] }
     return getCachedMetadata(user.exam_selection ?? '') || { exams: [], papers: [], subjects: [] }
@@ -43,8 +46,10 @@ export function useUserPerformance() {
 
   const [loading, setLoading] = useState(() => {
     if (authLoading) return true
-    if (!attemptsCacheKey || !user) return true
-    return !getCachedAttempts(user.id)
+    if (!user) return true
+    if (!user.exam_selection) return false
+    if (!attemptsCacheKey) return true
+    return !(getCachedAttempts(user.id) ?? []).length
   })
   const { mountedRef, nextId, isStale } = useStableFetch()
   const { state: errorState, error: pageError, captureNetworkError, retry: retryError, reset: resetError } = usePageError()
@@ -61,15 +66,20 @@ export function useUserPerformance() {
     if (firstPaper) setSelectedPaperId(firstPaper.id)
   }, [metadata.papers])
 
-  const loadInitialData = useCallback(async (force = false) => {
-    if (authLoading) return
-    if (!user?.id || !user?.exam_selection) return
+  const loadInitialData = useCallback(async (force = false): Promise<boolean> => {
+    if (authLoading) return false
+    if (!user?.id) return false
+    if (!user?.exam_selection) {
+      setLoading(false)
+      return true
+    }
     const id = nextId()
+    const cachedAttempts = getCachedAttempts(user?.id || '') ?? []
 
     if (force) {
       clearPerformanceCache(user.id)
-    } else if (getCachedAttempts(user?.id || '')?.length) {
-    } else {
+      if (!cachedAttempts.length) setLoading(true)
+    } else if (!cachedAttempts.length) {
       setLoading(true)
     }
 
@@ -78,20 +88,22 @@ export function useUserPerformance() {
       const allowedIds = getAllowedExamIds(user.exam_selection)
       const [rawAttempts, meta] = await Promise.all([
         fetchPerformanceAttempts(user.id, force),
-        fetchPerformanceMetadata(user.exam_selection)
+        fetchPerformanceMetadata(user.exam_selection, false)
       ])
 
-      if (isStale(id)) return
+      if (isStale(id)) return false
 
       const attempts = (rawAttempts || []).filter(a => a.exam_id && allowedIds.includes(a.exam_id))
       setAllAttempts(attempts)
       const m = meta || { exams: [], papers: [], subjects: [] }
       setMetadata(m)
+      return true
 
     } catch (err: unknown) {
-      if (isStale(id)) return
+      if (isStale(id)) return false
       console.error('[Performance-Fetch-Error]', err instanceof Error ? err.message : 'The analytics sync was interrupted. Please check your connection and try again.')
       captureNetworkError(err, { retryFn: () => loadInitialData(true) })
+      return false
     } finally {
       if (!isStale(id)) setLoading(false)
     }
@@ -129,22 +141,38 @@ export function useUserPerformance() {
 
   useEffect(() => {
     let isCancelled = false
-    const attemptIds = filteredAttempts.map(a => a.id).sort()
-    const loadAnswers = async () => {
-      if (attemptIds.length === 0) {
-        if (!isCancelled && mountedRef.current) setAllAnswers([])
-        return
-      }
+    const from =
+      selectedTimeRange === 'all'
+        ? null
+        : new Date(Date.now() - (selectedTimeRange === '7d' ? 7 : 30) * 24 * 60 * 60 * 1000).toISOString()
+
+    const loadSubjectStats = async () => {
+      if (!user?.id) return
       try {
-        const answers = await fetchPerformanceAnswers(attemptIds)
-        if (!isCancelled && mountedRef.current) setAllAnswers(answers)
+        const stats = await fetchPerformanceSubjectStats(user.id, {
+          examId: selectedExamId || null,
+          paperId: selectedPaperId || null,
+          from,
+        })
+        if (!isCancelled && mountedRef.current) {
+          setSubjectStats(stats)
+          setSubjectStatsError(null)
+        }
       } catch (err) {
-        console.error('[Answers-Fetch-Error]', err instanceof Error ? err.message : err)
+        console.error('[SubjectStats-Fetch-Error]', err instanceof Error ? err.message : err)
+        if (!isCancelled && mountedRef.current) {
+          setSubjectStatsError(
+            err instanceof Error ? err.message : 'Could not load subject insights. Please try again.'
+          )
+        }
+      } finally {
+        if (!isCancelled && mountedRef.current) setSubjectStatsLoading(false)
       }
     }
-    const timer = setTimeout(loadAnswers, 300)
+    setSubjectStatsLoading(true)
+    const timer = setTimeout(loadSubjectStats, 300)
     return () => { isCancelled = true; clearTimeout(timer) }
-  }, [filteredAttempts])
+  }, [user?.id, selectedExamId, selectedPaperId, selectedTimeRange, mountedRef])
 
   const metrics = useMemo(() => {
     const total = filteredAttempts.length
@@ -162,26 +190,19 @@ export function useUserPerformance() {
     }
   }, [filteredAttempts])
 
-  const subjectStats = useMemo<SubjectStat[]>(() => {
-    if (allAnswers.length === 0) return []
-    const subjects: Record<string, { correct: number; total: number }> = {}
-    allAnswers.forEach(ans => {
-      if (!subjects[ans.subject_name]) subjects[ans.subject_name] = { correct: 0, total: 0 }
-      subjects[ans.subject_name].total += 1
-      if (ans.is_correct) subjects[ans.subject_name].correct += 1
-    })
-    return Object.entries(subjects).map(([name, data]) => {
-      const accuracy = Math.round((data.correct / data.total) * 100)
-      return {
-        subject: name,
-        accuracy,
-        correct: data.correct,
-        total: data.total,
-        status: (accuracy >= 70 ? 'Strong' : accuracy <= 50 ? 'Weak' : 'Average') as SubjectStat['status'],
-        color: accuracy >= 70 ? '#22C55E' : accuracy <= 50 ? '#EF4444' : '#F59E0B'
-      }
-    }).sort((a, b) => b.accuracy - a.accuracy)
-  }, [allAnswers])
+  const scopeFilteredAttempts = useMemo(() => {
+    return allAttempts.filter(a =>
+      (!selectedExamId || a.exam_id === selectedExamId) &&
+      (!selectedPaperId || a.paper_id === selectedPaperId)
+    )
+  }, [allAttempts, selectedExamId, selectedPaperId])
+
+  const filterEmptyReason = useMemo<'scope' | 'time' | null>(() => {
+    if (filteredAttempts.length > 0) return null
+    if (scopeFilteredAttempts.length > 0) return 'time'
+    if (allAttempts.length > 0) return 'scope'
+    return null
+  }, [filteredAttempts.length, scopeFilteredAttempts.length, allAttempts.length])
 
   const trendData = useMemo<TrendDataPoint[]>(() => {
     return filteredAttempts
@@ -225,14 +246,18 @@ export function useUserPerformance() {
 
   return {
     loading,
+    needsSelection,
     errorState,
     pageError,
     retryError,
     isAppsc,
     allAttempts,
     filteredAttempts,
+    filterEmptyReason,
     metrics,
     subjectStats,
+    subjectStatsLoading,
+    subjectStatsError,
     trendData,
     distribution,
     selectedExamId,

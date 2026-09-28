@@ -1,4 +1,5 @@
 import { useHistory } from '../../components/exam/useHistory';
+import { Search, BarChart3 } from 'lucide-react';
 import {
   PageContainer,
   Stack,
@@ -7,28 +8,27 @@ import {
   ErrorContainer,
   RetryButton,
 } from '../../components/common/AntigravityUI';
-import { LoadingSkeleton, EmptyState, GridSkeleton } from '../../components/common/SharedComponents';
+import { EmptyState } from '../../components/common/SharedComponents';
 import { formatDateDDMMYYYY } from '../../utils/dateUtils';
 import { UserSelectionTabs } from '../../components/user/UserSelectionTabs';
 import { SectionReveal } from '../../components/common/AntigravityAnimation';
 import { Grid } from '../../components/common/AntigravityLayout';
 import { AttemptCardBase } from '../../components/common/AttemptCardBase';
+import { HistorySkeleton } from '../../components/user/history/HistorySkeleton';
 
 export default function UserHistory() {
   const {
-    loading, errorState, pageError, retryError,
+    isLoading, errorState, pageError, retryError,
     navigate,
+    authLoading,
     isAppsc, metadata,
     selectedExamId, selectedPaperId, setSelectedPaperId, handleExamChange,
-    examOptions, paperOptions, filteredAttempts,
+    examOptions, paperOptions, filteredAttempts, isEmptyFilter,
   } = useHistory();
 
-  if (loading) return (
+  if (isLoading) return (
     <PageContainer>
-      <Stack gap="xxl">
-        <LoadingSkeleton height={40} width={200} borderRadius={12} />
-        <GridSkeleton count={5} height={180} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
-      </Stack>
+      <HistorySkeleton showSelection={authLoading || isAppsc} />
     </PageContainer>
   );
 
@@ -58,19 +58,26 @@ export default function UserHistory() {
               customPapers={paperOptions.map(p => ({ label: p.name, id: p.id }))}
               showSubjects={false}
               hideAll={true}
-              bare
             />
           </SectionReveal>
         )}
 
         {filteredAttempts.length === 0 ? (
-          <EmptyState
-            icon={<span role="img" aria-label="No data">📊</span>}
-            title="No data found"
-            subtitle="You haven't attempted any exams for this selection yet. Start your preparation today!"
-            actionLabel="Start Today's Exam"
-            onAction={() => navigate('/exams')}
-          />
+          isEmptyFilter ? (
+            <EmptyState
+              icon={<Search size={48} aria-hidden />}
+              title="No attempts in this selection"
+              subtitle="No completed exams match the selected filters. Try switching the exam or paper tabs to see other attempts."
+            />
+          ) : (
+            <EmptyState
+              icon={<BarChart3 size={48} aria-hidden />}
+              title="No official exam attempts yet"
+              subtitle="Your exam history will appear here once you complete an exam. Start practicing today!"
+              actionLabel="Start Today's Exam"
+              onAction={() => navigate('/exams')}
+            />
+          )
         ) : (
           <div aria-live="polite" aria-label={`Showing ${filteredAttempts.length} exam attempts`}>
             <Grid cols={3} gap={24}>

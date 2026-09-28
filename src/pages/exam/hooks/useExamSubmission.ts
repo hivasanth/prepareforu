@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { addQuestionTime, syncAnswersCache, submitAttempt } from '../../../services/examService';
+import { invalidateTeacherExamLeaderboard } from '../../../services/teacherExamService';
 import { executeWithRetry } from '../../../services/persistenceRetry';
 import { clearExamSession } from '../../../utils/examSessionStore';
 import type { Question, Attempt, ExamPaper } from '../../../types/exam.types';
 
 interface UseExamSubmissionOptions {
-  questions: Question[];
   currentQuestion: Question | undefined;
   navigate: NavigateFunction;
   examSource: string;
@@ -30,7 +30,6 @@ interface UseExamSubmissionReturn {
 }
 
 export function useExamSubmission({
-  questions,
   currentQuestion,
   navigate,
   examSource,
@@ -60,25 +59,26 @@ export function useExamSubmission({
         const elapsed = Math.floor((Date.now() - questionEntryTimeRef.current) / 1000);
         questionTimeSpentRef.current[currentQuestion.id] = (questionTimeSpentRef.current[currentQuestion.id] || 0) + elapsed;
       }
-      const questionMap = new Map(questions.map(q => [q.id, q]));
       Promise.allSettled(
         Object.entries(questionTimeSpentRef.current)
           .filter(([, secs]) => secs > 0)
-          .map(([qId, secs]) => {
-            const correctOption = questionMap.get(qId)?.correct_option || '';
-            return executeWithRetry(
+          .map(([qId, secs]) =>
+            executeWithRetry(
               `${qId}-time`,
-              () => addQuestionTime(currentAttempt.id, qId, correctOption, secs),
-            );
-          })
+              () => addQuestionTime(currentAttempt.id, qId, secs),
+            )
+          )
       ).catch(() => {});
       await syncAnswersCache(currentAttempt.id, currentAnswers as Record<string, string | null>);
       const result = await submitAttempt(currentAttempt.id, user?.id);
-      clearExamSession();
-      if (user?.id) {
-        const { clearPerformanceCache } = await import('../../../services/performanceService');
-        clearPerformanceCache(user.id);
+      // M-4: single submission chokepoint (manual submit + time-up auto-submit
+      // both funnel through finalSubmit). After a successful teacher-exam
+      // submit, invalidate exactly this user's cached leaderboard row for the
+      // exam so their own new rank is reflected on the next fetch.
+      if (currentAttempt.teacher_exam_id) {
+        invalidateTeacherExamLeaderboard(user?.id, currentAttempt.teacher_exam_id);
       }
+      clearExamSession();
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
       navigate(`/review/${currentAttempt.id}`, {
         state: { result, examTitle: currentPaper?.paper_name, paperName: currentPaper?.paper_name, source: examSource }
@@ -88,14 +88,15 @@ export function useExamSubmission({
       setIsSubmitting(false);
       onError('Failed to submit. Please check your connection.');
     }
-  }, [user?.id, navigate, examSource, currentQuestion?.id, questions, attemptRef, selectedAnswersRef, paperRef, questionEntryTimeRef, questionTimeSpentRef, isActuallySubmitted, setIsSubmitting, setIsSubmitModalOpen, onError]);
+  }, [user?.id, navigate, examSource, currentQuestion, attemptRef, selectedAnswersRef, paperRef, questionEntryTimeRef, questionTimeSpentRef, isActuallySubmitted, setIsSubmitting, setIsSubmitModalOpen, onError]);
 
   const onTimeUp = useCallback(() => {
     if (isAutoSubmittingRef.current || isActuallySubmitted.current) return;
     isAutoSubmittingRef.current = true;
     setIsAutoSubmitting(true);
     setIsSubmitModalOpen(true);
-    setTimeout(finalSubmit, 2000);
+    const timerId = setTimeout(finalSubmit, 2000);
+    return () => clearTimeout(timerId);
   }, [finalSubmit, isAutoSubmittingRef, isActuallySubmitted, setIsAutoSubmitting, setIsSubmitModalOpen]);
 
   return { finalSubmit, onTimeUp };

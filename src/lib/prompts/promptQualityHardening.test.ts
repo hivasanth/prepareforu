@@ -92,8 +92,8 @@ describe('Anciently Indian History prompt — hardened composition', () => {
 describe('hardened VISUAL CONTRACT teaching (§9–§16, §33, §35–§38)', () => {
   const contract = extractContract(buildCanonicalOutputContract())
 
-  it('teaches the necessity gate (remove test / answer-leak test / interpretation test)', () => {
-    expect(contract).toContain('VISUAL USE — NECESSITY GATE')
+  it('teaches the necessity gate as the consolidated SELF-CHECK (remove / answer-leak / interpretation tests)', () => {
+    expect(contract).toContain('VISUAL QUESTION SELF-CHECK')
     expect(contract).toContain('REMOVE TEST')
     expect(contract).toContain('ANSWER-LEAK TEST')
     expect(contract).toContain('INTERPRETATION TEST')
@@ -155,19 +155,20 @@ describe('representative AI-output validation through the REAL parser (§42)', (
     const chart = buildVisualExample('chart')
     expect(chart).toEqual({
       type: 'chart',
-      title: 'Example',
+      title: 'Crop Production / పంట ఉత్పత్తి',
       data: {
         chartType: 'bar',
         labels: ['2019', '2020', '2021'],
-        data: [120, 180, 145],
+        series: [{ name: 'Rice / బియ్యం', value: [120, 180, 145] }],
       },
     })
     // No alternative representation keys are taught (datasets, x_axis, colors,
-    // y_axis, yAxisLabel, series are all absent from the taught example).
+    // y_axis, yAxisLabel are all absent from the taught example; series with a
+    // bilingual name is the single authoritative pattern).
     expect(QuestionVisualSchema.parse(chart).data).toEqual({
       chartType: 'bar',
       labels: ['2019', '2020', '2021'],
-      data: [120, 180, 145],
+      series: [{ name: 'Rice / బియ్యం', value: [120, 180, 145] }],
     })
   })
 

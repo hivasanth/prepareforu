@@ -1,4 +1,22 @@
 import React from 'react';
+import { ROW_HOVER } from './AntigravityCard';
+
+/* ─── FormattedBodyText ──────────────────────────────────────────────────────
+ * Design role:
+ *   Parses markdown-like text into semantic HTML (<p>, <strong>, <em>, <ul>,
+ *   <li>, <table>) while routing all typography through the central Typography
+ *   token system (--text-body, --lh-body, --fw-body, --text-label, etc.).
+ *
+ * Token routing:
+ *   <p>     → body tokens (--text-body, --lh-body)
+ *   <strong> → body + bold weight
+ *   <em>    → italic (standard)
+ *   <li>    → body tokens (inherits from <ul>)
+ *   <th>    → label tokens (--text-label, --fw-label, --ls-label)
+ *   <td>    → body tokens + secondary color
+ *
+ * Theme: Light + Dark (token-driven, theme-adaptive)
+ * ─────────────────────────────────────────────────────────────────────────── */
 
 interface FormattedBodyTextProps {
   text: string;
@@ -74,13 +92,13 @@ export function FormattedBodyText({ text, className }: FormattedBodyTextProps) {
             key={`table-container-${tableKey++}`} 
             className="w-full overflow-x-auto my-5 rounded-2xl border border-border-subtle/30 shadow-sm"
           >
-            <table className="w-full text-xs text-left border-collapse">
-              <thead className="bg-hover-bg/50 text-text-secondary border-b border-border-subtle/20 font-bold uppercase tracking-wider">
+            <table className="w-full text-[var(--text-body)] text-left border-collapse">
+              <thead className="bg-hover-bg/50 text-text-secondary border-b border-border-subtle/20 font-[var(--fw-label)] uppercase tracking-[var(--ls-label)]">
                 <tr>
                   {headers.map((h, i) => (
                     <th 
                       key={i} 
-                      className="px-4 py-3 font-semibold text-xs border-r last:border-r-0 border-border-subtle/20"
+                      className="px-4 py-3 font-[var(--fw-label)] text-[var(--text-label)] border-r last:border-r-0 border-border-subtle/20 uppercase tracking-[var(--ls-label)]"
                     >
                       {parseInlineMarkdown(h)}
                     </th>
@@ -91,12 +109,12 @@ export function FormattedBodyText({ text, className }: FormattedBodyTextProps) {
                 {bodyRows.map((row, i) => (
                   <tr 
                     key={i} 
-                    className="hover:bg-hover-bg/50 transition-colors"
+                    className={`${ROW_HOVER}`}
                   >
                     {row.map((val, j) => (
                       <td 
                         key={j} 
-                        className="px-4 py-3 text-text-secondary border-r last:border-r-0 border-border-subtle/20 leading-relaxed font-sans"
+                        className="px-4 py-3 text-text-secondary border-r last:border-r-0 border-border-subtle/20 leading-[var(--lh-body)] font-sans"
                       >
                         {parseInlineMarkdown(val)}
                       </td>
@@ -123,7 +141,7 @@ export function FormattedBodyText({ text, className }: FormattedBodyTextProps) {
     if (bulletMatch) {
       flushTable();
       currentList.push(
-        <li key={`li-${index}`} className="flex items-start gap-2.5 text-inherit leading-relaxed">
+        <li key={`li-${index}`} className="flex items-start gap-2.5 text-inherit leading-[var(--lh-body)]">
           <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-2" />
           <div className="flex-1 min-w-0 tracking-wide">
             {parseInlineMarkdown(bulletMatch[1])}
@@ -132,7 +150,7 @@ export function FormattedBodyText({ text, className }: FormattedBodyTextProps) {
       );
     } else if (isTableLine) {
       flushList();
-      let cells = trimmed.split('|').map(c => c.trim());
+      const cells = trimmed.split('|').map(c => c.trim());
       if (cells[0] === '' && trimmed.startsWith('|')) {
         cells.shift();
       }
@@ -144,7 +162,7 @@ export function FormattedBodyText({ text, className }: FormattedBodyTextProps) {
       flushList();
       flushTable();
       elements.push(
-        <p key={`p-${index}`} className="mb-2 last:mb-0 leading-relaxed tracking-wide">
+        <p key={`p-${index}`} className="mb-2 last:mb-0 leading-[var(--lh-body)] tracking-wide">
           {parseInlineMarkdown(trimmed)}
         </p>
       );

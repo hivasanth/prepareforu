@@ -1,0 +1,5 @@
+export type VisualErrorCode =
+  | 'UNKNOWN_VISUAL_TYPE'
+  | 'INVALID_VISUAL_DATA'
+  | 'VISUAL_RENDER_ERROR'
+  | 'EXTERNAL_ASSET_ERROR'

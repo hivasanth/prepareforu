@@ -1,20 +1,26 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { KNOWN_EXAM_IDS } from '../../../lib/examUtils'
 import { useAuth } from '../../../context/AuthContext'
-import { useToast } from '../../../hooks/useToast'
 import { toggleUserStatus, fetchUsersPaginated } from '../../../services/userService'
+import { classifyError } from '../../../utils/errorClassification'
 import { logError } from '../../../utils/logger'
+import { EXAM_TABS } from '../shared/examPresets'
 import type { UserRow } from '../../../types/user.types'
 
-const PAGE_SIZE = 20
+/** Authoritative page size — consumed by AdminUsers' range label so the UI can
+ *  never drift from the query contract. */
+export const USERS_PAGE_SIZE = 20
 const SEARCH_DEBOUNCE_MS = 300
+
+/** The tabs this page actually renders are THE authoritative exam-id set for
+ *  this feature (AU-2). No second allowlist exists. */
+const VALID_EXAM_IDS = EXAM_TABS.map((tab) => tab.id)
 
 export function useAdminUsers() {
   const { user } = useAuth()
-  const { toasts, showSuccess } = useToast()
   const [actionError, setActionError] = useState<string | null>(null)
-  const [searchParams] = useSearchParams()
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('exam') || 'all'
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -30,7 +36,7 @@ export function useAdminUsers() {
   const [usersError, setUsersError] = useState<string | null>(null)
   const fetchIdRef = useRef(0)
 
-  const totalPages = Math.ceil(data.total / PAGE_SIZE)
+  const totalPages = Math.ceil(data.total / USERS_PAGE_SIZE)
 
   const users = useMemo(() =>
     data.rows.map(u => ({
@@ -46,8 +52,21 @@ export function useAdminUsers() {
   }, [searchQuery])
 
   const fetchData = useCallback(async () => {
-    if (activeTab !== 'all' && !KNOWN_EXAM_IDS.includes(activeTab)) {
-      setData({ rows: [], total: 0 })
+    // AU-2: an unknown ?exam= URL value is normalized through the existing
+    // filter system (reset to 'all' with replace semantics). The request is
+    // held in LOADING until the normalized context refetches — an invalid
+    // input can never resolve into a fabricated success-empty render.
+    if (!VALID_EXAM_IDS.includes(activeTab)) {
+      setIsUsersLoading(true)
+      setUsersError(null)
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('exam')
+          return next
+        },
+        { replace: true },
+      )
       return
     }
     const fetchId = ++fetchIdRef.current
@@ -61,19 +80,21 @@ export function useAdminUsers() {
           statusFilter,
           searchQuery: debouncedSearchQuery,
           page,
-          pageSize: PAGE_SIZE,
+          pageSize: USERS_PAGE_SIZE,
         }
       )
       if (fetchId !== fetchIdRef.current) return
       setData({ rows: result.rows as unknown as UserRow[], total: result.total || 0 })
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (fetchId !== fetchIdRef.current) return
-      logError('useAdminUsers.fetchData.error', { message: error?.message || String(error) })
-      setUsersError('Failed to load users. Please try again.')
+      // AU-5: canonical classified copy — network/auth/server distinctions come
+      // from the shared classifier; raw backend text is never surfaced.
+      logError('useAdminUsers.fetchData.error', { message: error instanceof Error ? error.message : String(error) })
+      setUsersError(classifyError(error instanceof Error ? error : String(error)).message)
     } finally {
       if (fetchId === fetchIdRef.current) setIsUsersLoading(false)
     }
-  }, [activeTab, statusFilter, debouncedSearchQuery, page, user])
+  }, [activeTab, statusFilter, debouncedSearchQuery, page, user, setSearchParams])
 
   useEffect(() => {
     fetchData()
@@ -106,6 +127,7 @@ export function useAdminUsers() {
 
     toggleInFlightRef.current = true
     setTogglingId(id)
+    setActionSuccess(null)
     setOptimisticStatus(prev => ({ ...prev, [id]: newStatus }))
 
     try {
@@ -117,7 +139,7 @@ export function useAdminUsers() {
       if (!result.success) throw new Error(result.error?.message)
       setActionError(null)
       setConfirmToggle(null)
-      showSuccess(`User ${newStatus ? 'activated' : 'deactivated'} successfully.`)
+      setActionSuccess(`User ${newStatus ? 'activated' : 'deactivated'} successfully.`)
       fetchData()
     } catch (err: unknown) {
       setOptimisticStatus(prev => {
@@ -132,11 +154,11 @@ export function useAdminUsers() {
       toggleInFlightRef.current = false
       setTogglingId(null)
     }
-  }, [confirmToggle, user, showSuccess, fetchData])
+  }, [confirmToggle, user, fetchData])
 
   return {
-    toasts, actionError, activeTab,
-    users, totalUsers: data.total, isUsersLoading, usersError,
+    actionError, actionSuccess, clearActionSuccess: () => setActionSuccess(null),
+    activeTab, users, totalUsers: data.total, isUsersLoading, usersError,
     searchQuery, statusFilter, page, totalPages,
     togglingId, isToggling: togglingId !== null,
     handleSearchChange, handleStatusFilterChange, handleTabChange,

@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { normalizeVisualInput } from '../services/questions/visualNormalizer'
+import { QuestionVisualSchema } from './questionVisualSchemas'
 
 export const SELECTED_OPTIONS = ['A', 'B', 'C', 'D'] as const
 
@@ -23,10 +25,13 @@ export const SingleQuestionSchema = questionEnFieldsSchema.extend({
   paper_id: z.string().min(1, "Paper is required"),
   subject_name: z.string().min(1, "Subject is required"),
   difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
-  visual: z.any().nullable().optional(),
+  negative_marks: z.number().finite().min(0).max(99.99).optional().default(0),
+  visual: QuestionVisualSchema.nullable().optional(),
 
   // ── Telugu fields (fully optional) ────────────────────────────────────────
-  topic_en: z.string().trim().optional().nullable().default(null),
+  // topic_en is enforced non-empty IF supplied (DB trigger validates the
+  // value exists in exam_topics for the same exam/paper/subject).
+  topic_en: z.string().trim().min(1, 'topic_en cannot be empty when provided').optional().nullable().default(null),
   topic_te: z.string().trim().optional().nullable().default(null),
   question_text_te: z.string().trim().optional().nullable().default(null),
   option_a_te: z.string().trim().optional().nullable().default(null),
@@ -36,27 +41,7 @@ export const SingleQuestionSchema = questionEnFieldsSchema.extend({
   explanation_te: z.string().optional().nullable().default(null),
 })
 
-// Normalize visual_engine / visual into the canonical { type, data, title? } format
-function normalizeVisual(arg: any): any {
-  // Priority 1: visual_engine field (user's alternate format)
-  const raw = arg.visual_engine || arg.visual
-  if (!raw || typeof raw !== 'object') return arg.visual ?? null
-
-  // Already in canonical format: { type, data }
-  if (raw.type && raw.data !== undefined) return raw
-
-  // visual_engine format: { render_type, metadata } → { type, data }
-  if (raw.render_type && raw.metadata !== undefined) {
-    return {
-      type: raw.render_type,
-      title: raw.title || null,
-      data: raw.metadata,
-    }
-  }
-
-  // Unknown structure — pass through as-is (best effort)
-  return raw
-}
+// Canonical visual normalization is owned by services/questions/visualNormalizer.ts
 
 export const BulkQuestionSchema = z.pipe(z.transform((arg: any) => {
   // Normalize incoming fields (support both options array and discrete fields)
@@ -82,8 +67,9 @@ export const BulkQuestionSchema = z.pipe(z.transform((arg: any) => {
 
     correct_option: (arg.correct_option || arg.correct || '').toString().trim().toUpperCase(),
     difficulty: (arg.difficulty || 'medium').toLowerCase(),
-    // Normalize visual / visual_engine into canonical format
-    visual: normalizeVisual(arg),
+    // Single normalization authority (services/questions/visualNormalizer)
+    visual: normalizeVisualInput(arg.visual ?? arg.visual_engine ?? null),
+    negative_marks: arg.negative_marks ?? 0,
     
     // Pass through Telugu & Topic fields
     topic_en: arg.topic_en || null,
@@ -104,9 +90,10 @@ export const BulkQuestionSchema = z.pipe(z.transform((arg: any) => {
   }),
   difficulty: z.enum(['easy', 'medium', 'hard']),
   explanation_en: z.string().optional(),
-  visual: z.any().nullable().optional(),
+  visual: QuestionVisualSchema.nullable().optional(),
+  negative_marks: z.number().finite().min(0).max(99.99).optional(),
 
-  topic_en: z.string().optional().nullable(),
+  topic_en: z.string().min(1, 'topic_en cannot be empty when provided').optional().nullable(),
   topic_te: z.string().optional().nullable(),
   question_text_te: z.string().optional().nullable(),
   option_a_te: z.string().optional().nullable(),

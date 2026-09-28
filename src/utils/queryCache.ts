@@ -12,10 +12,27 @@ class QueryCache {
     if (typeof window !== 'undefined') {
       setInterval(() => {
         const now = Date.now();
+        // 1. Sweep in-memory entries
         for (const [key, item] of this.cache.entries()) {
           if (now > item.expiry) {
             this.cache.delete(key);
           }
+        }
+        // 2. Sweep persisted sessionStorage entries so stale keys never accumulate
+        try {
+          Object.keys(sessionStorage).forEach(storageKey => {
+            if (!storageKey.startsWith(this.PREFIX)) return;
+            try {
+              const parsed = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+              if (parsed && now > parsed.expiry) {
+                sessionStorage.removeItem(storageKey);
+              }
+            } catch {
+              sessionStorage.removeItem(storageKey);
+            }
+          });
+        } catch {
+          // Ignore storage errors (e.g. quota exceeded)
         }
       }, 60000);
     }
@@ -46,7 +63,7 @@ class QueryCache {
         }
         sessionStorage.removeItem(storageKey);
       }
-    } catch (e) {
+    } catch {
       // Ignore storage errors (e.g. quota exceeded)
     }
 
@@ -66,7 +83,7 @@ class QueryCache {
     this.cache.set(key, item);
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(item));
-    } catch (e) {
+    } catch {
       // Handle quota errors silently
     }
   }

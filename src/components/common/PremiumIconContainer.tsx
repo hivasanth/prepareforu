@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import { TRANSITION_INTERACTION } from './AntigravityMotion'
 
 interface PremiumIconContainerProps {
   icon?: LucideIcon
@@ -7,7 +8,9 @@ interface PremiumIconContainerProps {
   children?: ReactNode
   /** Container sizing + shape (e.g. w-9 h-9 rounded-[10px]). Keeps sizing per consumer. */
   className?: string
-  /** Dark-mode material (applied as-is; project is dark-first). Keeps existing dark look. */
+  /** Dark/base-mode material classes (applied as-is; project is dark-first).
+      Light mode is owned by the `light:` variants below, so these classes only
+      ever paint in non-light contexts. */
   darkClassName?: string
   /** Optional inline style (e.g. icon color tint). */
   style?: CSSProperties
@@ -25,6 +28,9 @@ interface PremiumIconContainerProps {
  *
  * Dark mode is delegated to `darkClassName` so each consumer keeps its
  * pixel-identical dark appearance. Sizing/shape is delegated to `className`.
+ * The `darkClassName` name is kept for parity with `IconBadge` — it carries
+ * the base/non-light mode classes; light-mode material comes from the `light:`
+ * variants below, never from `darkClassName`.
  */
 export function PremiumIconContainer({
   icon: Icon,
@@ -37,7 +43,7 @@ export function PremiumIconContainer({
   return (
     <div
       style={style}
-      className={`flex items-center justify-center shrink-0 transition-all light:bg-[image:var(--gradient-header)] light:text-[var(--ancient-gold-bright)] light:shadow-premium-icon ${darkClassName} ${className}`}
+      className={`flex items-center justify-center shrink-0 ${TRANSITION_INTERACTION} light:bg-[image:var(--gradient-header)] light:text-[var(--ancient-gold-bright)] light:shadow-premium-icon ${darkClassName} ${className}`}
     >
       {children ?? (Icon ? <Icon size={iconSize} /> : null)}
     </div>

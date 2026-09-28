@@ -1,15 +1,22 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@testing-library/react'
-import { ThemeProvider } from './context/ThemeContext'
+import { ThemeProvider, AuthThemeProvider } from './context/ThemeContext'
 import { Avatar } from './components/common/Avatar'
 
 afterEach(cleanup)
 
 function renderAvatar(ui: React.ReactNode, light = false) {
+  // Light mode must be driven by React state (isDark=false), not a bare CSS
+  // `.light` class — AdminIconWrap decides its material via useTheme(). The
+  // AuthThemeProvider forces isDark=false AND emits the `.light` wrapper.
   const r = render(
-    <ThemeProvider>
-      <div className={light ? 'light' : undefined}>{ui}</div>
-    </ThemeProvider>,
+    light ? (
+      <AuthThemeProvider>{ui}</AuthThemeProvider>
+    ) : (
+      <ThemeProvider>
+        <div>{ui}</div>
+      </ThemeProvider>
+    ),
   )
   return r.container.firstChild?.firstChild as HTMLElement
 }

@@ -1,7 +1,6 @@
 import React from 'react';
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps';
-
-const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+import worldAtlasGeo from '../../assets/maps/world-atlas-countries-110m.json';
 
 export const MapVisualizer: React.FC<{ data: any }> = React.memo(({ data }) => {
   const overlays = data.overlays || [];
@@ -17,7 +16,7 @@ export const MapVisualizer: React.FC<{ data: any }> = React.memo(({ data }) => {
         projectionConfig={{ center: [centerLng, centerLat], scale }}
         className="w-full h-full"
       >
-        <Geographies geography={geoUrl}>
+        <Geographies geography={worldAtlasGeo}>
           {({ geographies }) =>
             geographies.map((geo) => (
               <Geography

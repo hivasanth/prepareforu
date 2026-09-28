@@ -1,4 +1,5 @@
 import { useTheme } from '../../context/ThemeContext'
+import { FOCUS_RING } from '../common/AntigravityMotion'
 
 interface CarouselDotsProps {
   count: number
@@ -10,16 +11,15 @@ export function CarouselDots({ count, currentIndex, onClick }: CarouselDotsProps
   const { isDark } = useTheme()
 
   return (
-    <div className="flex justify-center items-center gap-2 mt-2 pb-2" role="tablist" aria-label="Carousel navigation">
+    <div className="flex justify-center items-center gap-2 mt-2 pb-2" role="group" aria-label="Carousel navigation">
       {Array.from({ length: count }, (_, index) => {
         const isActive = index === currentIndex
         return (
           <button
             key={index}
-            role="tab"
-            aria-selected={isActive}
+            aria-current={isActive ? 'page' : undefined}
             onClick={() => onClick(index)}
-            className={`p-3 -m-1.5 rounded-full transition-colors duration-300 ${
+            className={`p-3 -m-1.5 rounded-full transition-interaction duration-slow ease-standard ${FOCUS_RING} ${
               isActive
                 ? !isDark
                   ? 'bg-[var(--gold-200)] w-6 border border-[var(--gold-300)] shadow-[0_0_6px_rgba(200,150,12,0.6)]'

@@ -32,20 +32,25 @@ useUserPerformance (hook)
   → fetchPerformanceAttempts + fetchPerformanceMetadata (parallel, with stale protection)
   → filter by exam/paper/time-range (derived: filteredAttempts)
   → compute metrics, trendData, distribution (derived from filteredAttempts)
-  → fetchPerformanceAnswers (debounced 300ms, driven by filteredAttempts)
-  → compute subjectStats (derived from allAnswers)
+  → fetchPerformanceSubjectStats (debounced 300ms, driven by exam/paper/time filters)
+  → subjectStats (state from the DB-side aggregation RPC)
   → on error: captureNetworkError → retry via loadInitialData(true)
 ```
+
+Subject-accuracy aggregation runs server-side in `get_user_performance_answer_stats`
+(SECURITY DEFINER, `search_path=''`, scoped to `auth.uid()`). The client only sends
+filter params (exam/paper/from) and rounds the returned accuracy. This replaces the
+former client-side fetch of every `attempt_answers` row (previously truncated at 5000).
 
 ## Data Caching
 
 | Cache Key | TTL | Description |
 |-----------|-----|-------------|
 | `perf_attempts_{userId}` | 5 min | Fetched attempts with exam config names |
-| `perf_answers_{sortedIds}` | 5 min | Answer summaries for subject analysis |
+| `perf_subject_{userId}:{exam}:{paper}:{from}` | 5 min | DB-aggregated subject accuracy stats |
 | `perf_metadata_{examSelection}` | 10 min | Available exams, papers, subjects |
 
-Cache is invalidated via `clearPerformanceCache(userId)` on force-refresh or retry.
+Cache is invalidated via `clearPerformanceCache(userId)` on force-refresh, retry, or exam submission.
 
 ## Analytics Integrity
 
@@ -54,7 +59,7 @@ All computations are pure derived state (useMemo) inside the hook:
 | Metric | Input | Formula |
 |--------|-------|---------|
 | `metrics` | filteredAttempts | total count, avg accuracy (rounded), avg score (1 decimal), best score |
-| `subjectStats` | allAnswers | per-subject: correct/total ratio → accuracy %, classified as Strong(≥70%)/Average/Weak(≤50%) |
+| `subjectStats` | RPC `get_user_performance_answer_stats` | per-subject: correct/total ratio → accuracy % (client rounds), classified as Strong(≥70%)/Average/Weak(≤50%) |
 | `trendData` | filteredAttempts | per-attempt: date, sortKey (epoch), accuracy, score — sorted chronologically |
 | `distribution` | filteredAttempts | sum(correct_count), sum(wrong_count), sum(skipped_count) — filtered to non-zero |
 
@@ -64,7 +69,7 @@ All computations are pure derived state (useMemo) inside the hook:
 |-------|-------|
 | Attempts fetch + cache init | `useUserPerformance` |
 | Metadata fetch + cache init | `useUserPerformance` |
-| Answers fetch (debounced) | `useUserPerformance` |
+| Subject stats fetch (debounced, filter-driven) | `useUserPerformance` |
 | Loading / error | `useUserPerformance` |
 | All 3 filters (exam, paper, time) | `useUserPerformance` |
 | APPSC detection | `useUserPerformance` (derived) |
@@ -88,8 +93,8 @@ All computations are pure derived state (useMemo) inside the hook:
 | `SectionReveal` | AntigravityAnimation | Entry animation for APPSC filters |
 | `UserSelectionTabs` | User shared | APPSC exam/paper filter tabs |
 | `LoadingSkeleton` | SharedComponents | Skeleton placeholders |
-| `useStableFetch` | Global hook | Stale request protection |
 | `usePageError` | Global hook | Centralized error handling |
+| `useStableFetch` | Global hook | Stale request protection |
 | `useBreakpoint` | Global hook | Responsive grid columns |
 
 ## Performance Optimizations

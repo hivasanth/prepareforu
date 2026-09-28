@@ -13,7 +13,7 @@ import { memo } from 'react'
 
 const BLOCK = 'bg-[var(--skeleton-block)] animate-pulse'
 
-function SkeletonCardHeader({ width }: { width: string }) {
+function SkeletonCardHeader({ width }: { width: string | number }) {
   return (
     <div className="p-4 border-b border-border-subtle/30 flex items-center gap-2">
       <div className={`w-4 h-4 rounded-md ${BLOCK}`} />

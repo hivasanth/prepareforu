@@ -5,20 +5,20 @@ import { createHash } from 'node:crypto'
 import { composeBulkUploadPrompt } from './promptComposer'
 import { QUESTION_OUTPUT_CONTRACT_VERSION } from './dynamicOutputContract'
 import { DYNAMIC_OUTPUT_CONTRACT_MARKER } from './dynamicOutputContractMarker'
-import { sanitizeLegacyApplicationFormat } from './promptContentSanitizer'
+import { sanitizeLegacyApplicationFormat, stripGenericVisualTeaching } from './promptContentSanitizer'
 
 // Default prompt tests: the 33 `is_default` rows (the prompts a workspace sees
 // when topic prompts are filtered or absent) must satisfy the same composition
 // contract as the full corpus: exactly one canonical contract, no internal
 // marker leak, zero legacy tokens in the final composed prompt, and zero
-// legacy tokens in the STORED at-rest bytes after the consolidated migration.
+// legacy tokens in the STORED at-rest bytes after the consolidated migrations.
 // The is_default flag is read from the committed live snapshot
 // (scripts/data/prompt_templates_live_v1.jsonl) and the stored bodies from the
-// normalized migration SQL.
+// latest canonical migration SQL (Phase 2 — generic visual teaching removed).
 
 const ROOT = process.cwd()
 const SEED_PATH = join(ROOT, 'scripts', 'data', 'prompt_templates_live_v1.jsonl')
-const MIGRATION_PATH = join(ROOT, 'supabase', 'migrations', '20260921000000_prompts_full_normalization.sql')
+const MIGRATION_PATH = join(ROOT, 'supabase', 'migrations', '20260928000000_prompts_generic_visual_removal.sql')
 
 const FORBIDDEN_LEGACY_TOKENS = [
   'visual_engine',
@@ -115,6 +115,13 @@ describe('Default prompts (is_default): stored at-rest cleanliness', () => {
       const body = bodyBy.get(r.id)!
       const resanitized = sanitizeLegacyApplicationFormat(body)
       expect(resanitized, `${r.id}: sanitizing an already-clean stored body must not change it`).toBe(body)
+    }
+  })
+
+  it('default stored bodies are fixed points of the Phase-2 generic-visual strip', () => {
+    for (const r of defaults) {
+      const body = bodyBy.get(r.id)!
+      expect(stripGenericVisualTeaching(body), `${r.id}: stored body must be a fixed point of stripGenericVisualTeaching`).toBe(body)
     }
   })
 })

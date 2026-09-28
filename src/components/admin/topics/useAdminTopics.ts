@@ -1,16 +1,22 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAsyncOperation } from '../../../hooks/useAsyncOperation'
 import { useAuth } from '../../../context/AuthContext'
-import { useToast } from '../../../hooks/useToast'
 import { useAdminFilters } from '../../../hooks/useAdminFilters'
 import {
   fetchTopicsAdmin, createTopic, updateTopic,
-  deleteTopic, toggleTopicPublish, getNextDisplayOrder
+  deleteTopic, toggleTopicPublish, getNextDisplayOrder,
+  reorderTopics,
 } from '../../../services/topicsService'
 import type { StudyTopic, TopicSection } from '../../../types/exam.types'
 import { AI_PROMPT_TEMPLATE } from '../../../constants/aiPromptTemplate'
 import { parseOutlineText, reconstructOutlineText } from '../../../utils/parseOutlineText'
 import { topicMetadataSchema } from '../../../validations/adminSchemas'
+import { normalizeError } from '../../../utils/errorClassification'
+import { copyText } from '../../../utils/clipboardUtils'
+import type { PageError } from '../../../types/error.types'
+
+// HIGH-1: retry loading state for the initial-load RetryButton
+// MED-2: per-topic set tracking which publish toggles are in flight
 
 type TopicFieldErrors = Partial<Record<
   'title_en' | 'content_en' | 'title_te' | 'content_te' | 'youtube_url' | 'display_order',
@@ -19,8 +25,11 @@ type TopicFieldErrors = Partial<Record<
 
 export function useAdminTopics() {
   const { user } = useAuth()
-  const { toasts, showSuccess } = useToast()
   const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<PageError | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [successAlert, setSuccessAlert] = useState<string | null>(null)
   const { selectedExam, selectedPaper, selectedSubject, setSelectedExam, setSelectedPaper, setSelectedSubject } = useAdminFilters()
   const [topics, setTopics] = useState<StudyTopic[]>([])
   const { loading: isLoading, execute } = useAsyncOperation()
@@ -41,6 +50,13 @@ export function useAdminTopics() {
   const [isPublished, setIsPublished] = useState(true)
   const [fieldErrors, setFieldErrors] = useState<TopicFieldErrors>({})
   const submittedRef = useRef(false)
+  const [isRetrying, setIsRetrying] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [togglingTopicIds, setTogglingTopicIds] = useState<Set<string>>(new Set())
+  const [isReordering, setIsReordering] = useState(false)
+  // MED-4: per-topic publish operation state for safe rollback
+  const publishOpsRef = useRef<Map<string, number>>(new Map())
+  const publishOpIdRef = useRef(0)
 
   const isContextValid =
     selectedExam !== 'all' && selectedExam !== 'APPSC_GROUPS' &&
@@ -49,11 +65,15 @@ export function useAdminTopics() {
   const loadTopics = useCallback(async () => {
     if (!isContextValid) { setTopics([]); return }
     try {
+      setIsRetrying(true)
       await execute(async () => {
         setTopics(await fetchTopicsAdmin(selectedExam, selectedPaper, selectedSubject))
+        setLoadError(null)
       })
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load topics')
+      setLoadError(normalizeError(err))
+    } finally {
+      setIsRetrying(false)
     }
   }, [selectedExam, selectedPaper, selectedSubject, isContextValid, execute])
 
@@ -75,6 +95,8 @@ export function useAdminTopics() {
   }
 
   const openAdd = async () => {
+    setSuccessAlert(null)
+    setActionError(null)
     const nextOrder = await getNextDisplayOrder(selectedExam, selectedPaper, selectedSubject)
     setEditingTopic(null)
     resetForm(undefined, nextOrder)
@@ -82,6 +104,8 @@ export function useAdminTopics() {
   }
 
   const openEdit = (topic: StudyTopic) => {
+    setSuccessAlert(null)
+    setActionError(null)
     setEditingTopic(topic)
     resetForm(topic)
     setIsModalOpen(true)
@@ -90,24 +114,20 @@ export function useAdminTopics() {
   const closeModal = () => { setIsModalOpen(false); setEditingTopic(null); setError(null); setFieldErrors({}); submittedRef.current = false }
 
   const handleCopyAiPrompt = async () => {
-    try {
-      await navigator.clipboard.writeText(AI_PROMPT_TEMPLATE)
-      showSuccess('AI Prompt Template copied to clipboard!')
-    } catch {
-      setError('Failed to copy prompt')
+    const ok = await copyText(AI_PROMPT_TEMPLATE)
+    if (!ok) {
+      setActionError('Failed to copy prompt')
     }
   }
 
   const handleParseEn = () => {
     const result = parseOutlineText(rawEn, 'en')
     setParsedEn(result)
-    if (result.length > 0) showSuccess(`Parsed ${result.length} English sections`)
   }
 
   const handleParseTe = () => {
     const result = parseOutlineText(rawTe, 'te')
     setParsedTe(result)
-    if (result.length > 0) showSuccess(`Parsed ${result.length} Telugu sections`)
   }
 
   const computeErrors = (finalParsedEn: TopicSection[] | null): TopicFieldErrors => {
@@ -155,10 +175,12 @@ export function useAdminTopics() {
         is_published: isPublished,
       }
 
+      const cacheContext = { exam_id: selectedExam, paper_id: selectedPaper, subject_name: selectedSubject }
+
       if (editingTopic) {
-        const updated = await updateTopic(editingTopic.id, payload, user)
+        const updated = await updateTopic(editingTopic.id, payload, user, cacheContext)
         setTopics(prev => prev.map(t => t.id === updated.id ? updated : t))
-        showSuccess('Topic updated!')
+        setSuccessAlert('Topic updated!')
       } else {
         if (!user) return setError('Authentication required.')
         const created = await createTopic({
@@ -169,12 +191,12 @@ export function useAdminTopics() {
           created_by:   user.id,
         }, user)
         setTopics(prev => [...prev, created].sort((a, b) => a.display_order - b.display_order))
-        showSuccess('Topic created!')
+        setSuccessAlert('Topic created!')
       }
       setError(null)
       closeModal()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Save failed.')
+      setError(normalizeError(err).message)
     } finally {
       setIsSaving(false)
     }
@@ -191,56 +213,87 @@ export function useAdminTopics() {
   }
 
   const handleDelete = (topic: StudyTopic) => {
+    setDeleteError(null)
     setTopicToDelete(topic)
   }
 
   const handleConfirmDelete = async () => {
     if (!topicToDelete) return
+    setIsDeleting(true)
     try {
-      await deleteTopic(topicToDelete.id, user)
-      setTopics(prev => prev.filter(t => t.id !== topicToDelete.id))
-      setTopicToDelete(null)
-      showSuccess('Topic deleted.')
+      await execute(async () => {
+        await deleteTopic(topicToDelete.id, user, { exam_id: selectedExam, paper_id: selectedPaper, subject_name: selectedSubject })
+        setTopics(prev => prev.filter(t => t.id !== topicToDelete.id))
+        setTopicToDelete(null)
+        setDeleteError(null)
+        setActionError(null)
+        setSuccessAlert('Topic deleted.')
+      })
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Delete failed.')
-      setTopicToDelete(null)
+      // P0-2: surface the failure INSIDE the dialog rather than behind it. The
+      // modal stays open (topicToDelete not cleared) so the user sees the
+      // error and can retry or cancel.
+      setDeleteError(normalizeError(err).message)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
   const handleTogglePublish = async (topic: StudyTopic) => {
     const newPublished = !topic.is_published
-    const prevTopics = topics
+    const opId = ++publishOpIdRef.current
+    publishOpsRef.current.set(topic.id, opId)
+    // Optimistic update: flip only this topic
     setTopics(prev => prev.map(t => t.id === topic.id ? { ...t, is_published: newPublished } : t))
+    setTogglingTopicIds(prev => new Set(prev).add(topic.id))
     try {
-      await toggleTopicPublish(topic.id, newPublished, user)
+      await toggleTopicPublish(topic.id, newPublished, user, { exam_id: selectedExam, paper_id: selectedPaper, subject_name: selectedSubject })
     } catch (err: unknown) {
-      setTopics(prevTopics)
-      setError(err instanceof Error ? err.message : 'Failed to update.')
+      // Only rollback if no newer operation has taken over for this topic
+      if (publishOpsRef.current.get(topic.id) === opId) {
+        setTopics(prev => prev.map(t => t.id === topic.id ? { ...t, is_published: !newPublished } : t))
+      }
+      setActionError(normalizeError(err).message)
+    } finally {
+      if (publishOpsRef.current.get(topic.id) === opId) {
+        publishOpsRef.current.delete(topic.id)
+      }
+      setTogglingTopicIds(prev => { const next = new Set(prev); next.delete(topic.id); return next })
     }
   }
 
   const handleMove = async (idx: number, dir: 'up' | 'down') => {
+    if (isReordering) return
     const arr = [...topics]
     const swap = dir === 'up' ? idx - 1 : idx + 1
     if (swap < 0 || swap >= arr.length) return
     ;[arr[idx], arr[swap]] = [arr[swap], arr[idx]]
     const updated = arr.map((t, i) => ({ ...t, display_order: i + 1 }))
     setTopics(updated)
+    setIsReordering(true)
     try {
-      await Promise.all(updated.map(t => updateTopic(t.id, { display_order: t.display_order }, user)))
-    } catch {
-      setError('Failed to save order.'); loadTopics()
+      await reorderTopics(updated.map(t => ({ id: t.id, display_order: t.display_order })), user, {
+        exam_id: selectedExam, paper_id: selectedPaper, subject_name: selectedSubject,
+      })
+    } catch (err: unknown) {
+      setActionError(normalizeError(err).message)
+      loadTopics()
+    } finally {
+      setIsReordering(false)
     }
   }
 
   return {
-    user, toasts, error, clearError: () => setError(null),
-    topics, isLoading, isContextValid,
+    user, error, loadError,
+    actionError, successAlert, deleteError,
+    clearActionError: () => setActionError(null),
+    clearSuccessAlert: () => setSuccessAlert(null),
+    topics, isLoading, isContextValid, isRetrying, isReordering,
     selectedExam, selectedPaper, selectedSubject,
     setSelectedExam, setSelectedPaper, setSelectedSubject,
     isModalOpen, editingTopic, isSaving,
     previewTopic, setPreviewTopic,
-    topicToDelete,
+    topicToDelete, isDeleting,
     activeLang, setActiveLang,
     titleEn, setTitleEn,
     titleTe, setTitleTe,
@@ -256,8 +309,9 @@ export function useAdminTopics() {
     handleParseEn, handleParseTe,
     handleSave,
     fieldErrors, handleTopicFieldBlur,
-    handleDelete, handleConfirmDelete, cancelDelete: () => setTopicToDelete(null),
+    handleDelete, handleConfirmDelete, cancelDelete: () => { setTopicToDelete(null); setDeleteError(null) },
     handleTogglePublish, handleMove,
+    togglingTopicIds,
     loadTopics,
   }
 }

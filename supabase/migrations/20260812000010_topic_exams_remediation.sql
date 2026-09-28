@@ -247,6 +247,11 @@ GRANT EXECUTE ON FUNCTION public.add_question_time(uuid, uuid, text, numeric) TO
 
 DROP POLICY IF EXISTS exam_topics_read_authenticated ON public.exam_topics;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'rls_exam_topics_user_select' AND polrelid = 'public.exam_topics'::regclass
+  ) THEN
 CREATE POLICY rls_exam_topics_user_select
   ON public.exam_topics
   FOR SELECT
@@ -256,6 +261,9 @@ CREATE POLICY rls_exam_topics_user_select
     OR is_admin()
     OR is_sub_admin()
   );
+  END IF;
+END
+$$;
 
 -- ─── C. topic_counts view (DB-side aggregate, replaces client-side bug) ─────
 -- Replaces the .limit(200) + JS-aggregation pattern with a true DB aggregate.
@@ -317,18 +325,34 @@ DROP POLICY IF EXISTS admin_full_access_v2 ON public.questions;
 DROP POLICY IF EXISTS questions_select_admin_subadmin_v2 ON public.questions;
 DROP POLICY IF EXISTS sub_admin_full_access_v2 ON public.questions;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'admin_full_access_v2' AND polrelid = 'public.questions'::regclass
+  ) THEN
 CREATE POLICY admin_full_access_v2
   ON public.questions
   FOR ALL
   TO authenticated
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'questions_select_admin_subadmin_v2' AND polrelid = 'public.questions'::regclass
+  ) THEN
 CREATE POLICY questions_select_admin_subadmin_v2
   ON public.questions
   FOR SELECT
   TO authenticated
   USING (public.is_admin() OR public.is_sub_admin());
+  END IF;
+END
+$$;
 
 CREATE POLICY sub_admin_full_access_v2
   ON public.questions
@@ -339,31 +363,63 @@ CREATE POLICY sub_admin_full_access_v2
 
 DROP POLICY IF EXISTS exam_papers_write_admin ON public.exam_papers;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_papers_write_admin' AND polrelid = 'public.exam_papers'::regclass
+  ) THEN
 CREATE POLICY exam_papers_write_admin
   ON public.exam_papers
   FOR ALL
   TO public
   USING (public.is_admin());
+  END IF;
+END
+$$;
 
 DROP POLICY IF EXISTS exam_subjects_write_admin ON public.exam_subjects;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_subjects_write_admin' AND polrelid = 'public.exam_subjects'::regclass
+  ) THEN
 CREATE POLICY exam_subjects_write_admin
   ON public.exam_subjects
   FOR ALL
   TO public
   USING (public.is_admin());
+  END IF;
+END
+$$;
 
 DROP POLICY IF EXISTS exam_configs_select_all ON public.exam_configs;
 DROP POLICY IF EXISTS exam_configs_write_admin ON public.exam_configs;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_configs_select_all' AND polrelid = 'public.exam_configs'::regclass
+  ) THEN
 CREATE POLICY exam_configs_select_all
   ON public.exam_configs
   FOR SELECT
   TO public
   USING (is_published = true OR public.is_admin() OR public.is_sub_admin());
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy WHERE polname = 'exam_configs_write_admin' AND polrelid = 'public.exam_configs'::regclass
+  ) THEN
 CREATE POLICY exam_configs_write_admin
   ON public.exam_configs
   FOR ALL
   TO public
   USING (public.is_admin());
+  END IF;
+END
+$$;

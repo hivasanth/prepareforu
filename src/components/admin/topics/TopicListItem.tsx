@@ -3,6 +3,7 @@ import {
   ChevronDown, ChevronUp, Eye, EyeOff, GripVertical, BookOpen, Pencil, Trash2, Youtube
 } from 'lucide-react'
 import { Badge, IconButton, Card, PremiumIconContainer } from '../../common/AntigravityUI'
+import { Spinner } from '../../common/Spinner'
 import type { StudyTopic } from '../../../types/exam.types'
 
 interface TopicListItemProps {
@@ -16,6 +17,8 @@ interface TopicListItemProps {
   onMoveDown: () => void
   isFirst: boolean
   isLast: boolean
+  /** MED-2: true while this topic's publish toggle request is in flight */
+  toggling?: boolean
 }
 
 export const TopicListItem = React.memo(function TopicListItem({
@@ -29,6 +32,7 @@ export const TopicListItem = React.memo(function TopicListItem({
   onMoveDown,
   isFirst,
   isLast,
+  toggling = false,
 }: TopicListItemProps) {
   return (
     <Card
@@ -37,7 +41,7 @@ export const TopicListItem = React.memo(function TopicListItem({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       variant="default"
-      className="group flex items-center gap-3 p-4 hover:border-primary/30"
+      className="group flex items-center gap-3 p-4"
     >
       <PremiumIconContainer
         iconSize={14}
@@ -58,7 +62,7 @@ export const TopicListItem = React.memo(function TopicListItem({
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           {topic.youtube_url && (
-            <Badge variant="default" className="!text-[9px] !py-0 !px-1.5 !gap-1">
+            <Badge variant="default" className="text-[9px] py-0 px-1.5 gap-1">
               <Youtube size={8} /> Video
             </Badge>
           )}
@@ -82,7 +86,7 @@ export const TopicListItem = React.memo(function TopicListItem({
           disabled={isFirst}
           disabledOpacity={30}
           aria-label="Move topic up"
-          className="!w-8 !h-8"
+          className="w-8 h-8"
         >
           <ChevronUp size={14} />
         </IconButton>
@@ -94,7 +98,7 @@ export const TopicListItem = React.memo(function TopicListItem({
           disabled={isLast}
           disabledOpacity={30}
           aria-label="Move topic down"
-          className="!w-8 !h-8"
+          className="w-8 h-8"
         >
           <ChevronDown size={14} />
         </IconButton>
@@ -103,10 +107,12 @@ export const TopicListItem = React.memo(function TopicListItem({
           size="sm"
           focusRing
           onClick={e => { e.stopPropagation(); onTogglePublish() }}
+          disabled={toggling}
           aria-label={topic.is_published ? 'Unpublish topic' : 'Publish topic'}
-          className={`!w-8 !h-8 ${topic.is_published ? '!text-success hover:!bg-success/10' : '!text-text-secondary'}`}
+          aria-busy={toggling}
+          className={`w-8 h-8 ${topic.is_published ? 'text-success hover:bg-success/10' : 'text-text-secondary'}`}
         >
-          {topic.is_published ? <Eye size={14} /> : <EyeOff size={14} />}
+          {toggling ? <Spinner size="sm" /> : topic.is_published ? <Eye size={14} /> : <EyeOff size={14} />}
         </IconButton>
         <IconButton
           variant="ghost"
@@ -115,7 +121,7 @@ export const TopicListItem = React.memo(function TopicListItem({
           onClick={e => { e.stopPropagation(); onPreview() }}
           aria-label="Preview topic"
           title="Preview Topic"
-          className="!w-8 !h-8 !text-primary hover:!bg-primary/10"
+          className="w-8 h-8 text-primary hover:bg-primary/10"
         >
           <BookOpen size={14} />
         </IconButton>
@@ -125,7 +131,7 @@ export const TopicListItem = React.memo(function TopicListItem({
           focusRing
           onClick={e => { e.stopPropagation(); onEdit() }}
           aria-label="Edit topic"
-          className="!w-8 !h-8 !text-primary hover:!bg-primary/10"
+          className="w-8 h-8 text-primary hover:bg-primary/10"
         >
           <Pencil size={14} />
         </IconButton>
@@ -135,7 +141,7 @@ export const TopicListItem = React.memo(function TopicListItem({
           focusRing
           onClick={e => { e.stopPropagation(); onDelete() }}
           aria-label="Delete topic"
-          className="!w-8 !h-8 !text-danger hover:!bg-danger/10"
+          className="w-8 h-8 text-danger hover:bg-danger/10"
         >
           <Trash2 size={14} />
         </IconButton>
