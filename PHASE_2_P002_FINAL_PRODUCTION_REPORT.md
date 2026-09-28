@@ -1,9 +1,16 @@
 # P0-02 — Server-Owned Exam Entitlements · Final Production Report
 
-**Status: P0-02 DATABASE REMEDIATION COMPLETE AND VERIFIED. FRONTEND DEPLOYMENT NOT PERFORMED — BLOCKED (no Vercel credentials).**
-**Permission to start P0-03: NOT GRANTED.** See §28–§30.
+**P0-02 STATUS: NOT CLOSED** — database remediation **COMPLETE and LIVE-VERIFIED**; frontend **NOT DEPLOYED**.
+**Permission to start P0-03: NOT GRANTED.** See §29–§30.
 
-- Project: `xbjhlfwqmcyatblsrhxn` · PostgreSQL `17.6`
+| State | Verdict |
+|---|---|
+| DATABASE | **LIVE VERIFIED** |
+| SOURCE | Migration + suite + report **committed** (`8a0291a`); 4 source files **uncommitted, Option B** (§24) |
+| FRONTEND | **NOT DEPLOYED** (§27) |
+| POST-DEPLOYMENT | **NOT VERIFIED** (nothing deployed) |
+
+- Project: `xbjhlfwmwqmcyatblsrhxn` · PostgreSQL `17.6`
 - Migration: `supabase/migrations/20261004000000_p0_02_server_owned_exam_entitlements.sql`
 - Ledger: `supabase_migrations.schema_migrations` version `20261004000000`, name `p0_02_server_owned_exam_entitlements`
 - Suite: `supabase/tests/p0_02_exam_entitlements.sql`, `plan(46)`
@@ -124,7 +131,7 @@ Therefore the only UPDATE writer was the direct client column privilege, and rev
 
 **`public.exam_selection` enum — dropped from live.** Not the column and never was: a leftover type whose labels are a hardcoded exam list (`APPSC_GROUPS`, `NEET`, `AP_EAMCET_ENGINEERING`, `AP_EAMCET_MEDICAL`, `TS_EAMCET_ENGINEERING`, `TS_EAMCET_MEDICAL`). Pre-apply verification found 0 columns, 0 casts, 0 function arguments or return types, 0 column defaults, 0 constraints, and 0 non-internal `pg_depend` entries. `admin_leaderboard_view.exam_selection` is `text` from `exam_configs`, not the enum. No migration in this repository ever created the type. The drop is re-guarded at apply time and has **no `CASCADE`**, so a dependency appearing later aborts the drop rather than taking a dependent object with it. Post-apply: `enum_still_exists = false`.
 
-**`userRepo.updateUser(id, updates)` — removed from the repository.** A generic `.from('users').update(updates)` escape hatch with no callers, the exact shape that re-introduced P0-02. No test referenced it; removal verified by a clean build and an unchanged test run.
+**`userRepo.updateUser(id, updates)` — removed from the repository, but refactor-coupled.** A generic `.from('users').update(updates)` escape hatch, the exact shape that re-introduced P0-02. **Correction to the original claim:** it was described here as having "no callers." That is true only in the current working tree. At commit `8a0291a` it had three live callers — `userService.ts:176` (`is_active`), `:233` (sub-admin deactivation) and `:299` (`full_name`) — which the larger refactor replaced with the typed admin RPCs (`adminSetUserActiveRpc` et al.). It is therefore dead **only after** that refactor lands, cannot be removed in isolation, and is classified as Option B in §24. No test referenced it either way.
 
 **`leaderboardService.APPSC_GROUPS` — removed.** `fetchAdminLeaderboard` carried a second local copy of the four group ids while already importing `getAllowedExamIds`. Now delegates; behaviour identical for all three input cases (`all` → `[]`, `APPSC_GROUPS` → four ids, specific exam → `[id]`).
 
@@ -332,36 +339,63 @@ The guard aborts unless live is in exactly the audited state: table absent, ledg
 
 The guard was **dry-run first** (`GUARD_PASSED`) before the real apply. The migration body was concatenated programmatically from the file rather than retyped, and the assembled script was asserted to contain exactly one `BEGIN`, one `COMMIT`, the `CREATE TABLE`, the guard, the enum drop and the ledger insert.
 
-## 24. Repository changes
+## 24. Repository changes — release strategy: **OPTION B (refactor dependency)**
+
+**Decision: Option B.** The four P0-02 source changes cannot be safely isolated from the larger refactor, so no synthetic commit was fabricated. They stay in the working tree and land with the parent refactor. No `git reset --hard`, `git checkout .`, destructive stash, mass revert, or cherry-pick was used; the refactor's work is intact and the P0-02 edits ride on top of it.
+
+**Why isolation is unsafe** — the P0-02 edits are not merely co-located with the refactor, they *depend* on it:
+
+| P0-02 change | Refactor dependency that blocks isolation |
+|---|---|
+| Delete `userRepo.updateUser` | At `8a0291a` this function has **three live callers** (`userService.ts:176,233,299`). The refactor replaced them with `adminSetUserActiveRpc` and friends. Deleting it against the committed tree **breaks the build**; it is dead only once the refactor lands. |
+| De-duplicate `leaderboardService` APPSC groups | The P0-02 edit rewrites the expansion inside `fetchAdminLeaderboardPage`, a function the refactor created. At `8a0291a` that function does not exist, so the edit has nothing to attach to. |
+| Type the four `SignupPage` `any`s | They sit inside 18 refactor hunks in the same file; hand-porting them onto the pre-refactor component would not compile. |
+| `tsconfig.app.json` `exclude` block | Motivated by type errors that exist **only in untracked refactor test files** (`phase2LiveSurvivorProbe`, `phase2LiveDOProbe`, `phase2LiveFamThrowsProbe`, `liveFamilySurvivorProbe` — all four confirmed untracked). A clean checkout of `8a0291a` contains none of them, so the exclusion is not a P0-02-at-HEAD change; it is build hygiene the refactor's tests require. |
+
+**Exact P0-02 changes preserved (uncommitted, pending parent refactor):**
+
+| File | P0-02 change | Lines |
+|---|---|---|
+| `src/lib/repositories/user.repository.ts` | Remove the generic `.from('users').update(updates)` escape hatch | 1 hunk |
+| `src/services/leaderboardService.ts` | Replace the local `APPSC_GROUPS` list with the shared `getAllowedExamIds` | 1 hunk |
+| `src/pages/SignupPage.tsx` | Remove 4 P0-02 `any` usages; drop an unused catch binding | 4 of 18 hunks |
+| `tsconfig.app.json` | Exclude test globs from the production type-check | 1 hunk |
+
+The files carry ~320 lines of unrelated refactor alongside those edits (`user.repository.ts` +156/−76, `SignupPage.tsx` +81/−41, `leaderboardService.ts` +71/−131, `tsconfig.app.json` +12/−1 of which only the `exclude` block is P0-02's).
+
+**What must land together:** all four files, committed with the parent refactor. They are safe in the working tree — the refactor author will include them when they stage those files — but they are **not yet in history**, and a `git checkout .` or `git stash` would discard the P0-02 edits along with the refactor. That is the one residual risk in this closure.
+
+**Repository state summary:**
 
 | File | State | Change |
 |---|---|---|
-| `supabase/migrations/20261004000000_p0_02_server_owned_exam_entitlements.sql` | **committed** | Canonical migration, 9 sections, incl. guarded enum drop and anon revokes |
-| `supabase/tests/p0_02_exam_entitlements.sql` | **committed** | `plan(46)`, both fixture defects fixed, tautological assertion replaced |
-| `PHASE_2_P002_FINAL_PRODUCTION_REPORT.md` | **committed** | This report |
-| `src/services/leaderboardService.ts` | modified, uncommitted | Duplicate `APPSC_GROUPS` removed; delegates to `getAllowedExamIds` |
-| `src/lib/repositories/user.repository.ts` | modified, uncommitted | Dead generic `updateUser` removed |
-| `src/pages/SignupPage.tsx` | modified, uncommitted | 4 P0-02 `any` usages typed away, unused `err` removed |
-| `tsconfig.app.json` | modified, uncommitted | Test files excluded from the production type-check |
+| `supabase/migrations/20261004000000_p0_02_server_owned_exam_entitlements.sql` | **committed** (`8a0291a`) | Canonical migration, 9 sections, incl. guarded enum drop and anon revokes |
+| `supabase/tests/p0_02_exam_entitlements.sql` | **committed** (`8a0291a`) | `plan(46)`, both fixture defects fixed, tautological assertion replaced |
+| `PHASE_2_P002_FINAL_PRODUCTION_REPORT.md` | **committed** (`8a0291a`), amended by this closure | This report |
+| `src/lib/repositories/user.repository.ts` | uncommitted — Option B | Generic `users` update escape hatch removed |
+| `src/services/leaderboardService.ts` | uncommitted — Option B | Duplicate `APPSC_GROUPS` removed; delegates to `getAllowedExamIds` |
+| `src/pages/SignupPage.tsx` | uncommitted — Option B | 4 P0-02 `any` usages typed away, unused `err` removed |
+| `tsconfig.app.json` | uncommitted — Option B | Test files excluded from the production type-check |
 
-**Why the four source files are not in the commit.** The worktree is heavily dirty from unrelated pre-existing work spanning ~300 files, and these four were already modified before P0-02 began. Committing them would have swept in ~320 lines of that in-flight refactor under a P0-02 message:
+## 25. Four states, kept strictly separate
 
-| File | Lines changed | P0-02 share |
+| State | Verdict | Basis |
 |---|---|---|
-| `src/lib/repositories/user.repository.ts` | +156/−76 | 1 hunk (dead `updateUser`) |
-| `src/pages/SignupPage.tsx` | +81/−41 | 4 of 18 hunks |
-| `src/services/leaderboardService.ts` | +71/−131 | 1 hunk, riding on a `fetchAdminLeaderboardPage` refactor absent at HEAD |
-| `tsconfig.app.json` | +12/−1 | only the `exclude` block; `resolveJsonModule` is pre-existing |
+| **DATABASE** | **LIVE VERIFIED** | All seven canonical objects, the `REVOKE UPDATE (exam_selection)`, the anon/PUBLIC revokes, the enum drop, the 8-row backfill and ledger row `20261004000000` applied in one transaction. Re-verified after the fact: exploit replay refused, grant→access, revoke→lockout, zero residue. |
+| **SOURCE** | **PARTIALLY COMMITTED** | Migration, 46-assertion suite and this report committed in `8a0291a`. Four source files remain **uncommitted** and documented as **Option B — refactor-coupled** (§24). |
+| **FRONTEND** | **NOT DEPLOYED** | Blocked by absent credentials **and** by the absence of any authorized P0-02-only artifact (§27). No deploy was attempted or claimed. |
+| **POST-DEPLOYMENT** | **NOT VERIFIED** | Not applicable — nothing was deployed. No post-deployment claim is made anywhere in this report. |
 
-The split is not merely cosmetic: the `leaderboardService` fix sits on top of the refactored repository call, so committing that hunk alone would not compile at that commit. These four are therefore left in the working tree to land with the broader refactor they belong to. **They must not be lost** — the P0-02 fixes live in the working tree but not in history until that refactor is committed.
+Local source quality, for completeness: `tsc -b` exits 0 with 0 errors; the 7 P0-02-relevant suites pass **118/118**; the full suite is 2132 passed / 7 failed, all 7 in the unrelated `src/lib/prompts/` corpus; ESLint stands at 244 errors / 29 warnings, none on a P0-02-authored line.
 
-## 25. Three states, kept separate
+### 25a. Closure re-verification (live, re-run after the original sign-off)
 
-**Implemented in repository** — migration, 46-assertion suite, `leaderboardService` dedup, dead `updateUser` removal, `SignupPage` typing, `tsconfig.app.json` build fix. All verified locally: build exit 0, 0 P0-02 typecheck errors, 0 P0-02 test failures.
+Repeated for this closure, not carried over from the earlier run:
 
-**Applied to live DB** — all seven canonical objects, the `REVOKE UPDATE (exam_selection)`, the anon/PUBLIC revokes, the enum drop, the backfill of 8 grants, and the ledger row `20261004000000`. Committed in a single transaction.
-
-**Verified against live DB** — the exploit replay, all six function ACLs, the 5 policies and 9 RPCs, the backfill per real user, the admin grant/revoke cycle, the anon boundary, the PostgREST API surface, and zero probe residue. Not inferred from the repository.
+- **§6 integrity scan** — exactly one definition each of `user_exam_entitlements`, `is_exam_allowed_for_user`, `get_my_entitlements`, `set_preferred_exam`; `resolveExamIds` is a compat re-export that **delegates** to the single canonical `getAllowedExamIds`, not a parallel implementation. **Zero** direct `.from('users').update(` in non-test source, so no client-side write path to `users` exists at all. No authorization bypass.
+- **§7 frontend ↔ LIVE compatibility** — `set_preferred_exam(p_exam_id text)` and `get_my_entitlements()` match the repository calls exactly; `authenticated` EXECUTE is `true` for both, `anon` and `PUBLIC` are `false`.
+- **§8 build** — `tsc -b` 0 errors; P0-02 suites 118/118; no P0-02-attributable failure of any kind.
+- **§12 live security recheck** — `03_EXPLOIT_direct_update` = `REFUSED: permission denied for table users`; resolver `false` without entitlement; admin grant → `true` with 1767 visible questions; revoke → `false` with 0; `set_preferred_exam` refused after revoke. Post-rollback residue: **0** probe users, **0** probe profiles, **0** probe entitlements; real population intact at 30 users, 22 NULL-selection users with **0** entitlements, **0** non-NULL users missing an entitlement.
 
 ## 26. Hard gate checklist
 
@@ -394,15 +428,23 @@ The split is not merely cosmetic: the `leaderboardService` fix sits on top of th
 | 25 | No P0-02-specific typecheck errors | ✅ 0 |
 | 26 | No P0-02-specific lint errors | ✅ 0 on authored lines |
 | 27 | Build passes | ✅ fixed, exit 0 |
-| 28 | Migration + suite in version control | ✅ committed (§24) |
-| 29 | P0-02 source fixes in version control | ⚠️ uncommitted, entangled with the refactor (§24) |
-| 30 | Frontend deployed after DB | ❌ **blocked** |
-| 31 | Post-deployment verification | ❌ **blocked** |
-| 32 | Live verified, report complete | ✅ |
+| 28 | Migration + suite in version control | ✅ committed `8a0291a` |
+| 29 | P0-02 source fixes in version control | ⚠️ uncommitted, Option B — refactor-coupled (§24) |
+| 30 | Single canonical entitlement implementation | ✅ `resolveExamIds` delegates, does not duplicate |
+| 31 | Zero client-side authorization bypass | ✅ no direct `users` write in non-test source |
+| 32 | Frontend ↔ LIVE RPC compatibility | ✅ signatures match; `authenticated` EXECUTE, `anon`/`PUBLIC` denied |
+| 33 | P0-02 test suites | ✅ 118/118 |
+| 34 | `tsc -b` | ✅ 0 errors, exit 0 |
+| 35 | Live exploit re-run at closure | ✅ REFUSED; residue 0 |
+| 36 | Frontend deployed after DB | ❌ **blocked** (§27) |
+| 37 | Post-deployment verification | ❌ **N/A — not deployed** |
+| 38 | Report reflects actual state | ✅ four states stated in §25 |
 
 ## 27. Outstanding item — frontend deployment BLOCKED
 
-Deployment is **not** blocked by P0-02. It is blocked by missing access:
+Deployment is blocked by **two independent** reasons, either of which is sufficient on its own.
+
+**Reason 1 — no deployment access (previously accepted by the owner):**
 
 - `vercel.json` exists (security headers, cache policy).
 - No `.vercel` project link.
@@ -411,9 +453,19 @@ Deployment is **not** blocked by P0-02. It is blocked by missing access:
 - No CI workflow at all (`.github/workflows` does not exist) and no deploy script in `package.json`.
 - No production URL recorded anywhere in the repository.
 
-Deployment was presented to the owner with these three options — supply credentials, deploy locally and have the deployed bundle verified here, or accept items 30–31 as FAIL and close as-is. **The owner chose to close as-is.** This is a deliberate, accepted deferral, not an oversight; the items are recorded as FAIL and P0-03 remains denied.
+**Reason 2 — there is no authorized P0-02-only artifact to deploy (newly identified):**
 
-The database half is complete and independently verifiable; the frontend half is one `vercel --prod` away once credentials exist. Required ordering — migration → live verification → frontend deploy → integration verification — has been respected so far, since the DB is verified and the deploy has not happened.
+The P0-02 source changes are **refactor-coupled** (§24), so no P0-02-only frontend exists. All three candidate deployables are invalid:
+
+| Candidate | Why it must not be deployed |
+|---|---|
+| Current working tree | Ships the entire unverified ~300-file refactor. Explicitly out of P0-02 scope; would bypass the refactor rather than isolate from it. |
+| Committed `8a0291a` frontend | Pre-P0-02 source. Its `users` write paths assume privileges the live DB now revokes. |
+| A hand-assembled "P0-02 only" bundle | Would be a fabricated build; the P0-02 edits do not compile against the pre-refactor tree. |
+
+The security boundary is the **database**, which is already complete and verified. Shipping the frontend would carry only hygiene changes — dead-code removal, a de-duplication, four type annotations, and a build-config exclusion — none of which is required to keep the exploit blocked. That is why the gap is safe to defer rather than urgent, and why the database verification in §4/§12 stands on its own.
+
+Required ordering — migration → live verification → frontend deploy → integration verification — has been respected: the database is verified, and the deploy has not happened.
 
 `npm run build` now passes, so a deploy would not fail on the build. Until it runs, no claim can be made about the deployed bundle.
 
@@ -428,24 +480,41 @@ The database half is complete and independently verifiable; the frontend half is
 
 ## 29. Final verdict
 
-**P0-02 database remediation: COMPLETE and VERIFIED on live.**
+**P0-02 STATUS: NOT CLOSED.**
 
-The privilege escalation is closed at the database, which is the security boundary. Every exploit path is refused, all 14 dependent objects resolve through the new entitlement-backed chokepoint, the 8 accounts that legitimately had access still have it, the 22 that had none still have none, and no probe residue remains.
+Everything within reach of this task is complete, verified and correct. One item is not, and it is not a P0-02 defect.
 
-**P0-02 overall: NOT fully complete.** The frontend has not been deployed and post-deployment verification has not run, blocked by absent Vercel credentials and **accepted by the owner as a deferral** (§27). Four source-file fixes also remain uncommitted pending the broader refactor (§24).
+**Complete and verified — `LIVE DB: VERIFIED`:**
+
+- The privilege escalation is closed at the database, which is the security boundary. Every exploit path is refused, all 14 dependent objects resolve through the entitlement-backed chokepoint, the 8 accounts that legitimately had access still have it, the 22 that had none still have none, and no probe residue remains.
+- Re-verified live at closure, not carried over: the original `UPDATE users.exam_selection → APPSC_GROUPS` attack is `REFUSED: permission denied for table users`; `is_exam_allowed_for_user` is `false` without entitlement; an admin grant yields `true` with 1767 visible questions; a revoke returns `false` with 0; the post-rollback population is 30 users with 0 probe residue.
+- `DUPLICATES: NONE` — one canonical `getAllowedExamIds`; `resolveExamIds` is a compat delegate to it, not a second implementation.
+- `DEAD P0-02 CODE/OBJECTS: NONE` in the database. The orphan `public.exam_selection` enum is dropped; the client-side `.update()` escape hatch is removed pending the refactor (§24).
+- `SECURITY BYPASS: NONE FOUND` — zero direct client writes to `users` anywhere in non-test source; `exam_selection` is preference-only; no public function still reads it for authorization.
+- Source: `tsc -b` 0 errors, P0-02 suites 118/118, no P0-02-attributable failure.
+
+**Outstanding — the sole blocker:**
+
+- `FRONTEND: NOT DEPLOYED` and `POST-DEPLOYMENT: NOT VERIFIED`. Blocked by absent Vercel credentials **and**, independently, by there being no authorized P0-02-only artifact to deploy (§27). No deployment was attempted and none is claimed.
+
+The security exposure is closed and independently verified at the database layer. The gap is a release-hygiene gap: the frontend carrying the P0-02 source edits cannot be shipped in isolation from the ~300-file refactor, and shipping the refactor is outside P0-02's scope.
 
 ## 30. Permission to start P0-03
 
 **NOT GRANTED.**
 
-P0-03 may begin only when all of the following are true:
+| # | Condition | State |
+|---|---|---|
+| 1 | Migration `20261004000000` applied and verified on live | ✅ |
+| 2 | Live security verification passed with zero exploit paths | ✅ re-verified at closure |
+| 3 | Tests, typecheck and build pass with zero P0-02-specific failures | ✅ `tsc -b` 0, 118/118 P0-02 |
+| 4 | No duplicate entitlement implementation or authorization logic | ✅ |
+| 5 | No dead P0-02 database objects | ✅ |
+| 6 | No client-side authorization bypass; `exam_selection` preference-only | ✅ |
+| 7 | Migration + suite committed to version control | ✅ `8a0291a` |
+| 8 | Source changes committed **or** documented as dependent on parent refactor | ✅ Option B, documented (§24) |
+| 9 | Frontend deployed, or blocker explicitly resolved/accepted | ❌ **blocked** (§27) |
+| 10 | Post-deployment verification completed if deployed | ⬜ N/A — not deployed |
+| 11 | No unresolved P0-02 issue remains | ❌ item 9 |
 
-1. ✅ Migration `20261004000000` applied and verified on live.
-2. ✅ Live security verification passed with zero exploit paths.
-3. ✅ Repository tests, typecheck and build pass with zero P0-02-specific failures.
-4. ✅ `supabase/migrations/20261004000000_p0_02_server_owned_exam_entitlements.sql` and `supabase/tests/p0_02_exam_entitlements.sql` committed to version control.
-5. ⬜ Frontend deployed to production **after** the DB migration.
-6. ⬜ Post-deployment integration verification completed.
-7. ⬜ Four P0-02 source-file fixes committed alongside the refactor they sit on (§24).
-
-Items 5–7 are outstanding. **Recommendation: do not start P0-03.** The database is secure now, but the task is not closed until the shipped frontend is verified against it, and item 7 is at risk while those fixes sit uncommitted in a heavily dirty working tree.
+**To close P0-02**, the owner must either (a) accept the deployment deferral, as was done for the credential block, making item 9 an accepted FAIL; or (b) land the parent refactor, then deploy and run the post-deployment flows in §11. Until then **do not start P0-03.**
