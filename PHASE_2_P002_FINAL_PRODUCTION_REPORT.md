@@ -10,7 +10,7 @@
 | FRONTEND | **NOT DEPLOYED** (§27) |
 | POST-DEPLOYMENT | **NOT VERIFIED** (nothing deployed) |
 
-- Project: `xbjhlfwmwqmcyatblsrhxn` · PostgreSQL `17.6`
+- Project: `xbjhlfwqmcyatblsrhxn` · PostgreSQL `17.6`
 - Migration: `supabase/migrations/20261004000000_p0_02_server_owned_exam_entitlements.sql`
 - Ledger: `supabase_migrations.schema_migrations` version `20261004000000`, name `p0_02_server_owned_exam_entitlements`
 - Suite: `supabase/tests/p0_02_exam_entitlements.sql`, `plan(46)`
